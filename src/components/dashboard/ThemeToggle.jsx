@@ -23,7 +23,7 @@ const ThemeToggle = () => {
   return (
     <button
       onClick={() => setIsDark((v) => !v)}
-      className="w-10 h-10 rounded-2xl bg-white dark:bg-slate-800 text-gray-600 dark:text-yellow-300 flex items-center justify-center shadow-sm border border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700 transition-all"
+      className="w-10 h-10 rounded-2xl bg-[#14121c] text-[#f0b429] dark:bg-[#fffcf7] dark:text-[#14121c] flex items-center justify-center border border-black/10 hover:scale-105 transition"
       title={isDark ? "الوضع النهاري" : "الوضع الليلي"}
     >
       {isDark ? <FaSun className="text-base" /> : <FaMoon className="text-base" />}

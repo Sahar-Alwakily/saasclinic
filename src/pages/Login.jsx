@@ -17,7 +17,7 @@ const Login = () => {
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
       navigate('/dashboard');
-    } catch (err) {
+    } catch {
       setError('الإيميل أو كلمة المرور غير صحيحة');
     } finally {
       setLoading(false);
@@ -25,21 +25,28 @@ const Login = () => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-        <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">تسجيل الدخول</h1>
-
-        {error && <div className="bg-rose-50 text-rose-700 text-sm p-3 rounded-xl mb-4">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input type="email" placeholder="الإيميل" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" dir="ltr" />
-          <input type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" dir="ltr" />
-          
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 transition disabled:opacity-60">
-            {loading ? 'جاري الدخول...' : 'دخول'}
+    <div dir="rtl" className="min-h-screen grid md:grid-cols-2" style={{ background: '#14121c' }}>
+      <div className="hidden md:flex flex-col justify-between p-10 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(77,124,255,.35),transparent_40%),radial-gradient(circle_at_90%_80%,rgba(255,107,74,.28),transparent_42%)]" />
+        <p className="font-product text-3xl relative">نورا</p>
+        <div className="relative space-y-4">
+          <p className="text-[11px] tracking-[0.28em] uppercase text-[#22c9a0]">clinic operating system</p>
+          <h1 className="font-product text-5xl leading-[1.05]">تشغيل العيادة<br />كمنتج، لا كدفتر.</h1>
+          <p className="text-white/60 max-w-sm">مواعيد، شواغر، استرجاع، وإيراد — في كونسول واحد لفريق العيادة.</p>
+        </div>
+        <p className="relative text-xs text-white/35">SaaS للعيادات التجميلية</p>
+      </div>
+      <div className="flex items-center justify-center p-6 bg-[#f3efe6]">
+        <form onSubmit={handleSubmit} className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-8 border border-[#e4ddd0] space-y-4">
+          <h2 className="font-product text-2xl">دخول مساحة العمل</h2>
+          {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl">{error}</div>}
+          <input type="email" placeholder="الإيميل" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff] bg-white" dir="ltr" />
+          <input type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff] bg-white" dir="ltr" />
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
+            {loading ? 'جاري الدخول...' : 'دخول الكونسول'}
           </button>
+          <p className="text-center text-sm text-stone-500">ما عندك حساب؟ <Link to="/register" className="text-[#4d7cff] font-semibold">أنشئ مساحة عمل</Link></p>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-5">ما عندك حساب؟ <Link to="/register" className="text-violet-600 font-semibold hover:underline">أنشئ عيادة</Link></p>
       </div>
     </div>
   );

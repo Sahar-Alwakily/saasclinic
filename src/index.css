@@ -1,17 +1,36 @@
 @import "tailwindcss";
 @custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  --nura-ink: #14121c;
+  --nura-ink-2: #1e1b28;
+  --nura-sand: #f3efe6;
+  --nura-paper: #fffcf7;
+  --nura-line: #e4ddd0;
+  --nura-azure: #4d7cff;
+  --nura-coral: #ff6b4a;
+  --nura-mint: #22c9a0;
+  --nura-gold: #f0b429;
+  --nura-lilac: #a78bfa;
+}
+
 @layer base {
   html {
-    font-family: 'Tajawal', system-ui, sans-serif;
+    font-family: "IBM Plex Sans Arabic", "Tajawal", system-ui, sans-serif;
   }
   body {
-    @apply bg-slate-50 text-gray-800 antialiased;
+    @apply antialiased;
+    background: var(--nura-sand);
+    color: #1c1917;
   }
 }
 
 .font-display {
-  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+.font-product {
+  font-family: Syne, "IBM Plex Sans Arabic", sans-serif;
 }
 
 .no-scrollbar::-webkit-scrollbar {
@@ -20,4 +39,63 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+.saas-app {
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(77, 124, 255, 0.18), transparent 55%),
+    radial-gradient(700px 380px at -10% 110%, rgba(255, 107, 74, 0.14), transparent 50%),
+    radial-gradient(500px 280px at 70% 80%, rgba(34, 201, 160, 0.1), transparent 45%),
+    var(--nura-sand);
+  color: #1c1917;
+}
+
+.dark .saas-app {
+  background:
+    radial-gradient(900px 420px at 100% -10%, rgba(77, 124, 255, 0.16), transparent 55%),
+    radial-gradient(700px 380px at -10% 110%, rgba(255, 107, 74, 0.1), transparent 50%),
+    #0c0b10;
+  color: #f5f0ea;
+}
+
+.saas-app :is(.bg-pink-500, .bg-pink-600, .hover\:bg-pink-600:hover) {
+  background-color: var(--nura-azure) !important;
+}
+.saas-app :is(.text-pink-500, .text-pink-600, .text-pink-400, .dark\:text-pink-400) {
+  color: var(--nura-azure) !important;
+}
+.saas-app :is(.bg-pink-50, .dark\:bg-pink-900\/30, .dark\:bg-pink-900\/20) {
+  background-color: rgba(77, 124, 255, 0.12) !important;
+}
+.saas-app :is(.border-pink-500, .border-pink-100) {
+  border-color: rgba(77, 124, 255, 0.35) !important;
+}
+.saas-app :is(.border-t-2.border-pink-500, .border-b-2.border-pink-500) {
+  border-color: var(--nura-azure) !important;
+}
+
+.saas-card {
+  background: color-mix(in srgb, var(--nura-paper) 92%, white);
+  border: 1px solid var(--nura-line);
+  border-radius: 1.35rem;
+  box-shadow: 0 10px 30px -18px rgba(20, 18, 28, 0.35);
+}
+.dark .saas-card {
+  background: #17151f;
+  border-color: #2a2733;
+}
+
+.saas-rail {
+  background: linear-gradient(180deg, #17141f 0%, #12101a 100%);
+  color: #f6f1ea;
+}
+
+.saas-topbar {
+  background: color-mix(in srgb, var(--nura-paper) 78%, transparent);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--nura-line);
+}
+.dark .saas-topbar {
+  background: rgba(18, 16, 26, 0.8);
+  border-color: #2a2733;
 }

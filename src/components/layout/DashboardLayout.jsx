@@ -1,16 +1,18 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import Topbar from './Topbar';
 
 const DashboardLayout = () => {
   return (
-    <div dir="rtl" className="flex min-h-screen bg-slate-50 dark:bg-slate-900 font-sans transition-colors">
+    <div dir="rtl" className="saas-app flex min-h-screen font-sans">
       <Sidebar />
-      <main className="flex-1 h-screen overflow-y-auto">
-        <div className="p-4 md:p-8 max-w-7xl mx-auto">
+      <div className="flex-1 h-screen overflow-y-auto">
+        <Topbar />
+        <main className="p-4 md:p-8 max-w-7xl mx-auto">
           <Outlet />
-        </div>
-      </main>
+        </main>
+      </div>
     </div>
   );
 };

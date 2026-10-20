@@ -10,6 +10,10 @@ import MinimalTheme from '../components/themes/MinimalTheme';
 import { getPreviewClinic } from '../components/themes/previewData';
 import { DRAFT_STORAGE_KEY } from '../components/themes/themeUtils';
 import { slotsForBooking } from '../utils/scheduleSlots';
+import {
+  mergeAptSettings, slotKey, occupiedKeys, claimSlot, makeToken, appendHistory,
+  needsExtraConfirm, isHoliday, manageUrl,
+} from '../utils/appointmentOps';
 
 const PublicBooking = () => {
   const { clinicId } = useParams();
@@ -37,6 +41,11 @@ const PublicBooking = () => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [schedules, setSchedules] = useState({});
   const [staff, setStaff] = useState([]);
+  const [bookedApts, setBookedApts] = useState([]);
+  const [aptSettings, setAptSettings] = useState(mergeAptSettings(null));
+  const [policyOk, setPolicyOk] = useState(false);
+  const [extraOk, setExtraOk] = useState(false);
+  const [manageLink, setManageLink] = useState('');
   const queryApplied = useRef(false);
 
   useEffect(() => {
@@ -109,7 +118,13 @@ const PublicBooking = () => {
       const list = val ? Object.entries(val).map(([id, item]) => ({ id, ...item })) : [];
       setStaff(list.filter((u) => u.role !== 'admin'));
     });
-    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); unsubSched(); unsubUsers(); };
+    const unsubApts = onValue(ref(database, `clinics/${clinicId}/appointments`), (snap) => {
+      setBookedApts(snap.val() ? Object.entries(snap.val()).map(([id, item]) => ({ id, ...item })) : []);
+    });
+    const unsubAptSet = onValue(ref(database, `clinics/${clinicId}/appointmentSettings`), (snap) => {
+      setAptSettings(mergeAptSettings(snap.val()));
+    });
+    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); unsubSched(); unsubUsers(); unsubApts(); unsubAptSet(); };
   }, [clinicId, preview]);
 
   const handleCheckout = async () => {
@@ -142,23 +157,39 @@ const PublicBooking = () => {
       return;
     }
     try {
+      const price = Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0);
+      if (needsExtraConfirm(price, aptSettings) && !extraOk) return alert('هذا الموعد يتطلب تأكيداً إضافياً وفق سياسة العيادة');
+      if (!policyOk) return alert('الرجاء الموافقة على سياسة الإلغاء والتأخير');
+      const specialistId = bookingData.specialistId || '';
+      const key = slotKey(bookingData.branchId, specialistId, bookingData.date, bookingData.time);
       const aptRef = push(ref(database, `clinics/${clinicId}/appointments`));
+      const locked = await claimSlot(database, clinicId, key, aptRef.key);
+      if (!locked) return alert('هذا الوقت لم يعد متاحاً. اختاري ساعة أخرى.');
+      const token = makeToken();
+      const status = aptSettings.autoConfirm && !needsExtraConfirm(price, aptSettings) ? 'confirmed' : 'pending';
       await set(aptRef, {
         customerName: bookingData.name,
         phoneNumber: bookingData.phone,
         service: bookingData.service,
         serviceId: bookingData.serviceId || '',
-        specialistId: bookingData.specialistId || '',
+        specialistId,
         specialistName: bookingData.specialistName || '',
         date: bookingData.date,
         time: bookingData.time,
         branchId: bookingData.branchId,
         branchName: bookingData.branchName,
-        price: Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0),
+        price,
         campaignId: searchParams.get('wb') || '',
-        status: 'pending',
+        status,
+        extraConfirmRequired: needsExtraConfirm(price, aptSettings),
+        manageToken: token,
+        reminderVariant: Math.random() < 0.5 ? 'A' : 'B',
+        slotKey: key,
         createdAt: Date.now(),
+        history: appendHistory({}, { action: 'created', by: 'customer', status }),
       });
+      await set(ref(database, `clinics/${clinicId}/manageTokens/${token}`), { appointmentId: aptRef.key });
+      setManageLink(manageUrl(clinicId, token));
       setIsSuccess(true);
     } catch (error) {
       alert('حدث خطأ');
@@ -209,6 +240,16 @@ const PublicBooking = () => {
     || staff.find((u) => u.branch === bookingData.branchId && selectedService && (u.category === selectedService.category || u.category === 'all'))?.id
     || '';
   let slotInfo = slotsForBooking(schedules, bookingData.branchId, resolvedSpecialistId, bookingData.date);
+  const takenSlots = occupiedKeys(bookedApts);
+  if (slotInfo.slots?.length) {
+    slotInfo = {
+      ...slotInfo,
+      slots: slotInfo.slots.filter((t) => !takenSlots.has(slotKey(bookingData.branchId, resolvedSpecialistId || bookingData.specialistId, bookingData.date, t))),
+    };
+  }
+  if (bookingData.date && isHoliday(bookingData.date, aptSettings)) {
+    slotInfo = { ...slotInfo, slots: [], closed: true, missing: false, dayName: 'عطلة العيادة' };
+  }
   if ((preview || isDraft) && slotInfo.missing && bookingData.date) {
     const dayIdx = new Date(`${bookingData.date}T12:00:00`).getDay();
     if (dayIdx === 5 || dayIdx === 6) {
@@ -442,7 +483,19 @@ const PublicBooking = () => {
                       <div className="space-y-4">
                         <input type="text" placeholder="الاسم" value={bookingData.name} onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" />
                         <input type="tel" placeholder="الهاتف" value={bookingData.phone} onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" dir="ltr" />
-                        <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>تأكيد الجلسة</button>
+                        {aptSettings.cancellationPolicy && (
+                          <label className="flex items-start gap-2 text-xs opacity-70">
+                            <input type="checkbox" checked={policyOk} onChange={(e) => setPolicyOk(e.target.checked)} className="mt-1" />
+                            <span>{aptSettings.cancellationPolicy}{aptSettings.depositPolicyEnabled ? ` ${aptSettings.depositNote}` : ''}</span>
+                          </label>
+                        )}
+                        {needsExtraConfirm(Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0), aptSettings) && (
+                          <label className="flex items-start gap-2 text-xs opacity-70">
+                            <input type="checkbox" checked={extraOk} onChange={(e) => setExtraOk(e.target.checked)} className="mt-1" />
+                            أؤكّد هذا الموعد مرتفع القيمة وفق سياسة العيادة.
+                          </label>
+                        )}
+                        <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId || !policyOk} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>تأكيد الجلسة</button>
                       </div>
                     </div>
                   )}
@@ -453,7 +506,8 @@ const PublicBooking = () => {
               <div className="text-center p-12 mt-8 rounded-[2rem]" style={{ backgroundColor: panelBg }}>
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${primaryColor}22`, color: primaryColor }}><FaCheck className="text-3xl" /></div>
                 <h2 className="font-display text-4xl mb-2">تم حجز جلستكِ</h2>
-                <p className="opacity-70 mb-6">سنتواصل معكِ لتأكيد الموعد{bookingData.branchName ? ` في فرع ${bookingData.branchName}` : ''}</p>
+                <p className="opacity-70 mb-6">{aptSettings.autoConfirm ? 'الموعد مؤكد وفق سياسة العيادة.' : 'سنتواصل معكِ لتأكيد الموعد'}{bookingData.branchName ? ` في فرع ${bookingData.branchName}` : ''}</p>
+                {manageLink && <a href={manageLink} className="block mb-4 text-sm font-bold underline">تأكيد / إلغاء / تغيير الموعد</a>}
                 <button onClick={() => setShowBooking(false)} className="text-white px-8 py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>العودة للعيادة</button>
               </div>
             )}

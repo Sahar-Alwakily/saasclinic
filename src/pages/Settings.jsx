@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ref, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaCheckCircle, FaStore, FaLink, FaBuilding, FaSave, FaDesktop, FaSync, FaPalette } from 'react-icons/fa';
+import { FaCheckCircle, FaStore, FaLink, FaBuilding, FaSave, FaDesktop, FaSync, FaPalette, FaShieldAlt, FaPlug } from 'react-icons/fa';
 import { DRAFT_STORAGE_KEY, fontStack } from '../components/themes/themeUtils';
 
 const THEME_PRESETS = {
@@ -61,7 +62,9 @@ function ColorField({ label, value, onChange, fallback }) {
 
 const Settings = () => {
   const { clinicId, clinicInfo, clinicPath } = useClinic();
-  const [activeTab, setActiveTab] = useState('profile');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
+  const [privacyNote, setPrivacyNote] = useState('');
   const [loading, setLoading] = useState(false);
   const [previewKey, setPreviewKey] = useState(Date.now());
   const previewFrameRef = useRef(null);
@@ -130,8 +133,19 @@ const Settings = () => {
         whyChooseUs: clinicInfo.whyChooseUs || '',
         whyChooseUsTitle: clinicInfo.whyChooseUsTitle || '',
       });
+      setPrivacyNote(clinicInfo.privacyPolicy || '');
     }
   }, [clinicInfo]);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t) setActiveTab(t);
+  }, [searchParams]);
+
+  const goTab = (tab) => {
+    setActiveTab(tab);
+    setSearchParams(tab === 'profile' ? {} : { tab });
+  };
 
   const handleSaveProfile = async () => {
     if (!clinicPath) return;
@@ -190,11 +204,17 @@ const Settings = () => {
         <p className="text-gray-500 text-sm mt-1">إدارة بيانات العيادة وتخصيص واجهة التجميل للعميلات</p>
       </div>
 
-      <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-fit">
-        <button onClick={() => setActiveTab('profile')} className={`px-6 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'profile' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+      <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-fit flex-wrap">
+        <button onClick={() => goTab('profile')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'profile' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaBuilding /> بيانات العيادة
         </button>
-        <button onClick={() => setActiveTab('store')} className={`px-6 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'store' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+        <button onClick={() => goTab('privacy')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'privacy' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+          <FaShieldAlt /> الخصوصية
+        </button>
+        <button onClick={() => goTab('integrations')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'integrations' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+          <FaPlug /> التكاملات
+        </button>
+        <button onClick={() => goTab('store')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'store' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaStore /> واجهة العيادة
         </button>
       </div>
@@ -202,6 +222,52 @@ const Settings = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         <div className="space-y-6">
+          {activeTab === 'privacy' && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-4">
+              <p className="text-sm text-gray-500">نص سياسة الخصوصية يظهر للعميلات إن ربطتيه لاحقاً في الواجهة. إيقاف الاسترجاع موجود في قسم استرجاع العميلات.</p>
+              <textarea value={privacyNote} onChange={(e) => setPrivacyNote(e.target.value)} rows={6} className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none resize-none dark:text-white" placeholder="كيف تُستخدم أرقام العميلات، وحق إيقاف الرسائل..." />
+              <button
+                type="button"
+                disabled={loading}
+                onClick={async () => {
+                  if (!clinicPath) return;
+                  setLoading(true);
+                  try {
+                    await update(ref(database, clinicPath('info')), { privacyPolicy: privacyNote });
+                    toast.success('تم حفظ سياسة الخصوصية');
+                  } catch {
+                    toast.error('تعذّر الحفظ');
+                  } finally {
+                    setLoading(false);
+                  }
+                }}
+                className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold"
+              >
+                <FaSave className="inline ml-2" /> حفظ الخصوصية
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'integrations' && (
+            <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-4">
+              <p className="text-sm text-gray-500">أرقام وروابط القنوات المحفوظة في ملف العيادة — لا بوابة واتساب رسمية مربوطة بعد.</p>
+              {['whatsapp', 'facebook', 'instagram', 'tiktok'].map((key) => (
+                <div key={key}>
+                  <label className="block text-sm font-bold mb-1">{key}</label>
+                  <input
+                    value={storeData[key] || ''}
+                    onChange={(e) => setStoreData({ ...storeData, [key]: e.target.value })}
+                    className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none"
+                    dir="ltr"
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={handleSaveStore} disabled={loading} className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold">
+                حفظ التكاملات
+              </button>
+            </div>
+          )}
+
           {activeTab === 'profile' && (
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-6">
               <div>

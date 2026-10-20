@@ -1,98 +1,192 @@
 import React from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import { FaChartPie, FaUserTie, FaCalendarAlt, FaUsers, FaCog, FaSignOutAlt, FaUserMd, FaNotesMedical, FaBlog, FaStore, FaShoppingBag, FaPaperPlane } from 'react-icons/fa';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import {
+  FaChartPie, FaCalendarAlt, FaUsers, FaSpa, FaGlobe, FaRobot, FaPaperPlane,
+  FaBullhorn, FaChartBar, FaUserTie, FaCreditCard, FaCog, FaSignOutAlt,
+} from 'react-icons/fa';
 import { useClinic } from '../../context/ClinicContext';
 import { useAuth } from '../../context/AuthContext';
-import ThemeToggle from '../dashboard/ThemeToggle';
+
+const linkClass = ({ isActive }) =>
+  `flex flex-col px-3 py-2 rounded-xl text-sm transition-all ${
+    isActive
+      ? 'bg-white/10 text-white shadow-[inset_3px_0_0_#4d7cff]'
+      : 'text-white/70 hover:text-white hover:bg-white/5'
+  }`;
+
+const childClass = ({ isActive }) =>
+  `block px-3 py-1.5 rounded-lg text-[12px] ${
+    isActive ? 'text-white bg-white/10' : 'text-white/45 hover:text-white/80'
+  }`;
+
+const NAV = [
+  {
+    to: '/dashboard',
+    label: 'الرئيسية',
+    hint: 'ملخص الأداء والتنبيهات',
+    icon: FaChartPie,
+  },
+  {
+    to: '/appointments',
+    label: 'المواعيد',
+    hint: 'تقويم، حجوزات، إلغاء، انتظار',
+    icon: FaCalendarAlt,
+    children: [
+      { to: '/appointments', label: 'الحجوزات' },
+      { to: '/ops', label: 'الانتظار والشواغر' },
+    ],
+  },
+  {
+    to: '/customers',
+    label: 'العميلات',
+    hint: 'الملفات، الزيارات، سجل التواصل',
+    icon: FaUsers,
+    admin: true,
+  },
+  {
+    to: '/services',
+    label: 'العلاجات والخدمات',
+    hint: 'الخدمات والأسعار والباقات',
+    icon: FaSpa,
+    children: [
+      { to: '/services', label: 'الخدمات والأسعار' },
+      { to: '/treatments', label: 'متابعة العلاجات' },
+    ],
+  },
+  {
+    to: '/website',
+    label: 'موقع العيادة',
+    hint: 'التصميم، الصفحات، الدومين، SEO',
+    icon: FaGlobe,
+    admin: true,
+  },
+  {
+    to: '/assistant',
+    label: 'المساعد الذكي',
+    hint: 'واتساب، إعدادات الردود، المحادثات',
+    icon: FaRobot,
+    admin: true,
+  },
+  {
+    to: '/winback',
+    label: 'استرجاع العميلات',
+    hint: 'حملات العودة والنتائج',
+    icon: FaPaperPlane,
+    admin: true,
+  },
+  {
+    to: '/marketing',
+    label: 'التسويق',
+    hint: 'الحملات، المحتوى، الكوبونات',
+    icon: FaBullhorn,
+    admin: true,
+    children: [
+      { to: '/marketing', label: 'نظرة الحملات' },
+      { to: '/blog', label: 'المحتوى' },
+      { to: '/orders', label: 'الطلبات' },
+    ],
+  },
+  {
+    to: '/reports',
+    label: 'التقارير والتحليلات',
+    hint: 'الإيرادات والتحويل والحضور',
+    icon: FaChartBar,
+    admin: true,
+  },
+  {
+    to: '/team',
+    label: 'الفريق والفروع',
+    hint: 'الموظفات، الصلاحيات، الجداول',
+    icon: FaUserTie,
+    admin: true,
+    children: [
+      { to: '/staff', label: 'الموظفات' },
+      { to: '/branches', label: 'الفروع والجداول' },
+    ],
+  },
+  {
+    to: '/billing',
+    label: 'المدفوعات والاشتراكات',
+    hint: 'الفواتير، العربون، الاشتراك',
+    icon: FaCreditCard,
+    admin: true,
+  },
+  {
+    to: '/settings',
+    label: 'الإعدادات',
+    hint: 'بيانات العيادة، الخصوصية، التكاملات',
+    icon: FaCog,
+    admin: true,
+  },
+];
 
 const Sidebar = () => {
   const { clinicInfo, isAdmin } = useClinic();
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   const handleLogout = async () => {
     await logout();
     navigate('/login');
   };
 
-  const linkClass = ({ isActive }) =>
-    `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${
-      isActive
-        ? 'bg-pink-500 text-white shadow-md'
-        : 'text-gray-600 dark:text-gray-300 hover:bg-pink-50 dark:hover:bg-slate-700 hover:text-pink-600 dark:hover:text-pink-400'
-    }`;
+  const items = NAV.filter((item) => !item.admin || isAdmin);
 
   return (
-    <div className="w-64 bg-white dark:bg-slate-800 h-screen border-l border-gray-100 dark:border-slate-700 flex flex-col shadow-sm sticky top-0 transition-colors">
-      <div className="p-6 border-b border-gray-100 dark:border-slate-700 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center text-xl shadow-md">
-          🩺
+    <aside className="saas-rail w-[17.5rem] h-screen sticky top-0 flex flex-col border-l border-white/5">
+      <div className="p-5 flex items-center gap-3">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-lg">
+          ن
         </div>
         <div>
-          <h2 className="font-bold text-gray-800 dark:text-white text-lg leading-tight">نظام العيادات</h2>
-          <p className="text-[10px] text-gray-400 truncate w-36">{clinicInfo?.name || 'جاري التحميل...'}</p>
+          <p className="font-product text-xl leading-none">نورا</p>
+          <p className="text-[11px] text-white/45 mt-1 truncate w-36">{clinicInfo?.name || 'منصة تشغيل العيادة'}</p>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
-        <NavLink to="/dashboard" end className={linkClass}>
-          <FaChartPie /> لوحة التحكم
-        </NavLink>
-        <NavLink to="/appointments" className={linkClass}>
-          <FaCalendarAlt /> المواعيد والحجوزات
-        </NavLink>
-        <NavLink to="/treatments" className={linkClass}>
-          <FaNotesMedical /> متابعة العلاجات
-        </NavLink>
-
-        <NavLink to="/services" className={linkClass}>
-          <FaUserMd /> الخدمات والمنتجات
-        </NavLink>
-        <NavLink to="/orders" className={linkClass}>
-  <FaShoppingBag /> الطلبات
-</NavLink>
-        <NavLink to="/blog" className={linkClass}>
-          <FaBlog /> المدونة
-        </NavLink>
-
-        {isAdmin && (
-          <>
-            <NavLink to="/customers" className={linkClass}>
-              <FaUsers /> ملفات العملاء
-            </NavLink>
-            <NavLink to="/winback" className={linkClass}>
-              <FaPaperPlane /> استرجاع العميلات
-            </NavLink>
-
-            <div className="pt-4 mt-4 border-t border-gray-100 dark:border-slate-700">
-              <p className="px-4 text-xs font-bold text-gray-400 mb-2">الإدارة</p>
-              
-              <NavLink to="/branches" className={linkClass}>
-                <FaStore /> الفروع
+      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-1">
+        {items.map((item) => {
+          const Icon = item.icon;
+          const childActive = item.children?.some((c) => pathname === c.to || pathname.startsWith(`${c.to}/`));
+          const open = pathname === item.to || pathname.startsWith(`${item.to}/`) || childActive;
+          return (
+            <div key={item.to}>
+              <NavLink
+                to={item.to}
+                className={({ isActive }) => linkClass({ isActive: isActive || open })}
+              >
+                <span className="flex items-center gap-3 font-medium">
+                  <Icon className="shrink-0 opacity-80" />
+                  {item.label}
+                </span>
+                <span className={`text-[10px] leading-snug mt-0.5 pr-7 ${open ? 'text-white/50' : 'text-white/30'}`}>
+                  {item.hint}
+                </span>
               </NavLink>
-
-              <NavLink to="/staff" className={linkClass}>
-                <FaUserTie /> الموظفين
-              </NavLink>
-              
-              <NavLink to="/settings" className={linkClass}>
-                <FaCog /> الإعدادات
-              </NavLink>
+              {item.children && open && (
+                <div className="pr-9 pb-1 space-y-0.5">
+                  {item.children.map((c) => (
+                    <NavLink key={c.to} to={c.to} className={childClass} end={c.to === item.to}>
+                      {c.label}
+                    </NavLink>
+                  ))}
+                </div>
+              )}
             </div>
-          </>
-        )}
-      </div>
+          );
+        })}
+      </nav>
 
-      <div className="p-4 border-t border-gray-100 dark:border-slate-700 flex items-center justify-between">
-        <ThemeToggle />
+      <div className="p-4 border-t border-white/10">
         <button
           onClick={handleLogout}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-900/20 transition-all font-medium text-sm"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm text-[#ff8d78] hover:bg-white/5"
         >
-          <FaSignOutAlt /> تسجيل الخروج
+          <FaSignOutAlt /> خروج
         </button>
       </div>
-    </div>
+    </aside>
   );
 };
 

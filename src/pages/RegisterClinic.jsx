@@ -70,28 +70,28 @@ const RegisterClinic = () => {
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
-        <div className="text-center mb-6">
-          <div className="w-16 h-16 mx-auto rounded-2xl bg-violet-600 text-white flex items-center justify-center text-3xl shadow-lg mb-3">🩺</div>
-          <h1 className="text-2xl font-bold text-gray-800">أنشئ عيادتك</h1>
-          <p className="text-sm text-gray-500 mt-1">14 يوم مجاني — بدون بطاقة</p>
+    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f3efe6' }}>
+      <div className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-8 border border-[#e4ddd0]">
+        <div className="mb-6">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-xl mb-3">ن</div>
+          <h1 className="font-product text-2xl">أنشئ مساحة عمل</h1>
+          <p className="text-sm text-stone-500 mt-1">14 يوماً تجريبياً — بدون بطاقة</p>
         </div>
 
-        {error && <div className="bg-rose-50 text-rose-700 text-sm p-3 rounded-xl mb-4">{error}</div>}
+        {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input type="text" placeholder="اسم العيادة" onChange={update('clinicName')} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" />
-          <input type="text" placeholder="اسم المالك" onChange={update('ownerName')} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" />
-          <input type="tel" placeholder="رقم الهاتف" onChange={update('phone')} className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" />
-          <input type="email" placeholder="الإيميل" onChange={update('email')} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" dir="ltr" />
-          <input type="password" placeholder="كلمة المرور" onChange={update('password')} required className="w-full p-3 border rounded-xl outline-none focus:border-violet-400" dir="ltr" />
+          <input type="text" placeholder="اسم العيادة" onChange={update('clinicName')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
+          <input type="text" placeholder="اسم المالك" onChange={update('ownerName')} required className="w-full p-3 border rounded-xl border-[#e4ddd0] outline-none focus:border-[#4d7cff]" />
+          <input type="tel" placeholder="رقم الهاتف" onChange={update('phone')} className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
+          <input type="email" placeholder="الإيميل" onChange={update('email')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
+          <input type="password" placeholder="كلمة المرور" onChange={update('password')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
           
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-violet-600 text-white font-bold hover:bg-violet-700 transition disabled:opacity-60">
-            {loading ? 'جاري الإنشاء...' : 'أنشئ العيادة'}
+          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
+            {loading ? 'جاري الإنشاء...' : 'ابدئي الكونسول'}
           </button>
         </form>
-        <p className="text-center text-sm text-gray-500 mt-5">عندك حساب؟ <Link to="/login" className="text-violet-600 font-semibold hover:underline">سجّل دخول</Link></p>
+        <p className="text-center text-sm text-stone-500 mt-5">عندك حساب؟ <Link to="/login" className="text-[#4d7cff] font-semibold">دخول</Link></p>
       </div>
     </div>
   );
