@@ -32,7 +32,7 @@ const Login = () => {
         <div className="relative space-y-4">
           <p className="text-[11px] tracking-[0.28em] uppercase text-[#22c9a0]">clinic operating system</p>
           <h1 className="font-product text-5xl leading-[1.05]">تشغيل العيادة<br />كمنتج، لا كدفتر.</h1>
-          <p className="text-white/60 max-w-sm">مواعيد، شواغر، استرجاع، وإيراد — في كونسول واحد لفريق العيادة.</p>
+          <p className="text-white/60 max-w-sm">مواعيد، قائمة انتظار، استرجاع، وإيراد — في كونسول واحد لفريق العيادة.</p>
         </div>
         <p className="relative text-xs text-white/35">SaaS للعيادات التجميلية</p>
       </div>

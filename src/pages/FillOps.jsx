@@ -13,9 +13,9 @@ import {
 } from '../utils/appointmentOps';
 
 const TABS = [
-  { id: 'desk', label: 'برج التشغيل', color: '#4d7cff' },
-  { id: 'wait', label: 'الانتظار', color: '#22c9a0' },
-  { id: 'risk', label: 'المخاطر', color: '#ff6b4a' },
+  { id: 'desk', label: 'تقرير سريع', color: '#4d7cff' },
+  { id: 'wait', label: 'قائمة الانتظار', color: '#22c9a0' },
+  { id: 'risk', label: 'غياب بدون إشعار', color: '#ff6b4a' },
   { id: 'revenue', label: 'الإيراد', color: '#f0b429' },
   { id: 'tests', label: 'الرسائل', color: '#a78bfa' },
   { id: 'reports', label: 'التقارير', color: '#4d7cff' },
@@ -98,7 +98,7 @@ const FillOps = () => {
 
   const requestApproval = async (title, payload) => {
     await push(ref(database, clinicPath('opsApprovals')), { title, payload, status: 'pending', createdAt: Date.now() });
-    toast.info('بانتظار موافقة المديرة');
+    toast.info('أُرسل للمديرة للموافقة');
   };
 
   const addWaitlist = async (e) => {
@@ -205,9 +205,9 @@ const FillOps = () => {
       <section className="relative overflow-hidden rounded-[1.8rem] text-white p-6 md:p-8" style={{ background: 'linear-gradient(135deg,#17141f 0%,#1c2748 55%,#12352e 100%)' }}>
         <div className="absolute left-0 top-0 w-56 h-56 rounded-full bg-[#4d7cff]/30 blur-3xl" />
         <div className="absolute right-10 bottom-0 w-40 h-40 rounded-full bg-[#ff6b4a]/25 blur-3xl" />
-        <p className="relative text-[11px] tracking-[0.28em] uppercase text-[#22c9a0]">slot recovery · live</p>
-        <h1 className="relative font-product text-3xl md:text-4xl mt-1">برج الشواغر</h1>
-        <p className="relative text-white/65 text-sm mt-2 max-w-xl">مكان العمل اليومي: غير المؤكد، الساعات الهادئة، وعروض الانتظار — بدون قوائم مسطحة.</p>
+        <p className="relative text-[11px] tracking-[0.28em] uppercase text-[#22c9a0]">ملء المواعيد الفارغة</p>
+        <h1 className="relative font-product text-3xl md:text-4xl mt-1">إنقاذ المواعيد الضائعة</h1>
+        <p className="relative text-white/65 text-sm mt-2 max-w-xl">ملخص سريع: مواعيد بحاجة لتأكيد، فترات هادئة، وقائمة انتظار جاهزة للحجز — بضغطة زر.</p>
       </section>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
@@ -226,23 +226,23 @@ const FillOps = () => {
       {tab === 'desk' && (
         <div className="space-y-5">
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <Kpi label="بانتظار التأكيد" value={unconfirmed.length} accent="#ff6b4a" hint="تحتاج إجراء" />
-            <Kpi label="شواغر اليوم" value={gapsToday.length} accent="#4d7cff" hint="ساعات فاضية" />
-            <Kpi label="شواغر الغد" value={gapsTom.length} accent="#22c9a0" hint="فرصة ملء" />
-            <Kpi label="مخاطر حضور" value={risks.length} accent="#f0b429" hint="تأكيد مبكر" />
+            <Kpi label="حجوزات تحتاج تأكيد" value={unconfirmed.length} accent="#f0b429" hint="العميلة لم تؤكد الحضور" />
+            <Kpi label="مواعيد متاحة اليوم" value={gapsToday.length} accent="#22c9a0" hint="مواعيد لم تُحجز" />
+            <Kpi label="مواعيد متاحة غداً" value={gapsTom.length} accent="#22c9a0" hint="مواعيد لم تُحجز" />
+            <Kpi label="غياب بدون إشعار" value={risks.length} accent="#ff6b4a" hint="احتمال عدم حضور" />
           </div>
 
           <div className="grid lg:grid-cols-5 gap-4">
             <div className="lg:col-span-3 rounded-[1.5rem] p-5 text-white" style={{ background: '#14121c' }}>
-              <p className="text-[11px] tracking-widest uppercase text-[#22c9a0]">brief</p>
-              <h2 className="font-product text-2xl mt-1 mb-3">ملخص الوردية</h2>
+              <p className="text-[11px] tracking-widest uppercase text-[#22c9a0]">تقرير سريع</p>
+              <h2 className="font-product text-2xl mt-1 mb-3">ملخص العيادة</h2>
               <p className="text-white/70 text-sm leading-relaxed">
-                اليوم <b className="text-white">{todayApts.length}</b> مواعيد، منها <b className="text-[#ff6b4a]">{todayApts.filter((a) => a.status === 'pending').length}</b> بلا تأكيد.
-                غداً <b className="text-[#22c9a0]">{gapsTom.length}</b> ساعة هادئة قابلة للملء من الانتظار.
+                لديكِ اليوم <b className="text-white">{todayApts.length}</b> مواعيد (منها <b className="text-[#f0b429]">{todayApts.filter((a) => a.status === 'pending').length}</b> بحاجة لتأكيد العميلة)،
+                و <b className="text-[#22c9a0]">{gapsTom.length}</b> فترة فارغة غداً يمكن تعبئتها من قائمة الانتظار.
               </p>
               <div className="flex flex-wrap gap-2 mt-5">
-                <button className="px-4 py-2 rounded-full bg-[#4d7cff] text-sm font-bold" onClick={() => requestApproval('إرسال تذكيرات غير المؤكد', { type: 'remind-unconfirmed', ids: unconfirmed.map((a) => a.id) })}>طلب تذكير غير المؤكد</button>
-                <button className="px-4 py-2 rounded-full bg-white/10 text-sm font-bold" onClick={() => requestApproval('عروض ملء الساعات الهادئة', { type: 'fill-gaps', count: gapsTom.length })}>طلب ملء الغد</button>
+                <button className="px-4 py-2 rounded-full bg-[#4d7cff] text-sm font-bold" onClick={() => requestApproval('إرسال تذكيرات للعميلات', { type: 'remind-unconfirmed', ids: unconfirmed.map((a) => a.id) })}>إرسال تذكيرات للعميلات</button>
+                <button className="px-4 py-2 rounded-full bg-[#22c9a0] text-[#042f24] text-sm font-bold" onClick={() => requestApproval('إرسال رسائل لملء الغد', { type: 'fill-gaps', count: gapsTom.length })}>إرسال رسائل لملء الغد</button>
               </div>
             </div>
             <div className="lg:col-span-2 saas-card p-5">
@@ -264,9 +264,9 @@ const FillOps = () => {
           </div>
 
           <div className="saas-card overflow-hidden">
-            <div className="px-5 py-3 flex items-center justify-between bg-[#ff6b4a]/10">
-              <h3 className="font-product">طابور التأكيد</h3>
-              <span className="text-xs font-bold text-[#c2410c]">{unconfirmed.length}</span>
+            <div className="px-5 py-3 flex items-center justify-between bg-[#4d7cff]/10">
+              <h3 className="font-product">حجوزات تحتاج تأكيد العميلة</h3>
+              <span className="text-xs font-bold text-[#4d7cff]">{unconfirmed.length}</span>
             </div>
             {unconfirmed.slice(0, 10).map((a) => {
               const due = reminderDue(a, settings);
@@ -297,8 +297,8 @@ const FillOps = () => {
       {tab === 'wait' && (
         <div className="grid lg:grid-cols-2 gap-5">
           <form onSubmit={addWaitlist} className="saas-card p-6 space-y-3">
-            <p className="text-[11px] tracking-widest uppercase text-[#22c9a0]">enqueue</p>
-            <h3 className="font-product text-2xl">أضيفي للانتظار</h3>
+            <p className="text-[11px] tracking-widest uppercase text-[#22c9a0]">قائمة الانتظار</p>
+            <h3 className="font-product text-2xl">أضيفي عميلة للطابور</h3>
             <input placeholder="الاسم" value={waitForm.name} onChange={(e) => setWaitForm({ ...waitForm, name: e.target.value })} className={field} />
             <input placeholder="الهاتف" value={waitForm.phone} onChange={(e) => setWaitForm({ ...waitForm, phone: e.target.value })} className={field} dir="ltr" />
             <select value={waitForm.serviceId} onChange={(e) => setWaitForm({ ...waitForm, serviceId: e.target.value })} className={field}>
@@ -323,7 +323,7 @@ const FillOps = () => {
             <button className="w-full py-3 rounded-xl bg-[#22c9a0] text-[#042f24] font-bold">إضافة للطابور</button>
           </form>
           <div className="space-y-3">
-            <h3 className="font-product text-xl">شواغر حيّة</h3>
+            <h3 className="font-product text-xl">مواعيد متاحة للملء</h3>
             {openVacancies.map((v) => {
               const matches = rankWaitlist(waitlist, v);
               return (
@@ -335,13 +335,13 @@ const FillOps = () => {
                 </div>
               );
             })}
-            {!openVacancies.length && <div className="saas-card p-8 text-sm text-stone-500">لا شواغر مفتوحة. تُظهر هنا فور إلغاء موعد.</div>}
+            {!openVacancies.length && <div className="saas-card p-8 text-sm text-stone-500">لا مواعيد متاحة للعرض الآن. تظهر هنا فور إلغاء حجز.</div>}
             <div className="saas-card p-4">
               <h4 className="text-xs font-bold text-stone-400 mb-2">الطابور</h4>
               {waitlist.map((w) => (
                 <div key={w.id} className="flex justify-between py-2 text-sm border-t border-[#eee8dc] first:border-0">
                   <span>{w.name} · {w.service || '—'}</span>
-                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#4d7cff]/10 text-[#4d7cff]">{w.status}</span>
+                  <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#4d7cff]/10 text-[#4d7cff]">{w.status === 'waiting' ? 'بالطابور' : w.status === 'offered' ? 'عُرض عليها' : w.status === 'booked' ? 'حُجز' : w.status}</span>
                 </div>
               ))}
             </div>
@@ -367,7 +367,7 @@ const FillOps = () => {
               <button className="px-4 py-2 rounded-full bg-[#14121c] text-white text-sm font-bold" onClick={() => sendReminder(a, a.risk.extraReminderHours)}>مراجعة ثم تذكير</button>
             </div>
           ))}
-          {!risks.length && <div className="saas-card p-10 text-center text-stone-400">لا مواعيد عالية المخاطر الآن.</div>}
+          {!risks.length && <div className="saas-card p-10 text-center text-stone-400">لا مؤشرات غياب بدون إشعار الآن.</div>}
         </div>
       )}
 

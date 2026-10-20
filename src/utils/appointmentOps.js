@@ -3,7 +3,7 @@ import { normalizePhone, waDigits } from './winback';
 import { slotsForBooking } from './scheduleSlots';
 
 export const APT_STATUSES = [
-  { id: 'pending', label: 'بانتظار التأكيد' },
+  { id: 'pending', label: 'تحتاج تأكيد العميلة' },
   { id: 'confirmed', label: 'مؤكد' },
   { id: 'cancelled', label: 'ملغي' },
   { id: 'attended', label: 'حضر' },

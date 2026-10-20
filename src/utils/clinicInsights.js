@@ -179,8 +179,8 @@ export function interventionAlerts({
     list.push({
       id: 'pending',
       tone: 'gold',
-      title: `${tasks.pending.length} موعد بانتظار تأكيد`,
-      detail: 'حجوزات قادمة بلا تأكيد — تحتاج تدخلاً اليوم.',
+      title: `${tasks.pending.length} حجز تحتاج تأكيد العميلة`,
+      detail: 'العميلة لم تؤكد الحضور بعد — أرسلي تذكيراً اليوم.',
       to: '/appointments',
     });
   }
@@ -188,8 +188,8 @@ export function interventionAlerts({
     list.push({
       id: 'gaps',
       tone: 'azure',
-      title: `${tasks.gaps.length} شاغر في جدول اليوم`,
-      detail: 'يمكن عرضها على قائمة الانتظار.',
+      title: `${tasks.gaps.length} موعد متاح اليوم`,
+      detail: 'فترات لم تُحجز — يمكن عرضها على قائمة الانتظار.',
       to: '/ops',
     });
   }
@@ -198,8 +198,8 @@ export function interventionAlerts({
     list.push({
       id: 'wait',
       tone: 'mint',
-      title: `${waiting.length} على الانتظار مقابل شواغر اليوم`,
-      detail: 'عرض الشاغر لأول من تقبل يقلل الفاقد.',
+      title: `${waiting.length} بالطابور مقابل مواعيد متاحة اليوم`,
+      detail: 'أول عميلة تقبل العرض تسكر الساعة.',
       to: '/ops',
     });
   }
@@ -229,7 +229,7 @@ export function interventionAlerts({
     list.push({
       id: 'risk',
       tone: 'coral',
-      title: `${highRisk.length} موعد بدرجة غياب مرتفعة`,
+      title: `${highRisk.length} موعد باحتمال غياب بدون إشعار`,
       detail: 'الدرجة مبنية على سجل الهاتف عند توفر 5+ مواعيد مكتملة.',
       to: '/ops',
     });
@@ -354,7 +354,7 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
     tips.push(`${peakDay.name} أعلى يوم حجزاً في آخر 60 يوماً (${peakDay.count}) — لا تخفّضي الدوام فيه دون مراجعة.`);
   }
   if (sample.length >= 5 && quietDay && quietDay.count < (peakDay?.count || 0)) {
-    tips.push(`${quietDay.name} الأهدأ (${quietDay.count}) — أنسب لعرض شواغر الانتظار أو حملات العودة.`);
+    tips.push(`${quietDay.name} الأهدأ (${quietDay.count}) — أنسب لعرض المواعيد المتاحة على قائمة الانتظار أو لحملة عودة.`);
   }
   if (peakHour?.count) {
     tips.push(`ساعة ${peakHour.label} الأكثر ازدحاماً (${peakHour.count} حجز) — ثبّتي تأكيداً مبكراً قبلها.`);
@@ -397,7 +397,7 @@ function factLine(health) {
 export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [], occupancy }) {
   const q = String(question || '').trim();
   if (!q) {
-    return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو الإيراد أو الشواغر.', facts: [], missing: [] };
+    return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو الإيراد أو المواعيد المتاحة.', facts: [], missing: [] };
   }
   const facts = factLine(health);
   const missing = [];
@@ -444,13 +444,13 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
       ? `من الحجوزات غير الملغاة لآخر 60 يوماً (${occupancy.sample}): أكثر يوم ${pd?.name || '—'} (${pd?.count || 0})، أكثر ساعة ${ph?.label || '—'} (${ph?.count || 0}). امتلاء اليوم ${occupancy.todayFill == null ? 'غير محسوب بلا جدول' : `${occupancy.todayFill}%`}. هذا توزيع الحجوزات وليس سبباً خارجياً.`
       : 'لا حجوزات كافية لحساب الازدحام.';
   } else if (aboutGap) {
-    answer = `شواغر اليوم في الجدول: ${tasks.gaps.length}. على الانتظار: ${(waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered').length}.`;
+    answer = `مواعيد متاحة اليوم: ${tasks.gaps.length}. بالطابور: ${(waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered').length}.`;
   } else if (aboutToday) {
-    answer = `يحتاج تدخلاً اليوم: ${tasks.pending.length} غير مؤكد، ${tasks.gaps.length} شاغر، ${tasks.followups.length} تذكير، ${tasks.failed.length} رسالة فاشلة، ${tasks.noshowToday.length} غياب اليوم بلا متابعة.`;
+    answer = `يحتاج تدخلاً اليوم: ${tasks.pending.length} بحاجة لتأكيد العميلة، ${tasks.gaps.length} موعد متاح، ${tasks.followups.length} تذكير، ${tasks.failed.length} رسالة فاشلة، ${tasks.noshowToday.length} غياب اليوم بلا متابعة.`;
   } else if (aboutBook) {
     answer = `حجوزات الفترة الحالية ${health.curr.total} (مؤكد ${health.curr.confirmed}، معلّق ${health.curr.pending}، ملغي ${health.curr.cancelled}).`;
   } else {
-    answer = 'أقدر أجاوب من الأرقام المخزّنة فقط: الحجوزات، الحضور، الإلغاء، الإيراد من السعر، الشواغر، الرسائل الفاشلة. ما في سبب خارجي في قاعدة البيانات.';
+    answer = 'أقدر أجاوب من الأرقام المخزّنة فقط: الحجوزات، الحضور، الإلغاء، الإيراد من السعر، المواعيد المتاحة، الرسائل الفاشلة. ما في سبب خارجي في قاعدة البيانات.';
   }
 
   answer += ' ما بخترع أسباب غير موجودة في السجلات.';

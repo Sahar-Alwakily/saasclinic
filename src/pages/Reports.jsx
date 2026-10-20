@@ -58,7 +58,7 @@ const Reports = () => {
       <div className="saas-card p-5">
         <h2 className="font-product text-xl mb-2">كل السجل</h2>
         <p className="text-sm text-stone-500">حضر {rates.attended} · غاب {rates.noshow} · أُلغي {rates.cancelled} · معلّق {rates.pending} · مؤكد {rates.confirmed}</p>
-        <p className="text-sm mt-2">إيراد مستعاد من الشواغر: {rec.actual.toLocaleString('ar')} (صافي {rec.net.toLocaleString('ar')} بعد تكلفة الرسائل المسجّلة)</p>
+        <p className="text-sm mt-2">إيراد مستعاد من ملء المواعيد الفارغة: {rec.actual.toLocaleString('ar')} (صافي {rec.net.toLocaleString('ar')} بعد تكلفة الرسائل المسجّلة)</p>
       </div>
     </div>
   );

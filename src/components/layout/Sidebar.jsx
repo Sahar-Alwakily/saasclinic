@@ -30,11 +30,11 @@ const NAV = [
   {
     to: '/appointments',
     label: 'المواعيد',
-    hint: 'تقويم، حجوزات، إلغاء، انتظار',
+    hint: 'تقويم، حجوزات، إلغاء، قائمة انتظار',
     icon: FaCalendarAlt,
     children: [
       { to: '/appointments', label: 'الحجوزات' },
-      { to: '/ops', label: 'الانتظار والشواغر' },
+      { to: '/ops', label: 'قائمة الانتظار' },
     ],
   },
   {

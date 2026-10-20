@@ -72,7 +72,7 @@ const Appointments = () => {
       createdAt: Date.now(),
       open: true,
     });
-    toast.success('سُجّل الإلغاء وأُنشئ شاغر للانتظار — بلا عقوبة آلية');
+    toast.success('سُجّل الإلغاء وأُتيح الموعد لقائمة الانتظار — بلا عقوبة آلية');
     setCancelFor(null);
     setReason('');
   };
@@ -90,7 +90,7 @@ const Appointments = () => {
           <p className="text-gray-500 text-sm mt-1">حالات: بانتظار التأكيد، مؤكد، ملغي، حضر، لم يحضر</p>
         </div>
         <div className="flex gap-2">
-          <Link to="/ops" className="px-4 py-2.5 rounded-xl bg-pink-50 text-pink-700 font-bold text-sm">تشغيل الشواغر</Link>
+          <Link to="/ops" className="px-4 py-2.5 rounded-xl bg-pink-50 text-pink-700 font-bold text-sm">ملء المواعيد الفارغة</Link>
           <button onClick={() => setShowScheduleModal(true)} className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium">
             <FaClock /> إعدادات الجدول
           </button>

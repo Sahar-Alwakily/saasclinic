@@ -42,13 +42,18 @@ const Dashboard = () => {
   const [reply, setReply] = useState(null);
 
   useEffect(() => {
-    if (!clinicPath) {
+    if (loadingClinic || !clinicId || !clinicPath) {
+      if (!loadingClinic && !clinicId) setLoadingData(false);
+      return undefined;
+    }
+    const appointmentsPath = clinicPath('appointments');
+    if (!appointmentsPath) {
       setLoadingData(false);
       return undefined;
     }
     const fail = () => setLoadingData(false);
     const unsubs = [
-      onValue(ref(database, clinicPath('appointments')), (snap) => {
+      onValue(ref(database, appointmentsPath), (snap) => {
         let all = snap.val() ? Object.entries(snap.val()).map(([id, item]) => ({ id, ...item })) : [];
         if (userRole === 'worker' && user?.category) {
           all = all.filter((apt) => apt.category === user.category);
@@ -70,7 +75,7 @@ const Dashboard = () => {
       onValue(ref(database, clinicPath('appointmentSettings')), (s) => setSettings(s.val()), fail),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [clinicPath, userRole, user]);
+  }, [clinicPath, clinicId, loadingClinic, userRole, user]);
 
   const health = useMemo(() => clinicHealth({ appointments, customers }), [appointments, customers]);
   const tasks = useMemo(
@@ -293,18 +298,18 @@ const Dashboard = () => {
         <section className="saas-card p-5">
           <h2 className="font-product text-xl mb-3">مركز المهام اليومية</h2>
           <ul className="space-y-2 text-sm">
-            <TaskRow to="/appointments" label="مواعيد غير مؤكدة" count={tasks.pending.length} />
-            <TaskRow to="/ops" label="شواغر جدول اليوم" count={tasks.gaps.length} />
-            <TaskRow to="/ops" label="تذكيرات مستحقة" count={tasks.followups.length} />
-            <TaskRow to="/ops" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} />
-            <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} />
+            <TaskRow to="/appointments" label="حجوزات تحتاج تأكيد العميلة" count={tasks.pending.length} tone={tasks.pending.length ? TONES.gold : TONES.mint} />
+            <TaskRow to="/ops" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
+            <TaskRow to="/ops" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
+            <TaskRow to="/ops" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
+            <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} tone={tasks.failed.length ? TONES.coral : TONES.mint} />
           </ul>
         </section>
       </div>
 
       <section className="saas-card p-5">
         <h2 className="font-product text-xl">مساعد الأرقام</h2>
-        <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والإيراد والشواغر المخزّنة. لا يخترع سبباً خارج السجل.</p>
+        <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والإيراد والمواعيد المتاحة المخزّنة. لا يخترع سبباً خارج السجل.</p>
         <div className="flex flex-wrap gap-2 mt-3">
           {PROMPTS.map((p) => (
             <button key={p} type="button" onClick={() => runAsk(p)} className="text-xs px-3 py-1.5 rounded-full bg-[#f3efe6] dark:bg-[#1e1b28]">
@@ -357,12 +362,12 @@ const Dashboard = () => {
   );
 };
 
-function TaskRow({ to, label, count }) {
+function TaskRow({ to, label, count, tone }) {
   return (
     <li>
       <Link to={to} className="flex justify-between items-center rounded-xl px-3 py-2 bg-[#f3efe6] dark:bg-[#1e1b28]">
         <span>{label}</span>
-        <span className="font-product text-lg" style={{ color: count ? '#ff6b4a' : '#22c9a0' }}>{count}</span>
+        <span className="font-product text-lg" style={{ color: tone || TONES.azure }}>{count}</span>
       </Link>
     </li>
   );

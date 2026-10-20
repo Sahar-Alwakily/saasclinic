@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useAuth } from './AuthContext';
@@ -30,12 +30,14 @@ export const ClinicProvider = ({ children }) => {
     return () => unsub();
   }, [clinicId, authLoading]);
 
-  // دالة لإنشاء المسارات داخل العيادة
-  const clinicPath = (subPath = '') => {
+  const buildClinicPath = useCallback((subPath = '') => {
     if (!clinicId) return null;
-    const clean = subPath.replace(/^\/|\/$/g, '');
+    const clean = String(subPath || '').replace(/^\/|\/$/g, '');
     return clean ? `clinics/${clinicId}/${clean}` : `clinics/${clinicId}`;
-  };
+  }, [clinicId]);
+
+  // null حتى تُحمَّل العيادة — حتى لا يُستدعى Firebase بمسار "null"
+  const clinicPath = clinicId ? buildClinicPath : null;
 
   return (
     <ClinicContext.Provider

@@ -1,131 +1,240 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref, onValue, update } from 'firebase/database';
+import { ref, onValue, update, remove, push } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import { 
-  FaArrowRight, FaPhone, FaBirthdayCake, FaSyringe, 
-  FaPlus, FaTimes
+import {
+  FaArrowRight, FaPhone, FaBirthdayCake, FaSyringe, FaPlus, FaPen, FaTrash,
+  FaPlayCircle, FaCheckCircle, FaWhatsapp, FaList,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/ar';
+import SessionStampModal from '../components/customers/SessionStampModal';
+import WhatsAppInstructionsModal, { WHATSAPP_TEMPLATE_ID } from '../components/customers/WhatsAppInstructionsModal';
+import AddServiceModal from '../components/customers/AddServiceModal';
+import InstructionsList from '../components/customers/InstructionsList';
+
 moment.locale('ar');
 
 const CustomerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { clinicPath } = useClinic();
-  
+
   const [customer, setCustomer] = useState(null);
+  const [services, setServices] = useState([]);
+  const [templates, setTemplates] = useState({});
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("sessions");
-  
-  // Modals state
+  const [activeTab, setActiveTab] = useState('sessions');
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showAddService, setShowAddService] = useState(false);
+  const [showInstructions, setShowInstructions] = useState(false);
+  const [waModal, setWaModal] = useState({ show: false, client: null, treatment: null });
+  const migrationDoneRef = useRef(false);
 
   useEffect(() => {
-    if (!id || !clinicPath) return;
-    const customerRef = ref(database, `${clinicPath('customers')}/${id}`);
-    const unsub = onValue(customerRef, (snap) => {
-      setCustomer(snap.exists() ? { id, ...snap.val() } : null);
+    if (!id || !clinicPath) {
       setLoading(false);
-    });
-    return () => unsub();
+      return undefined;
+    }
+    if (!clinicPath('customers')) {
+      setLoading(false);
+      return undefined;
+    }
+    const unsubs = [
+      onValue(ref(database, `${clinicPath('customers')}/${id}`), (snap) => {
+        setCustomer(snap.exists() ? { id, ...snap.val() } : null);
+        setLoading(false);
+      }),
+      onValue(ref(database, clinicPath('services')), (s) => {
+        setServices(s.val() ? Object.entries(s.val()).map(([sid, v]) => ({ id: sid, ...v })) : []);
+      }),
+      onValue(ref(database, clinicPath('treatments/templates')), (s) => setTemplates(s.val() || {})),
+    ];
+    return () => unsubs.forEach((u) => u());
   }, [id, clinicPath]);
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div></div>;
-  if (!customer) return <div className="text-center py-20 text-gray-500">العميلة غير موجودة</div>;
+  const sortedSessions = useMemo(
+    () => [...(customer?.sessions || [])].sort((a, b) => new Date(b.recordedAt || 0) - new Date(a.recordedAt || 0)),
+    [customer],
+  );
 
-  const sortedSessions = [...(customer.sessions || [])].sort((a, b) => new Date(b.recordedAt) - new Date(a.recordedAt));
+  const treatmentsList = useMemo(() => {
+    const obj = customer?.treatments || {};
+    return Object.entries(obj)
+      .map(([tid, t]) => ({ id: tid, ...t }))
+      .sort((a, b) => new Date(b.phaseStartedAt || b.createdAt || 0) - new Date(a.phaseStartedAt || a.createdAt || 0));
+  }, [customer]);
 
-  // إضافة جلسة (مع إنشاء علاج تلقائي)
-  const handleAddSession = async (sessionData) => {
+  const handleSaveSession = async (sessionData) => {
+    if (migrationDoneRef.current) return;
+    migrationDoneRef.current = true;
     try {
+      const batch = Array.isArray(sessionData) ? sessionData : [sessionData];
       const now = new Date().toISOString();
-      const serviceName = sessionData.serviceTitle || 'علاج عام';
+      const existingSessions = Array.isArray(customer.sessions) ? customer.sessions : [];
+      const treatments = { ...(customer.treatments || {}) };
+      const createdThisBatch = {};
 
-      // 1. تجهيز الجلسة الجديدة
-      const newSession = {
-        id: Date.now().toString(),
-        ...sessionData,
-        recordedAt: now
-      };
+      const normalized = batch.map((sess) => {
+        const labels = sess.laserZonesLabels || [];
+        const title = labels.length
+          ? `${sess.serviceTitle || 'جلسة'} — ${labels.join(' ، ')}`
+          : (sess.serviceTitle || 'جلسة');
+        return { ...sess, serviceTitle: title, recordedAt: sess.recordedAt || now };
+      });
 
-      // 2. تحديث مصفوفة الجلسات
-      const newSessions = [...(customer.sessions || []), newSession];
+      const newSessions = [...existingSessions, ...normalized];
 
-      // 3. تجهيز العلاجات
-      const treatments = customer.treatments || {};
-      let treatmentId = Object.keys(treatments).find(
-        (tid) => treatments[tid].serviceName === serviceName
-      );
+      for (const sess of normalized) {
+        const serviceName = sess.serviceTitle.split(' — ')[0];
+        let treatmentId = Object.keys(treatments).find((tid) => treatments[tid].serviceName === serviceName)
+          || Object.keys(createdThisBatch).find((tid) => createdThisBatch[tid].serviceName === serviceName);
 
-      const updates = {
-        sessions: newSessions
-      };
-
-      if (treatmentId) {
-        // إذا العلاج موجود، نضيف الجلسة لسجله
-        const existingTreatment = treatments[treatmentId];
-        updates[`treatments/${treatmentId}/sessions`] = [
-          ...(existingTreatment.sessions || []),
-          {
-            sessionNumber: (existingTreatment.sessions?.length || 0) + 1,
-            date: now.split('T')[0],
-            time: new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-            notes: sessionData.note || '',
-            recordedAt: now
-          }
-        ];
-        updates[`treatments/${treatmentId}/updatedAt`] = now;
-      } else {
-        // إذا ما في علاج، ننشئ واحد جديد
-        const newTreatmentId = `t_${Date.now()}`;
-        updates[`treatments/${newTreatmentId}`] = {
-          serviceName: serviceName,
-          category: sessionData.category || 'beauty',
-          currentPhase: 'during', // يبدأ بـ "أثناء العلاج"
-          phaseStartedAt: now,
-          sessions: [
-            {
-              sessionNumber: 1,
-              date: now.split('T')[0],
-              time: new Date(now).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-              notes: sessionData.note || '',
-              recordedAt: now
-            }
-          ],
-          createdAt: now,
-          status: 'active'
+        const sessionEntry = {
+          sessionId: sess.id,
+          sessionNumber: 1,
+          date: String(sess.recordedAt).split('T')[0],
+          time: new Date(sess.recordedAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+          notes: sess.note || '',
+          recordedAt: sess.recordedAt,
         };
+
+        if (treatmentId) {
+          const t = treatments[treatmentId] || createdThisBatch[treatmentId];
+          const tSessions = [...(t.sessions || [])];
+          sessionEntry.sessionNumber = tSessions.length + 1;
+          tSessions.push(sessionEntry);
+          const next = { ...t, sessions: tSessions, updatedAt: now };
+          treatments[treatmentId] = next;
+          createdThisBatch[treatmentId] = next;
+        } else {
+          const treatRef = push(ref(database, clinicPath(`customers/${id}/treatments`)));
+          treatmentId = treatRef.key;
+          const templateId = Object.keys(templates).find((k) => templates[k]?.name === serviceName) || '';
+          const created = {
+            templateId,
+            serviceName,
+            category: sess.category || 'beauty',
+            currentPhase: 'during',
+            phaseStartedAt: sess.recordedAt || now,
+            sessions: [{ ...sessionEntry, sessionNumber: 1 }],
+            createdAt: now,
+            status: 'active',
+            autoCreated: true,
+          };
+          treatments[treatmentId] = created;
+          createdThisBatch[treatmentId] = created;
+        }
       }
 
-      // 4. الحفظ في الفايربايس
-      await update(ref(database, clinicPath(`customers/${id}`)), updates);
-      
-      toast.success('تم تسجيل الجلسة والعلاج بنجاح!');
+      await update(ref(database, clinicPath(`customers/${id}`)), {
+        sessions: newSessions,
+        treatments,
+        updatedAt: Date.now(),
+      });
+
+      if (normalized.length === 1) toast.success(`✅ تم تسجيل جلسة "${normalized[0].serviceTitle}"`);
+      else toast.success(`✨ تم تسجيل ${normalized.length} جلسات`);
       setShowSessionModal(false);
-    } catch (e) { 
+    } catch (e) {
       console.error(e);
-      toast.error('حدث خطأ أثناء الحفظ'); 
+      toast.error('حدث خطأ أثناء الحفظ');
+    } finally {
+      migrationDoneRef.current = false;
     }
   };
+
+  const handleDeleteSession = async (session) => {
+    if (!window.confirm('حذف هذه الجلسة من السجل؟')) return;
+    try {
+      const sessions = (customer.sessions || []).filter((s) => s.id !== session.id);
+      const treatments = { ...(customer.treatments || {}) };
+      Object.keys(treatments).forEach((tid) => {
+        const t = treatments[tid];
+        treatments[tid] = {
+          ...t,
+          sessions: (t.sessions || []).filter((x) => x.sessionId !== session.id),
+          updatedAt: new Date().toISOString(),
+        };
+      });
+      await update(ref(database, clinicPath(`customers/${id}`)), { sessions, treatments, updatedAt: Date.now() });
+      toast.success('حُذفت الجلسة');
+    } catch {
+      toast.error('تعذّر الحذف');
+    }
+  };
+
+  const handleEditSessionNote = async (session) => {
+    const next = window.prompt('تعديل الملاحظة', session.note || '');
+    if (next == null) return;
+    const sessions = (customer.sessions || []).map((s) => (s.id === session.id ? { ...s, note: next, updatedAt: new Date().toISOString() } : s));
+    const treatments = { ...(customer.treatments || {}) };
+    Object.keys(treatments).forEach((tid) => {
+      const t = treatments[tid];
+      treatments[tid] = {
+        ...t,
+        sessions: (t.sessions || []).map((x) => (x.sessionId === session.id ? { ...x, notes: next } : x)),
+        updatedAt: new Date().toISOString(),
+      };
+    });
+    await update(ref(database, clinicPath(`customers/${id}`)), { sessions, treatments, updatedAt: Date.now() });
+    toast.success('عُدّلت الجلسة');
+  };
+
+  const handleChangePhase = async (tid, newPhase) => {
+    const t = customer.treatments?.[tid] || {};
+    const now = new Date().toISOString();
+    const patch = { currentPhase: newPhase, phaseStartedAt: now };
+    const days = Number(templates[t.templateId]?.phases?.after?.followUpDays);
+    if (newPhase === 'after' && days) {
+      patch.followUpDate = moment().add(days, 'days').format('YYYY-MM-DD');
+    }
+    await update(ref(database, clinicPath(`customers/${id}/treatments/${tid}`)), patch);
+    toast.success('عُدّلت المرحلة');
+  };
+
+  const handleDeleteTreatment = async (tid) => {
+    if (!window.confirm('حذف هذا العلاج؟ الجلسات في السجل تبقى.')) return;
+    try {
+      await remove(ref(database, clinicPath(`customers/${id}/treatments/${tid}`)));
+      toast.success('حُذف العلاج');
+    } catch {
+      toast.error('تعذّر الحذف');
+    }
+  };
+
+  const medicalRows = useMemo(() => {
+    const m = customer?.medicalInfo || {};
+    const rows = [
+      ['الحساسية', m.allergies],
+      ['الأمراض المزمنة', m.chronicDiseases],
+      ['الأدوية الحالية', m.currentMedications],
+      ['عمليات سابقة', m.previousSurgeries],
+      ['ملاحظات', m.notes],
+    ].filter(([, v]) => v);
+    if (customer?.gender === 'female') {
+      if (m.isPregnant) rows.push(['حمل', 'نعم']);
+      if (m.isBreastfeeding) rows.push(['رضاعة', 'نعم']);
+    }
+    return rows;
+  }, [customer]);
+
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500" /></div>;
+  if (!customer) return <div className="text-center py-20 text-gray-500">العميلة غير موجودة</div>;
 
   return (
     <div dir="rtl" className="space-y-6 max-w-4xl mx-auto">
       <ToastContainer position="top-left" rtl />
-      
-      {/* زر الرجوع */}
-      <button onClick={() => navigate('/customers')} className="flex items-center gap-2 text-gray-500 hover:text-pink-500 transition-colors">
+      <button onClick={() => navigate('/customers')} className="flex items-center gap-2 text-gray-500 hover:text-pink-500">
         <FaArrowRight /> العودة لملفات العملاء
       </button>
 
-      {/* الهيدر */}
       <div className="bg-gradient-to-l from-pink-500 to-rose-400 text-white rounded-3xl p-6 shadow-lg">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-3xl font-bold backdrop-blur">
-            {(customer.firstName || "?")[0]}
+          <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-3xl font-bold">
+            {(customer.firstName || '?')[0]}
           </div>
           <div>
             <h1 className="text-2xl font-bold mb-2">{customer.firstName} {customer.lastName}</h1>
@@ -148,30 +257,42 @@ const CustomerProfile = () => {
         </div>
       </div>
 
-      {/* التبويبات */}
-      <div className="flex border-b border-gray-100 bg-white dark:bg-slate-800 rounded-t-2xl px-2">
-        <button onClick={() => setActiveTab("sessions")} className={`flex-1 py-4 font-bold ${activeTab === "sessions" ? "text-pink-600 border-b-2 border-pink-500" : "text-gray-400"}`}>سجل الجلسات</button>
-        <button onClick={() => setActiveTab("medical")} className={`flex-1 py-4 font-bold ${activeTab === "medical" ? "text-pink-600 border-b-2 border-pink-500" : "text-gray-400"}`}>المعلومات الطبية</button>
+      <div className="flex overflow-x-auto no-scrollbar border-b border-gray-100 bg-white dark:bg-slate-800 rounded-t-2xl px-2">
+        {[
+          ['sessions', 'سجل الجلسات'],
+          ['treatments', 'العلاجات'],
+          ['medical', 'المعلومات الطبية'],
+        ].map(([tid, label]) => (
+          <button key={tid} type="button" onClick={() => setActiveTab(tid)} className={`shrink-0 px-4 py-4 font-bold ${activeTab === tid ? 'text-pink-600 border-b-2 border-pink-500' : 'text-gray-400'}`}>{label}</button>
+        ))}
       </div>
 
       <div className="bg-white dark:bg-slate-800 rounded-b-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 min-h-[300px]">
-        {activeTab === "sessions" && (
+        {activeTab === 'sessions' && (
           <div>
-            <button onClick={() => setShowSessionModal(true)} className="w-full bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 py-3 rounded-xl flex items-center justify-center gap-2 font-bold mb-6 hover:bg-pink-100 dark:hover:bg-pink-900/40 transition">
-              <FaPlus /> تسجيل جلسة جديدة
-            </button>
-            
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button type="button" onClick={() => setShowSessionModal(true)} className="flex-1 min-w-[12rem] bg-pink-50 dark:bg-pink-900/20 text-pink-600 py-3 rounded-xl flex items-center justify-center gap-2 font-bold">
+                <FaPlus /> تسجيل جلسة جديدة (مع توقيع)
+              </button>
+              <button type="button" onClick={() => setShowAddService(true)} className="px-4 py-3 rounded-xl bg-violet-50 text-violet-700 font-bold text-sm">➕ إضافة خدمة جديدة</button>
+              <button type="button" onClick={() => setShowInstructions(true)} className="px-4 py-3 rounded-xl bg-stone-100 dark:bg-slate-700 font-bold text-sm flex items-center gap-1"><FaList /> التعليمات</button>
+            </div>
             {sortedSessions.length === 0 ? (
               <div className="text-center py-10 text-gray-400">لا توجد جلسات مسجلة بعد</div>
             ) : (
               <div className="space-y-3">
-                {sortedSessions.map(session => (
-                  <div key={session.id} className="p-4 border border-pink-100 dark:border-slate-700 bg-pink-50/50 dark:bg-slate-700/50 rounded-xl flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-600 dark:text-pink-400 flex items-center justify-center"><FaSyringe /></div>
-                    <div>
+                {sortedSessions.map((session) => (
+                  <div key={session.id} className="p-4 border border-pink-100 dark:border-slate-700 bg-pink-50/50 dark:bg-slate-700/50 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-600 flex items-center justify-center shrink-0"><FaSyringe /></div>
+                    <div className="flex-1 min-w-0">
                       <p className="font-bold text-gray-800 dark:text-white">{session.serviceTitle || 'جلسة عامة'}</p>
-                      <p className="text-xs text-gray-500">{moment(session.recordedAt).format('dddd، D MMMM YYYY — HH:mm')}</p>
+                      <p className="text-xs text-gray-500">{moment(session.recordedAt).format('dddd، D MMMM YYYY — HH:mm')} · {session.recordedBy || '—'}</p>
                       {session.note && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 bg-white dark:bg-slate-800 p-1 rounded">📝 {session.note}</p>}
+                      {session.signature && <img src={session.signature} alt="توقيع" className="mt-2 h-12 bg-white rounded border" />}
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => handleEditSessionNote(session)} className="w-9 h-9 rounded-full bg-white text-violet-600 flex items-center justify-center"><FaPen /></button>
+                      <button type="button" onClick={() => handleDeleteSession(session)} className="w-9 h-9 rounded-full bg-white text-rose-500 flex items-center justify-center"><FaTrash /></button>
                     </div>
                   </div>
                 ))}
@@ -180,49 +301,78 @@ const CustomerProfile = () => {
           </div>
         )}
 
-        {activeTab === "medical" && (
+        {activeTab === 'treatments' && (
           <div className="space-y-4">
-            <div className="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl">
-              <p className="text-xs text-gray-400 mb-1">الحساسية</p>
-              <p className="text-sm font-medium dark:text-white">{customer.medicalInfo?.allergies || 'لا يوجد'}</p>
-            </div>
-            <div className="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl">
-              <p className="text-xs text-gray-400 mb-1">الأمراض المزمنة</p>
-              <p className="text-sm font-medium dark:text-white">{customer.medicalInfo?.chronicDiseases || 'لا يوجد'}</p>
-            </div>
+            {treatmentsList.length === 0 && <p className="text-center text-gray-400 py-10">لا علاجات بعد — تُنشأ تلقائياً مع أول جلسة.</p>}
+            {treatmentsList.map((t) => {
+              const after = t.currentPhase === 'after';
+              return (
+                <div key={t.id} className="rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-700">
+                  <div className={`text-white p-4 bg-gradient-to-l ${after ? 'from-emerald-400 to-teal-500' : 'from-blue-400 to-indigo-500'}`}>
+                    <p className="font-bold flex items-center gap-2">
+                      {after ? <FaCheckCircle /> : <FaPlayCircle />}
+                      {t.serviceName}
+                    </p>
+                    <p className="text-xs opacity-80 mt-1">{after ? 'بعد العلاج' : 'أثناء العلاج'} · {t.sessions?.length || 0} جلسة</p>
+                  </div>
+                  <div className="p-4 space-y-2 bg-white dark:bg-slate-800">
+                    <div className="flex flex-wrap gap-2">
+                      <button type="button" onClick={() => handleChangePhase(t.id, 'during')} className={`text-xs px-3 py-1.5 rounded-full ${!after ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}>أثناء العلاج</button>
+                      <button type="button" onClick={() => handleChangePhase(t.id, 'after')} className={`text-xs px-3 py-1.5 rounded-full ${after ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'}`}>بعد العلاج</button>
+                      <button
+                        type="button"
+                        onClick={() => setWaModal({
+                          show: true,
+                          client: { clientId: id, customerName: `${customer.firstName} ${customer.lastName}`.trim(), phoneNumber: customer.phone },
+                          treatment: { ...t, templateId: WHATSAPP_TEMPLATE_ID },
+                        })}
+                        className="text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1"
+                      >
+                        <FaWhatsapp /> إرسال تعليمات المرحلة
+                      </button>
+                      <button type="button" onClick={() => handleDeleteTreatment(t.id)} className="text-xs px-3 py-1.5 rounded-full text-rose-500">حذف العلاج</button>
+                    </div>
+                    {(t.sessions || []).map((s, i) => (
+                      <p key={i} className="text-xs text-stone-500">جلسة {s.sessionNumber || i + 1} · {s.date} {s.time} {s.notes ? `· ${s.notes}` : ''}</p>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        )}
+
+        {activeTab === 'medical' && (
+          medicalRows.length === 0
+            ? <p className="text-center text-gray-400 py-10">لا معلومات طبية مسجّلة. عدّلي الملف من قائمة العميلات.</p>
+            : (
+              <div className="space-y-3">
+                {medicalRows.map(([label, val]) => (
+                  <div key={label} className="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl">
+                    <p className="text-xs text-gray-400 mb-1">{label}</p>
+                    <p className="text-sm font-medium dark:text-white">{String(val)}</p>
+                  </div>
+                ))}
+              </div>
+            )
         )}
       </div>
 
-      {/* Modal إضافة جلسة */}
-      {showSessionModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 w-full max-w-md" dir="rtl">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg dark:text-white">تسجيل جلسة جديدة</h3>
-              <button onClick={() => setShowSessionModal(false)} className="text-gray-400 hover:text-rose-500"><FaTimes /></button>
-            </div>
-            <form onSubmit={(e) => {
-              e.preventDefault();
-              const form = e.target;
-              handleAddSession({
-                serviceTitle: form.serviceTitle.value,
-                note: form.note.value,
-                recordedBy: 'الطبيبة'
-              });
-            }}>
-              <div className="space-y-4">
-                <input name="serviceTitle" placeholder="اسم الخدمة (مثال: جلسة ليزر)" required className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none focus:border-pink-400 dark:text-white" />
-                <textarea name="note" placeholder="ملاحظات الجلسة" className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none focus:border-pink-400 dark:text-white" rows="3" />
-                <div className="flex gap-2">
-                  <button type="button" onClick={() => setShowSessionModal(false)} className="flex-1 py-2 bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 rounded-xl">إلغاء</button>
-                  <button type="submit" className="flex-1 py-2 bg-pink-500 text-white rounded-xl font-bold">حفظ</button>
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SessionStampModal
+        show={showSessionModal}
+        onClose={() => setShowSessionModal(false)}
+        onSave={handleSaveSession}
+        services={services}
+      />
+      <AddServiceModal show={showAddService} onClose={() => setShowAddService(false)} onAdded={() => {}} />
+      <InstructionsList show={showInstructions} onClose={() => setShowInstructions(false)} />
+      <WhatsAppInstructionsModal
+        show={waModal.show}
+        onClose={() => setWaModal({ show: false, client: null, treatment: null })}
+        client={waModal.client}
+        treatment={waModal.treatment}
+        activePhase={waModal.treatment?.currentPhase}
+      />
     </div>
   );
 };
