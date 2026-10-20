@@ -68,15 +68,15 @@ export default function BeautyTheme({
                 <span className="absolute -top-1 -right-1 text-[10px] w-5 h-5 rounded-full text-white flex items-center justify-center" style={{ backgroundColor: mainColor }}>{cartCount}</span>
               )}
             </button>
-            <button onClick={onOpenBooking} className="hidden md:inline-flex text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg" style={{ backgroundColor: mainColor }}>احجزي جلستكِ</button>
-            <button onClick={() => setMobileMenu(true)} className="lg:hidden p-2"><FiMenu size={22} /></button>
+            <button onClick={onOpenBooking} className="hidden sm:inline-flex text-white px-3 md:px-5 py-2.5 rounded-full text-xs md:text-sm font-bold shadow-lg" style={{ backgroundColor: mainColor }}>احجزي</button>
+            <button onClick={() => setMobileMenu(true)} className="lg:hidden p-2 min-w-11 min-h-11 flex items-center justify-center" aria-label="القائمة"><FiMenu size={22} /></button>
           </div>
         </div>
       </header>
 
       {mobileMenu && (
         <div className="fixed inset-0 z-[80] bg-[#3A2A28]/40 backdrop-blur-sm" onClick={() => setMobileMenu(false)}>
-          <div className="absolute top-0 right-0 h-full w-80 bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute top-0 right-0 h-full w-[min(20rem,88vw)] bg-white p-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setMobileMenu(false)} className="mb-8"><FiX size={22} /></button>
             <div className="space-y-5 text-lg font-medium">
               <a href="#about" onClick={() => setMobileMenu(false)} className="block">العيادة</a>
@@ -212,7 +212,7 @@ export default function BeautyTheme({
                 <p className="text-xs tracking-[0.3em] uppercase mb-2" style={{ color: mainColor }}>قائمة الجلسات</p>
                 <h2 className="font-display text-4xl md:text-5xl">علاجات البشرة والتجميل</h2>
               </div>
-              <button onClick={onOpenBooking} className="hidden md:block text-sm font-bold" style={{ color: mainColor }}>احجزي الآن ←</button>
+              <button onClick={onOpenBooking} className="text-sm font-bold shrink-0" style={{ color: mainColor }}>احجزي الآن ←</button>
             </div>
             {services.length === 0 ? (
               <div className="bg-white/70 rounded-3xl p-12 text-center border" style={{ borderColor: withAlpha(mainColor, 0.12) }}>
@@ -329,10 +329,14 @@ export default function BeautyTheme({
       </footer>
 
       {whatsapp && (
-        <a href={whatsapp} target="_blank" rel="noreferrer" className="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-2xl">
+        <a href={whatsapp} target="_blank" rel="noreferrer" className="fixed bottom-[5.5rem] sm:bottom-6 left-4 sm:left-6 z-40 w-14 h-14 rounded-full bg-[#25D366] text-white flex items-center justify-center shadow-2xl">
           <FaWhatsapp size={26} />
         </a>
       )}
+      <div className="sm:hidden h-20" />
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-white/92 backdrop-blur border-t" style={{ borderColor: withAlpha(mainColor, 0.15) }}>
+        <button type="button" onClick={onOpenBooking} className="w-full py-3.5 rounded-full text-white font-bold" style={{ backgroundColor: mainColor }}>احجزي جلستكِ</button>
+      </div>
     </div>
   );
 }

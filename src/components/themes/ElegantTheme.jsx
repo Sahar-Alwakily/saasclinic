@@ -54,15 +54,15 @@ export default function ElegantTheme({
               <FiShoppingBag />
               {cartCount > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 text-[10px] rounded-full text-black flex items-center justify-center" style={{ backgroundColor: gold }}>{cartCount}</span>}
             </button>
-            <button onClick={onOpenBooking} className="hidden md:inline-flex px-6 py-2.5 text-xs tracking-[0.2em] uppercase font-bold text-black" style={{ backgroundColor: gold }}>موعد خاص</button>
-            <button onClick={() => setMobileMenu(true)} className="lg:hidden"><FiMenu size={22} /></button>
+            <button onClick={onOpenBooking} className="hidden sm:inline-flex px-3 md:px-6 py-2.5 text-[10px] md:text-xs tracking-[0.2em] uppercase font-bold text-black" style={{ backgroundColor: gold }}>موعد</button>
+            <button onClick={() => setMobileMenu(true)} className="lg:hidden min-w-11 min-h-11" aria-label="القائمة"><FiMenu size={22} /></button>
           </div>
         </div>
       </header>
 
       {mobileMenu && (
         <div className="fixed inset-0 z-[80]" style={{ backgroundColor: withAlpha(bg, 0.7) }} onClick={() => setMobileMenu(false)}>
-          <div className="absolute inset-y-0 right-0 w-80 p-8 border-l" style={{ backgroundColor: bg, borderColor: withAlpha(gold, 0.3) }} onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-y-0 right-0 w-[min(20rem,88vw)] p-8 border-l" style={{ backgroundColor: bg, borderColor: withAlpha(gold, 0.3) }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setMobileMenu(false)} className="mb-10" style={{ color: gold }}><FiX size={22} /></button>
             <div className="space-y-6 font-display text-2xl">
               <a href="#services" onClick={() => setMobileMenu(false)} className="block">الجلسات</a>
@@ -236,10 +236,14 @@ export default function ElegantTheme({
       </footer>
 
       {whatsapp && (
-        <a href={whatsapp} target="_blank" rel="noreferrer" className="fixed bottom-6 left-6 z-40 w-12 h-12 rounded-full flex items-center justify-center text-black" style={{ backgroundColor: gold }}>
+        <a href={whatsapp} target="_blank" rel="noreferrer" className="fixed bottom-[5.5rem] sm:bottom-6 left-4 sm:left-6 z-40 w-12 h-12 rounded-full flex items-center justify-center text-black" style={{ backgroundColor: gold }}>
           <FaWhatsapp size={22} />
         </a>
       )}
+      <div className="sm:hidden h-20" />
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t" style={{ backgroundColor: withAlpha(bg, 0.95), borderColor: withAlpha(gold, 0.25) }}>
+        <button type="button" onClick={onOpenBooking} className="w-full py-3.5 font-bold text-black" style={{ backgroundColor: gold }}>احجزي موعداً</button>
+      </div>
     </div>
   );
 }

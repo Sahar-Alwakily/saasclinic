@@ -355,7 +355,7 @@ export function siteStatus({ clinicInfo, clinicId, services = [], blog = [] }) {
     total: checks.length,
     services: (services || []).map((s) => ({
       id: s.id,
-      name: s.name,
+      name: s.title || s.name,
       price: s.price,
       hasDesc: !!s.description,
       duration: s.duration,

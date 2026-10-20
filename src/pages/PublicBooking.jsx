@@ -394,20 +394,20 @@ const PublicBooking = () => {
           <div className="max-w-3xl mx-auto p-5 md:p-10">
             {!isSuccess ? (
               <>
-                <h1 className="font-display text-4xl text-center mb-10">احجزي جلستكِ</h1>
-                <div className="flex justify-between items-center mb-10 relative px-2">
-                  <div className="absolute top-1/2 left-4 right-4 h-px -z-10" style={{ backgroundColor: `${primaryColor}33` }} />
+                <h1 className="font-display text-2xl sm:text-4xl text-center mb-6 sm:mb-10">احجزي جلستكِ</h1>
+                <div className="flex justify-between items-center mb-6 sm:mb-10 relative px-0 sm:px-2">
+                  <div className="absolute top-4 sm:top-1/2 left-4 right-4 h-px -z-10" style={{ backgroundColor: `${primaryColor}33` }} />
                   {['الفرع', 'الجلسة', 'اليوم', 'الوقت', 'بياناتكِ'].map((label, idx) => {
                     const step = idx + 1;
                     return (
-                      <div key={label} className="flex flex-col items-center gap-2">
-                        <div className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold" style={{ backgroundColor: bookingStep >= step ? primaryColor : 'transparent', color: bookingStep >= step ? (isDark ? '#0C0B0A' : '#fff') : undefined, border: `1px solid ${primaryColor}` }}>{step}</div>
-                        <span className="text-[11px] opacity-60">{label}</span>
+                      <div key={label} className="flex flex-col items-center gap-1 sm:gap-2">
+                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold" style={{ backgroundColor: bookingStep >= step ? primaryColor : 'transparent', color: bookingStep >= step ? (isDark ? '#0C0B0A' : '#fff') : undefined, border: `1px solid ${primaryColor}` }}>{step}</div>
+                        <span className="text-[9px] sm:text-[11px] opacity-60">{label}</span>
                       </div>
                     );
                   })}
                 </div>
-                <div className="rounded-[2rem] p-6 md:p-8 min-h-[280px]" style={{ backgroundColor: panelBg }}>
+                <div className="rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 md:p-8 min-h-[280px]" style={{ backgroundColor: panelBg }}>
                   {bookingStep === 1 && (
                     <div>
                       <h2 className="font-display text-2xl text-center mb-6">اختاري الفرع</h2>
@@ -469,7 +469,7 @@ const PublicBooking = () => {
                       {!slotInfo.missing && !slotInfo.closed && slotInfo.slots.length === 0 && (
                         <p className="text-center text-sm opacity-70 py-8">لا توجد ساعات متاحة في هذا اليوم.</p>
                       )}
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                         {slotInfo.slots.map((t) => (
                           <button key={t} onClick={() => { setBookingData({ ...bookingData, time: t, specialistId: resolvedSpecialistId || bookingData.specialistId }); setBookingStep(5); }} className="p-3 border rounded-2xl font-bold" style={{ borderColor: bookingData.time === t ? primaryColor : undefined, backgroundColor: bookingData.time === t ? primaryColor : 'transparent', color: bookingData.time === t ? (isDark ? '#0C0B0A' : '#fff') : undefined }}>{t}</button>
                         ))}

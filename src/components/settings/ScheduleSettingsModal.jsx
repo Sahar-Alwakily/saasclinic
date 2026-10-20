@@ -125,7 +125,7 @@ const ScheduleSettingsModal = ({ show, onClose }) => {
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><FaMapMarkerAlt /> اختر الفرع</label>
               {branches.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {branches.map(branch => (
                     <button
                       key={branch.id}

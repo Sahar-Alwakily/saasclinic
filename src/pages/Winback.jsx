@@ -279,9 +279,9 @@ const Winback = () => {
         <p className="text-sm text-gray-500 mt-1">اكتشاف، مراجعة، حملة مصرّح بها، دون توصيات طبية آلية.</p>
       </div>
 
-      <div className="flex flex-wrap gap-1 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-gray-100 dark:border-slate-700">
+      <div className="flex gap-1 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`px-3 py-2 rounded-xl text-sm font-bold ${tab === t.id ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500'}`}>{t.label}</button>
+          <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold ${tab === t.id ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500'}`}>{t.label}</button>
         ))}
       </div>
 

@@ -204,17 +204,17 @@ const Settings = () => {
         <p className="text-gray-500 text-sm mt-1">إدارة بيانات العيادة وتخصيص واجهة التجميل للعميلات</p>
       </div>
 
-      <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-fit flex-wrap">
-        <button onClick={() => goTab('profile')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'profile' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+      <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-full max-w-full overflow-x-auto no-scrollbar">
+        <button onClick={() => goTab('profile')} className={`shrink-0 px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'profile' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaBuilding /> بيانات العيادة
         </button>
-        <button onClick={() => goTab('privacy')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'privacy' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+        <button onClick={() => goTab('privacy')} className={`shrink-0 px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'privacy' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaShieldAlt /> الخصوصية
         </button>
-        <button onClick={() => goTab('integrations')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'integrations' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+        <button onClick={() => goTab('integrations')} className={`shrink-0 px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'integrations' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaPlug /> التكاملات
         </button>
-        <button onClick={() => goTab('store')} className={`px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'store' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
+        <button onClick={() => goTab('store')} className={`shrink-0 px-4 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'store' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaStore /> واجهة العيادة
         </button>
       </div>
@@ -549,7 +549,7 @@ const Settings = () => {
               key={previewKey}
               src={`/book/${clinicId}?draft=1`}
               title="معاينة الواجهة"
-              className="w-full h-[500px] border-0 bg-gray-50"
+              className="w-full h-[min(70vh,500px)] border-0 bg-gray-50"
               onLoad={() => {
                 const clinic = { ...(clinicInfo || {}), ...storeData, name: profileData.name || clinicInfo?.name || '', phone: profileData.phone || clinicInfo?.phone || '', _demo: false };
                 previewFrameRef.current?.contentWindow?.postMessage({ type: 'clinic-draft', clinicId, clinic }, window.location.origin);

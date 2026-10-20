@@ -2,10 +2,11 @@ import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
   FaChartPie, FaCalendarAlt, FaUsers, FaSpa, FaGlobe, FaRobot, FaPaperPlane,
-  FaBullhorn, FaChartBar, FaUserTie, FaCreditCard, FaCog, FaSignOutAlt,
+  FaBullhorn, FaChartBar, FaUserTie, FaCreditCard, FaCog, FaSignOutAlt, FaTimes,
 } from 'react-icons/fa';
 import { useClinic } from '../../context/ClinicContext';
 import { useAuth } from '../../context/AuthContext';
+import { useShellNav } from './shellNav';
 
 const linkClass = ({ isActive }) =>
   `flex flex-col px-3 py-2 rounded-xl text-sm transition-all ${
@@ -125,6 +126,7 @@ const Sidebar = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
+  const { open, setOpen } = useShellNav();
 
   const handleLogout = async () => {
     await logout();
@@ -134,15 +136,22 @@ const Sidebar = () => {
   const items = NAV.filter((item) => !item.admin || isAdmin);
 
   return (
-    <aside className="saas-rail w-[17.5rem] h-screen sticky top-0 flex flex-col border-l border-white/5">
+    <aside
+      className={`saas-rail fixed lg:sticky top-0 right-0 z-50 h-dvh w-[min(17.5rem,88vw)] flex flex-col border-l border-white/5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200 lg:translate-x-0 ${
+        open ? 'translate-x-0' : 'translate-x-full'
+      }`}
+    >
       <div className="p-5 flex items-center gap-3">
         <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-lg">
           ن
         </div>
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="font-product text-xl leading-none">نورا</p>
-          <p className="text-[11px] text-white/45 mt-1 truncate w-36">{clinicInfo?.name || 'منصة تشغيل العيادة'}</p>
+          <p className="text-[11px] text-white/45 mt-1 truncate">{clinicInfo?.name || 'منصة تشغيل العيادة'}</p>
         </div>
+        <button type="button" className="lg:hidden p-2 text-white/70" aria-label="إغلاق" onClick={() => setOpen(false)}>
+          <FaTimes />
+        </button>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-1">

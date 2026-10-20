@@ -19,9 +19,9 @@ const LandingPage = () => {
               </div>
               <span className="font-extrabold text-2xl text-gray-800">ClinicSaaS</span>
             </div>
-            <div className="flex items-center gap-4">
-              <Link to="/login" className="text-gray-600 hover:text-violet-600 font-medium">تسجيل الدخول</Link>
-              <Link to="/register" className="bg-violet-600 text-white px-6 py-2.5 rounded-xl font-bold shadow-md hover:bg-violet-700 transition">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <Link to="/login" className="text-gray-600 hover:text-violet-600 font-medium text-sm sm:text-base">دخول</Link>
+              <Link to="/register" className="bg-violet-600 text-white px-3 sm:px-6 py-2 sm:py-2.5 rounded-xl font-bold shadow-md hover:bg-violet-700 transition text-sm sm:text-base">
                 ابدأ مجاناً
               </Link>
             </div>
@@ -35,7 +35,7 @@ const LandingPage = () => {
           <span className="inline-block bg-white text-violet-600 font-bold px-4 py-1.5 rounded-full text-sm mb-6 shadow-sm border border-violet-100">
             🚀 النظام الأحدث لإدارة عيادات التجميل
           </span>
-          <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight mb-6">
             أدر عيادتك باحترافية، <br/>
             <span className="text-transparent bg-clip-text bg-gradient-to-l from-violet-600 to-fuchsia-500">
               وضاعف أرباحك

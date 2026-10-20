@@ -44,15 +44,15 @@ export default function MinimalTheme({
               <FiShoppingBag size={18} />
               {cartCount > 0 && <span className="absolute top-0 right-0 w-4 h-4 text-[10px] rounded-full text-white flex items-center justify-center" style={{ backgroundColor: ink }}>{cartCount}</span>}
             </button>
-            <button onClick={onOpenBooking} className="hidden md:inline text-sm underline underline-offset-8 decoration-1">احجزي جلسة</button>
-            <button onClick={() => setMobileMenu(true)} className="md:hidden"><FiMenu /></button>
+            <button onClick={onOpenBooking} className="hidden sm:inline text-sm underline underline-offset-8 decoration-1">احجزي</button>
+            <button onClick={() => setMobileMenu(true)} className="sm:hidden min-w-11 min-h-11" aria-label="القائمة"><FiMenu /></button>
           </div>
         </div>
       </header>
 
       {mobileMenu && (
         <div className="fixed inset-0 z-[80] bg-black/20" onClick={() => setMobileMenu(false)}>
-          <div className="absolute inset-y-0 right-0 w-72 p-8 bg-[#FAF8F5]" onClick={(e) => e.stopPropagation()}>
+          <div className="absolute inset-y-0 right-0 w-[min(18rem,88vw)] p-8 bg-[#FAF8F5]" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setMobileMenu(false)} className="mb-8"><FiX /></button>
             <div className="space-y-5 text-lg">
               <a href="#work" onClick={() => setMobileMenu(false)} className="block">الجلسات</a>
@@ -198,6 +198,10 @@ export default function MinimalTheme({
           {whatsapp && <a href={whatsapp}><FaWhatsapp /></a>}
         </div>
       </footer>
+      <div className="sm:hidden h-20" />
+      <div className="sm:hidden fixed bottom-0 inset-x-0 z-40 p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-[#FAF8F5]/95 backdrop-blur border-t border-stone-200">
+        <button type="button" onClick={onOpenBooking} className="w-full py-3.5 rounded-full text-white font-medium" style={{ backgroundColor: ink }}>احجزي جلسة</button>
+      </div>
     </div>
   );
 }

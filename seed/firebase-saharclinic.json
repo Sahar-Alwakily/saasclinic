@@ -1,0 +1,788 @@
+{
+  "clinics": {
+    "clinic_1792418920086_plfk7i": {
+      "info": {
+        "address": "رهط",
+        "bgColor": "#FBF4F0",
+        "createdAt": 1792418920086,
+        "degree": "شهادة التجميل",
+        "doctorBio": "دكتورة سحر، عيادة تجميل في رهط وبئر السبع. المحتوى هنا من ملف العيادة وليس ادعاءً طبياً.",
+        "doctorName": "دكتورة سحر",
+        "email": "user1@test.com",
+        "facebook": "https://facebook.com/saharclinic",
+        "fontFamily": "Tajawal",
+        "heroImage": "https://img.magnific.com/free-photo/portrait-smiling-medical-worker-girl-doctor-white-coat-with-stethoscope-pointing-fingers-left_1258-124585.jpg?semt=ais_hybrid&w=740&q=80",
+        "heroTitle": "بشرتك تُقرأ قبل أن تُعالَج\nفرع رهط وفرع بئر السبع",
+        "instagram": "https://instagram.com/saharclinic",
+        "isActive": true,
+        "logoUrl": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRF-KQaiBLjUjImybOPQvAuVIBc4jlQH-b9zsgHH9gbr1AKAfB-YiFeANKP&s=10",
+        "name": "SaharClinic",
+        "ownerEmail": "user1@test.com",
+        "ownerName": "Sahar",
+        "phone": "0535216847",
+        "plan": "trial",
+        "primaryColor": "#C48B7A",
+        "privacyPolicy": "أرقام العميلات تُستخدم لتنظيم المواعيد وتذكير الجلسات. يمكن إيقاف رسائل الاسترجاع من رابط الرسالة أو من ملف العميلة.",
+        "seoDescription": "SaharClinic في رهط وبئر السبع: حجز جلسات ليزر وفيتامينات وكوزمتكا حسب جدول الفرع.",
+        "seoTitle": "SaharClinic | حجز جلسات تجميل — رهط وبئر السبع",
+        "showBlog": true,
+        "showProducts": true,
+        "showServices": true,
+        "specialty": "عيادة التجميل",
+        "storeDescription": "الجمال يبدأ من الداخل. احجزي حسب الفرع والجدول المعروض، بدون وعود علاجية غير مكتوبة هنا.",
+        "storeTheme": "beauty",
+        "textColor": "#3A2A28",
+        "tiktok": "https://tiktok.com/@saharclinic",
+        "trialEndsAt": 1793628520086,
+        "whatsapp": "0535216847",
+        "whyChooseUs": "تشخيص مكتوب لكل زيارة، غرف خاصة، وخصومات موسمية تُعلن داخل العيادة.",
+        "whyChooseUsTitle": "لماذا تختاريننا؟"
+      },
+      "appointmentSettings": {
+        "autoConfirm": false,
+        "timezone": "Asia/Jerusalem",
+        "reminderHours": [24, 3],
+        "reminderCap": 3,
+        "extraConfirmEnabled": true,
+        "highValueAmount": 250,
+        "depositPolicyEnabled": true,
+        "depositNote": "عربون 50 ₪ للجلسات فوق 250 ₪ يُسجَّل يدوياً عند التأكيد.",
+        "cancellationPolicy": "يمكن الإلغاء أو التغيير قبل 24 ساعة عبر رابط الموعد. التأخير أكثر من 15 دقيقة قد يتطلب إعادة جدولة.",
+        "waitlistOfferMinutes": 30,
+        "messageCost": 0.4,
+        "aiCostMonthly": 0,
+        "holidays": "2026-10-24",
+        "quietStart": 10,
+        "quietEnd": 18,
+        "noshowFollowupHours": 4
+      },
+      "opsBaseline": {
+        "cancelRate": 18,
+        "attendRate": 72,
+        "at": 1792500000000
+      },
+      "users": {
+        "9iPpMGaCO1OTVWExaf01obIoCoy1": {
+          "createdAt": 1792418920086,
+          "email": "user1@test.com",
+          "name": "Sahar",
+          "role": "admin"
+        },
+        "FHJbhFARJ4YqNfkERKriiPR47H03": {
+          "category": "laser",
+          "createdAt": 1792421945635,
+          "email": "sahar@gmail.com",
+          "name": "ساره",
+          "role": "worker",
+          "branch": "-P4P1C-4YW5c06We0h2E"
+        },
+        "QfErbMx4n6RLHKtFxGhXpZlGeEZ2": {
+          "branch": "-P4KEH-2cfGszPA54m7e",
+          "category": "vitamins",
+          "createdAt": 1792513972680,
+          "email": "as@gmail.com",
+          "name": "تن",
+          "role": "worker"
+        }
+      },
+      "branches": {
+        "-P4KEH-2cfGszPA54m7e": {
+          "address": "رهط، الشارع الرئيسي",
+          "createdAt": 1792431487699,
+          "name": "رهط",
+          "phone": "0535216847"
+        },
+        "-P4P1C-4YW5c06We0h2E": {
+          "address": "بئر السبع، المتحام 7",
+          "createdAt": 1792511946043,
+          "name": "بئر السبع",
+          "phone": "0535216666"
+        }
+      },
+      "scheduleSettings": {
+        "-P4KEH-2cfGszPA54m7e_QfErbMx4n6RLHKtFxGhXpZlGeEZ2": {
+          "day_0": { "active": true, "start": 9, "end": 17 },
+          "day_1": { "active": true, "start": 9, "end": 17 },
+          "day_2": { "active": true, "start": 9, "end": 17 },
+          "day_3": { "active": true, "start": 9, "end": 17 },
+          "day_4": { "active": true, "start": 9, "end": 16 },
+          "day_5": { "active": false, "start": 9, "end": 17 },
+          "day_6": { "active": true, "start": 10, "end": 14 }
+        },
+        "-P4P1C-4YW5c06We0h2E_FHJbhFARJ4YqNfkERKriiPR47H03": {
+          "day_0": { "active": true, "start": 10, "end": 18 },
+          "day_1": { "active": true, "start": 10, "end": 18 },
+          "day_2": { "active": true, "start": 10, "end": 18 },
+          "day_3": { "active": true, "start": 10, "end": 18 },
+          "day_4": { "active": true, "start": 10, "end": 16 },
+          "day_5": { "active": false, "start": 10, "end": 18 },
+          "day_6": { "active": true, "start": 10, "end": 14 }
+        }
+      },
+      "services": {
+        "serv1": {
+          "category": "laser",
+          "createdAt": 1792419000000,
+          "description": "جلسة ليزر حسب تقييم المختصة في الزيارة. المدة والسعر يظهران عند الحجز.",
+          "duration": 45,
+          "faqs": [
+            { "q": "كم تدوم الجلسة؟", "a": "حوالي 45 دقيقة حسب المنطقة المتفق عليها في العيادة." },
+            { "q": "هل أحتاج تحضيراً؟", "a": "اتفقي مع الفرع قبل الموعد؛ التعليمات تُعطى عند الحجز وليس كوصفة عامة." }
+          ],
+          "imageUrl": "",
+          "price": 300,
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "title": "جلسة ليزر"
+        },
+        "serv2": {
+          "category": "vitamins",
+          "createdAt": 1792419000000,
+          "description": "جلسة فيتامينات حسب بروتوكول العيادة المكتوب للعميلة.",
+          "duration": 30,
+          "faqs": [
+            { "q": "كم المدة؟", "a": "حوالي 30 دقيقة." }
+          ],
+          "imageUrl": "",
+          "price": 200,
+          "specialistId": "QfErbMx4n6RLHKtFxGhXpZlGeEZ2",
+          "title": "فيتامينات"
+        },
+        "serv3": {
+          "category": "cosmetica",
+          "createdAt": 1792419000000,
+          "description": "جلسة كوزمتكا للعناية بالبشرة كما تُحدَّد في الاستشارة.",
+          "duration": 60,
+          "faqs": [],
+          "imageUrl": "",
+          "price": 150,
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "title": "كوزمتكا"
+        },
+        "-P4O58E-p0Nr8AdPAKIN": {
+          "category": "beauty",
+          "createdAt": 1792496202054,
+          "description": "جلسة تجميل قصيرة — حدّثي الاسم والوصف من كتالوج الخدمات.",
+          "duration": 25,
+          "imageUrl": "",
+          "price": 7,
+          "title": "يسشي"
+        }
+      },
+      "products": {
+        "-P4JasPCJxybFcynVNB7": {
+          "category": "laser",
+          "createdAt": 1792420897173,
+          "imageUrl": "",
+          "price": 100,
+          "title": "واقي شمس العيادة"
+        }
+      },
+      "blog": {
+        "-P4Jn8C2KIJuYoISHF6D": {
+          "content": "نصائح عامة لتنظيم الزيارة: احضري قبل 10 دقائق، وأبلغي الفرع بأي إلغاء قبل 24 ساعة.",
+          "createdAt": 1792424111666,
+          "imageUrl": "",
+          "title": "كيف تحضّرين زيارتكِ"
+        },
+        "blog2": {
+          "content": "خصم الاسترجاع يُطبَّق فقط عبر رابط الحملة وليس كوعد طبي.",
+          "createdAt": 1792480000000,
+          "imageUrl": "",
+          "title": "عروض العودة لشهر أكتوبر"
+        }
+      },
+      "orders": {
+        "-P4OG3Oh2Z02Ax5aovFk": {
+          "createdAt": 1792499065825,
+          "customerInfo": { "address": "رهط", "name": "بسي", "phone": "0507777777" },
+          "items": [
+            {
+              "category": "laser",
+              "id": "-P4JasPCJxybFcynVNB7",
+              "imageUrl": "",
+              "price": 100,
+              "qty": 2,
+              "title": "واقي شمس العيادة"
+            }
+          ],
+          "status": "pending",
+          "total": 200
+        },
+        "ord2": {
+          "createdAt": 1792505000000,
+          "customerInfo": { "address": "بئر السبع", "name": "سارة أحمد", "phone": "0501111111" },
+          "items": [
+            { "id": "-P4JasPCJxybFcynVNB7", "price": 100, "qty": 1, "title": "واقي شمس العيادة" }
+          ],
+          "status": "completed",
+          "total": 100
+        }
+      },
+      "customers": {
+        "-P4JVfgXAvMgDj2ZfF5R": {
+          "birthDate": "1998-10-07",
+          "createdAt": 1792419272249,
+          "firstName": "سهى",
+          "lastName": "أبو عمر",
+          "phone": "0535216847",
+          "sessions": [
+            {
+              "id": "1792423076383",
+              "note": "زيارة أولى",
+              "recordedAt": "2026-10-19T15:17:56.383Z",
+              "recordedBy": "الطبيبة",
+              "serviceTitle": "كوزمتكا"
+            }
+          ],
+          "treatments": {
+            "t_1792423187040": {
+              "category": "beauty",
+              "createdAt": "2026-10-19T15:19:47.040Z",
+              "currentPhase": "during",
+              "phaseStartedAt": "2026-10-19T15:19:47.040Z",
+              "serviceName": "كوزمتكا",
+              "sessions": [
+                {
+                  "date": "2026-10-19",
+                  "notes": "جلسة 1",
+                  "recordedAt": "2026-10-19T15:19:47.040Z",
+                  "sessionNumber": 1,
+                  "time": "06:19 م"
+                }
+              ],
+              "status": "active"
+            }
+          }
+        },
+        "cust1": {
+          "adsStamp": { "signature": true },
+          "birthDate": "1990-10-22",
+          "createdAt": 1784500000000,
+          "firstName": "سارة",
+          "lastName": "أحمد",
+          "phone": "0501111111",
+          "sessions": [
+            { "id": "s1a", "recordedAt": "2026-04-12T10:00:00.000Z", "serviceTitle": "جلسة ليزر" },
+            { "id": "s1b", "recordedAt": "2026-05-10T10:00:00.000Z", "serviceTitle": "جلسة ليزر" },
+            { "id": "s1c", "recordedAt": "2026-06-08T10:00:00.000Z", "serviceTitle": "جلسة ليزر" },
+            { "id": "s1d", "recordedAt": "2026-07-06T10:00:00.000Z", "serviceTitle": "جلسة ليزر" },
+            { "id": "s1e", "recordedAt": "2026-08-03T10:00:00.000Z", "serviceTitle": "جلسة ليزر" },
+            { "id": "s1", "recordedAt": "2026-09-08T10:00:00.000Z", "serviceTitle": "جلسة ليزر" }
+          ]
+        },
+        "cust2": {
+          "adsStamp": { "signature": true },
+          "birthDate": "1995-05-15",
+          "createdAt": 1782000000000,
+          "firstName": "نور",
+          "lastName": "محمد",
+          "phone": "0502222222",
+          "sessions": [
+            { "id": "s2a", "recordedAt": "2026-03-01T09:00:00.000Z", "serviceTitle": "فيتامينات" },
+            { "id": "s2b", "recordedAt": "2026-04-01T09:00:00.000Z", "serviceTitle": "فيتامينات" },
+            { "id": "s2c", "recordedAt": "2026-05-01T09:00:00.000Z", "serviceTitle": "فيتامينات" },
+            { "id": "s2d", "recordedAt": "2026-06-01T09:00:00.000Z", "serviceTitle": "فيتامينات" },
+            { "id": "s2e", "recordedAt": "2026-07-01T09:00:00.000Z", "serviceTitle": "فيتامينات" },
+            { "id": "s2", "recordedAt": "2026-08-15T09:00:00.000Z", "serviceTitle": "فيتامينات" }
+          ]
+        },
+        "cust3": {
+          "birthDate": "1988-12-01",
+          "createdAt": 1789000000000,
+          "firstName": "ليان",
+          "lastName": "خالد",
+          "phone": "0503333333",
+          "sessions": [
+            { "id": "s3a", "recordedAt": "2026-09-18T12:00:00.000Z", "serviceTitle": "جلسة ليزر" }
+          ]
+        },
+        "cust4": {
+          "adsStamp": { "signature": true },
+          "birthDate": "1992-03-20",
+          "createdAt": 1778000000000,
+          "firstName": "ريم",
+          "lastName": "سليمان",
+          "phone": "0504444444",
+          "sessions": [
+            { "id": "s4", "recordedAt": "2026-06-20T11:00:00.000Z", "serviceTitle": "كوزمتكا" }
+          ]
+        },
+        "cust5": {
+          "adsStamp": { "signature": true },
+          "birthDate": "1987-11-02",
+          "createdAt": 1775000000000,
+          "doNotContact": false,
+          "firstName": "هديل",
+          "lastName": "ناصر",
+          "phone": "0505555555",
+          "sessions": [
+            { "id": "s5", "recordedAt": "2026-05-02T11:00:00.000Z", "serviceTitle": "فيتامينات" }
+          ]
+        },
+        "cust6": {
+          "firstName": "آية",
+          "lastName": "حسين",
+          "phone": "0506666666",
+          "createdAt": 1780000000000,
+          "birthDate": "1993-01-11",
+          "sessions": [
+            { "id": "s6", "recordedAt": "2026-07-11T11:00:00.000Z", "serviceTitle": "جلسة ليزر" }
+          ]
+        }
+      },
+      "appointments": {
+        "-P4Jkp-ji0EhnIRpdSt-": {
+          "branchId": "-P4KEH-2cfGszPA54m7e",
+          "branchName": "رهط",
+          "createdAt": 1792423504677,
+          "customerName": "oui",
+          "date": "2026-10-20",
+          "phoneNumber": "0509999001",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "specialistId": "QfErbMx4n6RLHKtFxGhXpZlGeEZ2",
+          "specialistName": "تن",
+          "status": "pending",
+          "time": "10:00 ص"
+        },
+        "-P4O3dyidVAucfGdBBkO": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "createdAt": 1792495811886,
+          "customerName": "لارا",
+          "date": "2026-10-28",
+          "manageToken": "toklara28",
+          "phoneNumber": "0505320000",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "specialistName": "ساره",
+          "status": "pending",
+          "time": "10:00 ص"
+        },
+        "apt1": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "category": "laser",
+          "createdAt": 1792416692519,
+          "customerName": "سارة أحمد",
+          "date": "2026-10-20",
+          "manageToken": "toksara20",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "remindersSent": {},
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "specialistName": "ساره",
+          "status": "confirmed",
+          "time": "11:00 ص"
+        },
+        "apt2": {
+          "branchId": "-P4KEH-2cfGszPA54m7e",
+          "branchName": "رهط",
+          "category": "vitamins",
+          "createdAt": 1792416692519,
+          "customerName": "نور محمد",
+          "date": "2026-10-20",
+          "history": [
+            { "action": "noshow", "at": 1792519367469, "by": "staff" }
+          ],
+          "phoneNumber": "0502222222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "specialistId": "QfErbMx4n6RLHKtFxGhXpZlGeEZ2",
+          "specialistName": "تن",
+          "status": "noshow",
+          "time": "11:00 ص"
+        },
+        "apt3": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "category": "laser",
+          "createdAt": 1792416692519,
+          "customerName": "ليان خالد",
+          "date": "2026-10-21",
+          "manageToken": "toklayan21",
+          "phoneNumber": "0503333333",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "specialistName": "ساره",
+          "status": "confirmed",
+          "time": "14:00 م"
+        },
+        "sep_s1": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "createdAt": 1789900000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-09-03",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "attended",
+          "time": "10:00 ص"
+        },
+        "sep_s2": {
+          "createdAt": 1790200000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-09-08",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "attended",
+          "time": "10:00 ص"
+        },
+        "sep_s3": {
+          "createdAt": 1790400000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-09-10",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "cancelled",
+          "time": "12:00 م"
+        },
+        "sep_s4": {
+          "createdAt": 1790500000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-09-12",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "noshow",
+          "time": "11:00 ص"
+        },
+        "sep_s5": {
+          "createdAt": 1790700000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-09-15",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "attended",
+          "time": "10:00 ص"
+        },
+        "sep_n1": {
+          "createdAt": 1789950000000,
+          "customerName": "نور محمد",
+          "date": "2026-09-04",
+          "phoneNumber": "0502222222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "status": "attended",
+          "time": "11:00 ص"
+        },
+        "sep_n2": {
+          "createdAt": 1790100000000,
+          "customerName": "نور محمد",
+          "date": "2026-09-06",
+          "phoneNumber": "0502222222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "status": "noshow",
+          "time": "11:00 ص"
+        },
+        "sep_n3": {
+          "createdAt": 1790300000000,
+          "customerName": "نور محمد",
+          "date": "2026-09-09",
+          "phoneNumber": "0502222222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "status": "attended",
+          "time": "11:00 ص"
+        },
+        "sep_n4": {
+          "createdAt": 1790600000000,
+          "customerName": "نور محمد",
+          "date": "2026-09-14",
+          "phoneNumber": "0502222222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "status": "cancelled",
+          "time": "13:00 م"
+        },
+        "sep_l1": {
+          "createdAt": 1790800000000,
+          "customerName": "ليان خالد",
+          "date": "2026-09-18",
+          "phoneNumber": "0503333333",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "attended",
+          "time": "14:00 م"
+        },
+        "sep_r1": {
+          "createdAt": 1790000000000,
+          "customerName": "ريم سليمان",
+          "date": "2026-09-05",
+          "phoneNumber": "0504444444",
+          "price": 150,
+          "service": "كوزمتكا",
+          "serviceId": "serv3",
+          "status": "attended",
+          "time": "15:00 م"
+        },
+        "oct_fill": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "cancelledSourceAt": 1792000000000,
+          "createdAt": 1792100000000,
+          "customerName": "آية حسين",
+          "date": "2026-10-12",
+          "filledFromCancelledId": "sep_s3",
+          "phoneNumber": "0506666666",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "status": "attended",
+          "time": "12:00 م"
+        },
+        "oct_wb": {
+          "branchId": "-P4KEH-2cfGszPA54m7e",
+          "branchName": "رهط",
+          "campaignId": "camp_return_oct",
+          "createdAt": 1792200000000,
+          "customerName": "هديل ناصر",
+          "date": "2026-10-14",
+          "phoneNumber": "0505555555",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "status": "attended",
+          "time": "10:00 ص"
+        },
+        "oct_pending_high": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "branchName": "بئر السبع",
+          "createdAt": 1792300000000,
+          "customerName": "سارة أحمد",
+          "date": "2026-10-22",
+          "manageToken": "toksara22",
+          "phoneNumber": "0501111111",
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "specialistName": "ساره",
+          "status": "pending",
+          "time": "12:00 م"
+        }
+      },
+      "manageTokens": {
+        "toklara28": { "appointmentId": "-P4O3dyidVAucfGdBBkO" },
+        "toksara20": { "appointmentId": "apt1" },
+        "toklayan21": { "appointmentId": "apt3" },
+        "toksara22": { "appointmentId": "oct_pending_high" }
+      },
+      "waitlist": {
+        "wl1": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "createdAt": 1792480000000,
+          "duration": 45,
+          "name": "مها يوسف",
+          "phone": "0507771111",
+          "preferredTimes": "morning",
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "status": "waiting"
+        },
+        "wl2": {
+          "branchId": "-P4KEH-2cfGszPA54m7e",
+          "createdAt": 1792490000000,
+          "duration": 30,
+          "name": "دانا عمر",
+          "phone": "0507772222",
+          "preferredTimes": "any",
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "specialistId": "QfErbMx4n6RLHKtFxGhXpZlGeEZ2",
+          "status": "offered"
+        }
+      },
+      "waitlistEvents": {
+        "vac1": {
+          "branchId": "-P4P1C-4YW5c06We0h2E",
+          "createdAt": 1792510000000,
+          "date": "2026-10-20",
+          "fromAppointmentId": "apt2",
+          "open": true,
+          "price": 300,
+          "service": "جلسة ليزر",
+          "serviceId": "serv1",
+          "specialistId": "FHJbhFARJ4YqNfkERKriiPR47H03",
+          "time": "13:00 م"
+        }
+      },
+      "waitlistOffers": {
+        "offertoken1": {
+          "branchId": "-P4KEH-2cfGszPA54m7e",
+          "createdAt": 1792511000000,
+          "date": "2026-10-20",
+          "expiresAt": 1890000000000,
+          "name": "دانا عمر",
+          "phone": "0507772222",
+          "price": 200,
+          "service": "فيتامينات",
+          "serviceId": "serv2",
+          "specialistId": "QfErbMx4n6RLHKtFxGhXpZlGeEZ2",
+          "status": "open",
+          "time": "15:00 م",
+          "vacancyId": "vac1",
+          "waitlistId": "wl2"
+        }
+      },
+      "winbackSettings": {
+        "defaultLapseDays": 60,
+        "lapseByCategory": { "laser": 45, "vitamins": 30, "cosmetica": 40, "beauty": 50, "all": 60 },
+        "channels": { "whatsapp": true, "sms": false, "email": false },
+        "reminderEnabled": true,
+        "reminderAfterDays": 3,
+        "contactCapDays": 21,
+        "contactCapPerMonth": 2,
+        "allowedHoursStart": 10,
+        "allowedHoursEnd": 18,
+        "holdoutPercent": 15,
+        "autoRulesEnabled": false,
+        "autoMinScore": 45
+      },
+      "winbackOffers": {
+        "off10": {
+          "adminApproved": true,
+          "createdAt": 1792000000000,
+          "discountType": "percent",
+          "expiresAt": "2026-12-31",
+          "serviceId": "serv2",
+          "title": "عودة الفيتامينات 10%",
+          "value": 10
+        }
+      },
+      "winbackCampaigns": {
+        "camp_return_oct": {
+          "abTest": true,
+          "channel": "whatsapp",
+          "createdAt": 1792100000000,
+          "holdoutIds": ["504444444"],
+          "launchedAt": 1792110000000,
+          "name": "حملة عودة أكتوبر",
+          "offerId": "off10",
+          "status": "active",
+          "targetIds": ["505555555", "506666666"]
+        }
+      },
+      "winbackMessages": {
+        "wm1": {
+          "campaignId": "camp_return_oct",
+          "channel": "whatsapp",
+          "createdAt": 1792110000000,
+          "customerId": "cust5",
+          "name": "هديل ناصر",
+          "phone": "0505555555",
+          "phoneKey": "505555555",
+          "sentAt": 1792110500000,
+          "status": "read",
+          "body": "تذكير تنظيمي بجلسة سابقة في SaharClinic. احجزي من رابط العيادة."
+        },
+        "wm2": {
+          "campaignId": "camp_return_oct",
+          "channel": "whatsapp",
+          "createdAt": 1792110000000,
+          "customerId": "cust6",
+          "lastError": "channel-disabled",
+          "name": "آية حسين",
+          "phone": "0506666666",
+          "phoneKey": "506666666",
+          "status": "failed"
+        }
+      },
+      "winbackInbox": {
+        "in1": {
+          "at": 1792200000000,
+          "body": "بدي أحجز الأسبوع الجاي",
+          "name": "هديل ناصر",
+          "phone": "0505555555"
+        }
+      },
+      "winbackOptOuts": {
+        "504444444": { "at": 1791800000000, "reason": "طلب العميلة" }
+      },
+      "blockedPhones": {},
+      "opsApprovals": {
+        "ap1": {
+          "createdAt": 1792500000000,
+          "payload": { "note": "رفع حد العربون" },
+          "status": "pending",
+          "title": "تعديل سياسة العربون"
+        }
+      },
+      "appointmentAudit": {
+        "au1": {
+          "action": "status",
+          "at": 1792519367469,
+          "detail": "apt2 → noshow"
+        }
+      }
+    }
+  },
+  "meta": {
+    "clinics": {
+      "clinic_1792418674876_0ck44f": {
+        "createdAt": 1792418674876,
+        "isActive": true,
+        "name": "SaharClinic",
+        "ownerEmail": "user1@test.com",
+        "plan": "trial"
+      },
+      "clinic_1792418920086_plfk7i": {
+        "createdAt": 1792418920086,
+        "isActive": true,
+        "name": "SaharClinic",
+        "ownerEmail": "user1@test.com",
+        "plan": "trial"
+      }
+    },
+    "users": {
+      "9iPpMGaCO1OTVWExaf01obIoCoy1": {
+        "clinicId": "clinic_1792418920086_plfk7i",
+        "email": "user1@test.com",
+        "role": "admin"
+      },
+      "C5SDgVDXacZZbqBPsCfnAYNM07h2": {
+        "clinicId": "clinic_1792418674876_0ck44f",
+        "email": "user1@test.com",
+        "role": "admin"
+      },
+      "FHJbhFARJ4YqNfkERKriiPR47H03": {
+        "category": "laser",
+        "clinicId": "clinic_1792418920086_plfk7i",
+        "email": "sahar@gmail.com",
+        "role": "worker",
+        "branch": "-P4P1C-4YW5c06We0h2E"
+      },
+      "QfErbMx4n6RLHKtFxGhXpZlGeEZ2": {
+        "branch": "-P4KEH-2cfGszPA54m7e",
+        "category": "vitamins",
+        "clinicId": "clinic_1792418920086_plfk7i",
+        "email": "as@gmail.com",
+        "role": "worker"
+      }
+    }
+  }
+}

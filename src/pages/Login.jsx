@@ -36,8 +36,9 @@ const Login = () => {
         </div>
         <p className="relative text-xs text-white/35">SaaS للعيادات التجميلية</p>
       </div>
-      <div className="flex items-center justify-center p-6 bg-[#f3efe6]">
-        <form onSubmit={handleSubmit} className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-8 border border-[#e4ddd0] space-y-4">
+      <div className="flex items-center justify-center p-4 sm:p-6 bg-[#f3efe6]">
+        <form onSubmit={handleSubmit} className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-6 sm:p-8 border border-[#e4ddd0] space-y-4">
+          <p className="md:hidden font-product text-xl">نورا</p>
           <h2 className="font-product text-2xl">دخول مساحة العمل</h2>
           {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl">{error}</div>}
           <input type="email" placeholder="الإيميل" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff] bg-white" dir="ltr" />

@@ -207,14 +207,14 @@ const Dashboard = () => {
             </button>
           ))}
         </div>
-        <div className="flex gap-2 mt-3">
+        <div className="flex flex-col sm:flex-row gap-2 mt-3">
           <input
             value={ask}
             onChange={(e) => setAsk(e.target.value)}
-            className="flex-1 p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none"
+            className="flex-1 min-w-0 p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none"
             placeholder="اسألي عن الحجوزات أو الحضور..."
           />
-          <button type="button" onClick={() => runAsk()} className="px-4 rounded-xl bg-[#14121c] text-white text-sm">اسألي</button>
+          <button type="button" onClick={() => runAsk()} className="px-4 py-3 rounded-xl bg-[#14121c] text-white text-sm shrink-0">اسألي</button>
         </div>
         {reply && (
           <div className="mt-4 rounded-2xl border border-[#e4ddd0] dark:border-white/10 p-4 space-y-2">
@@ -238,7 +238,7 @@ const Dashboard = () => {
             </div>
             <Link to="/website" className="text-xs font-bold text-[#4d7cff]">فتح المركز</Link>
           </div>
-          <div className="grid sm:grid-cols-4 gap-2 mt-4 text-xs">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4 text-xs">
             <Link to="/settings?tab=store" className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">التصميم</Link>
             <div className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">النشر: {site.published ? 'اسم العيادة موجود' : 'ناقص الاسم'}</div>
             <div className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3 break-all" dir="ltr">{site.url || '—'}</div>
