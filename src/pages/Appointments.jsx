@@ -97,7 +97,7 @@ const Appointments = () => {
                     <span className="flex items-center gap-1"><FaCalendarAlt /> {apt.date}</span>
                     <span className="flex items-center gap-1" dir="ltr"><FaPhone /> {apt.phoneNumber}</span>
                   </div>
-                  <p className="text-xs text-pink-600 mt-1">{apt.service}</p>
+                  <p className="text-xs text-pink-600 mt-1">{apt.service}{apt.branchName ? ` · ${apt.branchName}` : ''}</p>
                 </div>
 
                 <div className="flex items-center gap-2">

@@ -9,3 +9,15 @@
     @apply bg-slate-50 text-gray-800 antialiased;
   }
 }
+
+.font-display {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

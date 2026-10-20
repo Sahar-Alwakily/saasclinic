@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { FaChartPie, FaUserTie, FaCalendarAlt, FaUsers, FaCog, FaSignOutAlt, FaUserMd, FaNotesMedical, FaBlog, FaStore } from 'react-icons/fa';
+import { FaChartPie, FaUserTie, FaCalendarAlt, FaUsers, FaCog, FaSignOutAlt, FaUserMd, FaNotesMedical, FaBlog, FaStore, FaShoppingBag } from 'react-icons/fa';
 import { useClinic } from '../../context/ClinicContext';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../dashboard/ThemeToggle';
@@ -48,6 +48,9 @@ const Sidebar = () => {
         <NavLink to="/services" className={linkClass}>
           <FaUserMd /> الخدمات والمنتجات
         </NavLink>
+        <NavLink to="/orders" className={linkClass}>
+  <FaShoppingBag /> الطلبات
+</NavLink>
         <NavLink to="/blog" className={linkClass}>
           <FaBlog /> المدونة
         </NavLink>

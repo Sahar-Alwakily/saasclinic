@@ -17,7 +17,7 @@ import TreatmentTracker from './pages/TreatmentTracker';
 import LandingPage from './pages/LandingPage';
 import Blog from './pages/Blog';
 import ServiceDetails from './pages/ServiceDetails';
-
+import Orders from './pages/Orders';
 import Branches from './pages/Branches';
 const ProtectedApp = ({ children }) => {
   const { loadingClinic } = useClinic();
@@ -53,6 +53,7 @@ function App() {
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/treatments" element={<TreatmentTracker />} />
               <Route path="/services" element={<Services />} />
+              <Route path="/orders" element={<Orders />} />
               <Route path="/staff" element={<Staff />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/branches" element={<Branches />} />
