@@ -16,6 +16,8 @@ import CustomerProfile from './pages/CustomerProfile';
 import TreatmentTracker from './pages/TreatmentTracker';
 import LandingPage from './pages/LandingPage';
 import Blog from './pages/Blog';
+import ServiceDetails from './pages/ServiceDetails';
+
 import Branches from './pages/Branches';
 const ProtectedApp = ({ children }) => {
   const { loadingClinic } = useClinic();
@@ -32,32 +34,34 @@ function App() {
       <AuthProvider>
         <ClinicProvider>
 <Routes>
-  {/* الصفحة الرئيسية */}
-  <Route path="/" element={<LandingPage />} />
-  
-  {/* مسارات عامة */}
-  <Route path="/register" element={<RegisterClinic />} />
-  <Route path="/login" element={<Login />} />
-  <Route path="/book/:clinicId" element={<PublicBooking />} />
+            {/* الصفحة الرئيسية */}
+            <Route path="/" element={<LandingPage />} />
+            
+            {/* مسارات عامة */}
+            <Route path="/register" element={<RegisterClinic />} />
+            <Route path="/login" element={<Login />} />
+            
+            {/* ✅ مسارات واجهة العملاء (عامة، بدون حماية) */}
+            <Route path="/book/:clinicId" element={<PublicBooking />} />
+            <Route path="/book/:clinicId/service/:serviceId" element={<ServiceDetails />} />
 
-  {/* مسارات محمية */}
-  <Route element={<ProtectedApp><DashboardLayout /></ProtectedApp>}>
-    <Route path="/dashboard" element={<Dashboard />} />
-    <Route path="/appointments" element={<Appointments />} />
-    <Route path="/customers" element={<Customers />} />
-    <Route path="/customers/:id" element={<CustomerProfile />} />
-    <Route path="/treatments" element={<TreatmentTracker />} />
-    <Route path="/services" element={<Services />} />
-    <Route path="/staff" element={<Staff />} />
-    <Route path="/blog" element={<Blog />} />
-<Route path="/branches" element={<Branches />} />
+            {/* مسارات محمية (للعاملين بالعيادة فقط) */}
+            <Route element={<ProtectedApp><DashboardLayout /></ProtectedApp>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/appointments" element={<Appointments />} />
+              <Route path="/customers" element={<Customers />} />
+              <Route path="/customers/:id" element={<CustomerProfile />} />
+              <Route path="/treatments" element={<TreatmentTracker />} />
+              <Route path="/services" element={<Services />} />
+              <Route path="/staff" element={<Staff />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/branches" element={<Branches />} />
+              <Route path="/settings" element={<Settings />} />
+            </Route>
 
-    <Route path="/settings" element={<Settings />} />
-  </Route>
-
-  {/* أي مسار غلط يروح للرئيسية */}
-  <Route path="*" element={<Navigate to="/" replace />} />
-</Routes>
+            {/* أي مسار غلط يروح للرئيسية */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </ClinicProvider>
       </AuthProvider>
     </BrowserRouter>

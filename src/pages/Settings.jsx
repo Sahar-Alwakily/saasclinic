@@ -3,7 +3,7 @@ import { ref, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaCheckCircle, FaStore, FaLink, FaBuilding, FaSave, FaDesktop, FaSync } from 'react-icons/fa';
+import { FaCheckCircle, FaStore, FaLink, FaBuilding, FaSave, FaDesktop, FaSync, FaPalette } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const THEMES = [
@@ -14,20 +14,32 @@ const THEMES = [
 
 const Settings = () => {
   const { clinicId, clinicInfo, clinicPath } = useClinic();
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile' أو 'store'
+  const [activeTab, setActiveTab] = useState('profile');
   const [loading, setLoading] = useState(false);
   const [previewKey, setPreviewKey] = useState(Date.now());
 
-  // بيانات الحساب
   const [profileData, setProfileData] = useState({ name: '', phone: '', ownerEmail: '' });
   
-  // بيانات المتجر
   const [storeData, setStoreData] = useState({
-    storeTheme: 'beauty', storeDescription: '', doctorName: '',
-    heroImage: '', logoUrl: '', whatsapp: '', address: '',
-    // ✅ الحقول الجديدة
-    doctorBio: '', specialty: '', degree: '',
-    facebook: '', instagram: '', tiktok: '',
+    storeTheme: 'beauty', 
+    storeDescription: '', 
+    doctorName: '',
+    heroImage: '', 
+    logoUrl: '', 
+    whatsapp: '', 
+    address: '',
+    doctorBio: '', 
+    specialty: '', 
+    degree: '',
+    facebook: '', 
+    instagram: '', 
+    tiktok: '',
+    primaryColor: '#ec4899',
+    bgColor: '#fdf2f8',
+    // ✅ إعدادات إخفاء الأقسام
+    showServices: true,
+    showProducts: true,
+    showBlog: true,
   });
 
   useEffect(() => {
@@ -45,13 +57,17 @@ const Settings = () => {
         logoUrl: clinicInfo.logoUrl || '',
         whatsapp: clinicInfo.whatsapp || '',
         address: clinicInfo.address || '',
-        // ✅ جلب الحقول الجديدة
         doctorBio: clinicInfo.doctorBio || '',
         specialty: clinicInfo.specialty || '',
         degree: clinicInfo.degree || '',
         facebook: clinicInfo.facebook || '',
         instagram: clinicInfo.instagram || '',
         tiktok: clinicInfo.tiktok || '',
+        primaryColor: clinicInfo.primaryColor || '#ec4899',
+        bgColor: clinicInfo.bgColor || '#fdf2f8',
+        showServices: clinicInfo.showServices !== false,
+        showProducts: clinicInfo.showProducts !== false,
+        showBlog: clinicInfo.showBlog !== false,
       });
     }
   }, [clinicInfo]);
@@ -95,7 +111,6 @@ const Settings = () => {
         <p className="text-gray-500 text-sm mt-1">إدارة بيانات الحساب وتخصيص واجهة المتجر</p>
       </div>
 
-      {/* التبويبات */}
       <div className="flex gap-2 bg-white dark:bg-slate-800 p-1.5 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 w-fit">
         <button onClick={() => setActiveTab('profile')} className={`px-6 py-2 rounded-xl font-bold transition flex items-center gap-2 ${activeTab === 'profile' ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500 hover:bg-gray-50'}`}>
           <FaBuilding /> بيانات العيادة
@@ -105,12 +120,9 @@ const Settings = () => {
         </button>
       </div>
 
-      {/* شبكة مقسمة: إعدادات + معاينة */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* العمود الأيمن: الإعدادات */}
         <div className="space-y-6">
-          {/* تبويب بيانات العيادة */}
           {activeTab === 'profile' && (
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-6">
               <div>
@@ -132,10 +144,8 @@ const Settings = () => {
             </div>
           )}
 
-          {/* تبويب واجهة المتجر */}
           {activeTab === 'store' && (
             <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-6">
-              {/* الرابط */}
               <div>
                 <label className="flex items-center gap-2 text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">
                   <FaLink className="text-pink-500" /> رابط صفحة الحجز
@@ -146,7 +156,6 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* التصميم */}
               <div>
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">اختر تصميم الواجهة</label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -161,7 +170,6 @@ const Settings = () => {
                 </div>
               </div>
 
-              {/* بيانات الواجهة */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">اسم الطبيبة / العيادة</label>
@@ -180,7 +188,6 @@ const Settings = () => {
                   <textarea value={storeData.storeDescription} onChange={(e) => setStoreData({...storeData, storeDescription: e.target.value})} rows={3} className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none resize-none" />
                 </div>
                 
-                {/* ✅ الحقول الجديدة */}
                 <div className="md:col-span-2">
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">نبذة عن الطبيب (تظهر تحت الاسم)</label>
                   <textarea value={storeData.doctorBio} onChange={(e) => setStoreData({...storeData, doctorBio: e.target.value})} rows={3} className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none resize-none" placeholder="طبيبة أسنان حاصلة على..." />
@@ -205,8 +212,6 @@ const Settings = () => {
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">رابط تيك توك</label>
                   <input type="url" value={storeData.tiktok} onChange={(e) => setStoreData({...storeData, tiktok: e.target.value})} className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none" dir="ltr" placeholder="https://tiktok.com/@..." />
                 </div>
-                {/* ================== */}
-
                 <div>
                   <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">رقم الواتساب</label>
                   <input type="text" value={storeData.whatsapp} onChange={(e) => setStoreData({...storeData, whatsapp: e.target.value})} className="w-full p-3 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none" dir="ltr" />
@@ -217,6 +222,50 @@ const Settings = () => {
                 </div>
               </div>
 
+              {/* ✅ قسم تخصيص الألوان */}
+              <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
+                <h4 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                  <FaPalette className="text-pink-500" /> الهوية البصرية (الألوان)
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">اللون الأساسي</label>
+                    <div className="flex items-center gap-3">
+                      <input type="color" value={storeData.primaryColor} onChange={(e) => setStoreData({...storeData, primaryColor: e.target.value})} className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0" />
+                      <input type="text" value={storeData.primaryColor} onChange={(e) => setStoreData({...storeData, primaryColor: e.target.value})} className="flex-1 p-2 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl uppercase" dir="ltr" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-2">لون الخلفية</label>
+                    <div className="flex items-center gap-3">
+                      <input type="color" value={storeData.bgColor} onChange={(e) => setStoreData({...storeData, bgColor: e.target.value})} className="w-12 h-12 rounded-lg cursor-pointer border-0 p-0" />
+                      <input type="text" value={storeData.bgColor} onChange={(e) => setStoreData({...storeData, bgColor: e.target.value})} className="flex-1 p-2 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl uppercase" dir="ltr" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ✅ إخفاء وإظهار الأقسام */}
+              <div className="bg-gray-50 dark:bg-slate-900 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
+                <h4 className="font-bold text-gray-800 dark:text-white mb-4 flex items-center gap-2">
+                  👁️ إخفاء / إظهار الأقسام
+                </h4>
+                <div className="space-y-3">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={storeData.showServices} onChange={(e) => setStoreData({...storeData, showServices: e.target.checked})} className="w-5 h-5 accent-pink-500" />
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم الخدمات</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={storeData.showProducts} onChange={(e) => setStoreData({...storeData, showProducts: e.target.checked})} className="w-5 h-5 accent-pink-500" />
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم المنتجات</span>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" checked={storeData.showBlog} onChange={(e) => setStoreData({...storeData, showBlog: e.target.checked})} className="w-5 h-5 accent-pink-500" />
+                    <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم المدونة</span>
+                  </label>
+                </div>
+              </div>
+
               <button onClick={handleSaveStore} disabled={loading} className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold hover:bg-pink-600 transition disabled:opacity-60 flex items-center justify-center gap-2">
                 <FaSave /> {loading ? 'جاري الحفظ...' : 'حفظ إعدادات الواجهة'}
               </button>
@@ -224,23 +273,18 @@ const Settings = () => {
           )}
         </div>
 
-        {/* العمود الأيسر: المعاينة الحية */}
         <div className="lg:sticky lg:top-6 h-fit">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <FaDesktop className="text-pink-500 text-lg" />
               <h2 className="text-lg font-bold text-gray-800 dark:text-white">معاينة حية</h2>
             </div>
-            <button 
-              onClick={() => setPreviewKey(Date.now())} 
-              className="text-sm text-pink-500 hover:text-pink-600 flex items-center gap-1 bg-pink-50 dark:bg-pink-900/20 px-3 py-1.5 rounded-lg transition"
-            >
+            <button onClick={() => setPreviewKey(Date.now())} className="text-sm text-pink-500 hover:text-pink-600 flex items-center gap-1 bg-pink-50 dark:bg-pink-900/20 px-3 py-1.5 rounded-lg transition">
               <FaSync /> تحديث
             </button>
           </div>
           
           <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-            {/* شريط المتصفح الوهمي */}
             <div className="bg-gray-100 dark:bg-slate-900 px-4 py-2.5 border-b border-gray-200 dark:border-slate-700 flex items-center gap-2">
               <div className="flex gap-1.5">
                 <div className="w-3 h-3 rounded-full bg-rose-400"></div>
@@ -254,20 +298,7 @@ const Settings = () => {
               </div>
             </div>
             
-            {/* الـ iframe */}
-            <iframe
-              key={previewKey}
-              src={`/book/${clinicId}`}
-              title="معاينة الواجهة"
-              className="w-full h-[500px] border-0 bg-gray-50"
-            />
-          </div>
-          <p className="text-center text-xs text-gray-400 mt-3">هذه المعاينة تظهر كيف يرى العميل واجهة عيادتك.</p>
-          
-          <div className="text-center mt-4">
-            <Link to={`/book/${clinicId}`} target="_blank" className="inline-flex items-center gap-2 text-pink-600 font-medium hover:underline text-sm">
-              فتح في نافذة جديدة ↗
-            </Link>
+            <iframe key={previewKey} src={`/book/${clinicId}`} title="معاينة الواجهة" className="w-full h-[500px] border-0 bg-gray-50" />
           </div>
         </div>
 
