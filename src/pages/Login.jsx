@@ -1,14 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../APIFirebase/firebase';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { user, userMeta, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (authLoading || !user) return;
+    if (userMeta?.clinicId) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+    setLoading(false);
+    if (!userMeta) setError('لا توجد عيادة مرتبطة بهذا الحساب');
+  }, [authLoading, user, userMeta, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,10 +28,8 @@ const Login = () => {
     setLoading(true);
     try {
       await signInWithEmailAndPassword(auth, email.trim(), password);
-      navigate('/dashboard');
     } catch {
       setError('الإيميل أو كلمة المرور غير صحيحة');
-    } finally {
       setLoading(false);
     }
   };
@@ -43,8 +53,8 @@ const Login = () => {
           {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl">{error}</div>}
           <input type="email" placeholder="الإيميل" value={email} onChange={(e) => setEmail(e.target.value)} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff] bg-white" dir="ltr" />
           <input type="password" placeholder="كلمة المرور" value={password} onChange={(e) => setPassword(e.target.value)} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff] bg-white" dir="ltr" />
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
-            {loading ? 'جاري الدخول...' : 'دخول الكونسول'}
+          <button type="submit" disabled={loading || authLoading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
+            {loading || (user && authLoading) ? 'جاري فتح مساحة العمل...' : 'دخول الكونسول'}
           </button>
           <p className="text-center text-sm text-stone-500">ما عندك حساب؟ <Link to="/register" className="text-[#4d7cff] font-semibold">أنشئ مساحة عمل</Link></p>
         </form>

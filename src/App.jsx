@@ -1,6 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
 import RegisterClinic from './pages/RegisterClinic';
 import Login from './pages/Login';
@@ -30,12 +30,16 @@ import Marketing from './pages/Marketing';
 import Reports from './pages/Reports';
 import Billing from './pages/Billing';
 import Team from './pages/Team';
+const bootScreen = (
+  <div className="min-h-screen flex items-center justify-center bg-[#14121c] text-white/70">جاري فتح مساحة العمل...</div>
+);
+
 const ProtectedApp = ({ children }) => {
+  const { user, loading: authLoading } = useAuth();
   const { loadingClinic } = useClinic();
 
-  if (loadingClinic) return <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 text-gray-500">جاري التحميل...</div>;
-
-  // مؤقتاً: السماح بالمرور دائماً (لحد ما نجهز صفحة الدفع)
+  if (authLoading || loadingClinic) return bootScreen;
+  if (!user) return <Navigate to="/login" replace />;
   return children;
 };
 

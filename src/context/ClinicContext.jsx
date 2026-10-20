@@ -6,7 +6,7 @@ import { useAuth } from './AuthContext';
 const ClinicContext = createContext(null);
 
 export const ClinicProvider = ({ children }) => {
-  const { user, userMeta, loading: authLoading } = useAuth();
+  const { userMeta, loading: authLoading } = useAuth();
   const [clinicInfo, setClinicInfo] = useState(null);
   const [loadingClinic, setLoadingClinic] = useState(true);
 
@@ -14,19 +14,28 @@ export const ClinicProvider = ({ children }) => {
   const userRole = userMeta?.role || null;
   const userCategory = userMeta?.category || null;
   useEffect(() => {
-    if (authLoading) return;
+    if (authLoading) {
+      setLoadingClinic(true);
+      return undefined;
+    }
     if (!clinicId) {
       setClinicInfo(null);
       setLoadingClinic(false);
-      return;
+      return undefined;
     }
 
     setLoadingClinic(true);
-    const unsub = onValue(ref(database, `clinics/${clinicId}/info`), (snap) => {
-      setClinicInfo(snap.val());
-      setLoadingClinic(false);
-    });
-
+    const unsub = onValue(
+      ref(database, `clinics/${clinicId}/info`),
+      (snap) => {
+        setClinicInfo(snap.val());
+        setLoadingClinic(false);
+      },
+      () => {
+        setClinicInfo(null);
+        setLoadingClinic(false);
+      },
+    );
     return () => unsub();
   }, [clinicId, authLoading]);
 

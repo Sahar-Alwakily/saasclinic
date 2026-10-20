@@ -14,19 +14,28 @@ export const AuthProvider = ({ children }) => {
     let unsubMeta = null;
 
     const unsubAuth = onAuthStateChanged(auth, (firebaseUser) => {
+      if (unsubMeta) {
+        unsubMeta();
+        unsubMeta = null;
+      }
       if (firebaseUser) {
         setUser(firebaseUser);
-        
-        // جلب بيانات المستخدم الإضافية (العيادة والدور)
-        unsubMeta = onValue(ref(database, `meta/users/${firebaseUser.uid}`), (snap) => {
-          setUserMeta(snap.val());
-          setLoading(false);
-        });
+        setLoading(true);
+        unsubMeta = onValue(
+          ref(database, `meta/users/${firebaseUser.uid}`),
+          (snap) => {
+            setUserMeta(snap.val());
+            setLoading(false);
+          },
+          () => {
+            setUserMeta(null);
+            setLoading(false);
+          },
+        );
       } else {
         setUser(null);
         setUserMeta(null);
         setLoading(false);
-        if (unsubMeta) unsubMeta();
       }
     });
 

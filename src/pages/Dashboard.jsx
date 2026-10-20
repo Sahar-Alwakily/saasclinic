@@ -42,15 +42,10 @@ const Dashboard = () => {
   const [reply, setReply] = useState(null);
 
   useEffect(() => {
-    if (loadingClinic || !clinicId || !clinicPath) {
-      if (!loadingClinic && !clinicId) setLoadingData(false);
-      return undefined;
-    }
+    if (loadingClinic || !clinicId || !clinicPath) return undefined;
     const appointmentsPath = clinicPath('appointments');
-    if (!appointmentsPath) {
-      setLoadingData(false);
-      return undefined;
-    }
+    if (!appointmentsPath) return undefined;
+    setLoadingData(true);
     const fail = () => setLoadingData(false);
     const unsubs = [
       onValue(ref(database, appointmentsPath), (snap) => {
