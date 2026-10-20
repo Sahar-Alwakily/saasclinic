@@ -1,5 +1,7 @@
 import { upcomingGaps, reminderDue, mergeAptSettings, noShowRisk } from './appointmentOps';
 
+export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
 export function toYmd(d) {
   const x = d instanceof Date ? d : new Date(d);
   if (Number.isNaN(x.getTime())) return '';
@@ -266,6 +268,122 @@ function fmtMoney(n) {
   return `${Number(n || 0).toLocaleString('ar')} ₪`;
 }
 
+export function hourFromTime(t) {
+  const s = String(t || '');
+  const m = s.match(/(\d{1,2})/);
+  if (!m) return null;
+  let h = parseInt(m[1], 10);
+  const pm = /م|pm/i.test(s);
+  const am = /ص|am/i.test(s);
+  if (pm && h < 12) h += 12;
+  if (am && h === 12) h = 0;
+  if (h < 0 || h > 23) return null;
+  return h;
+}
+
+function occupiesSlot(apt) {
+  return apt && !['cancelled'].includes(apt.status);
+}
+
+export function occupancyInsights({ appointments = [], schedules = {}, branches = [] }, now = new Date()) {
+  const since = new Date(now);
+  since.setDate(since.getDate() - 60);
+  const sinceYmd = toYmd(since);
+  const untilYmd = toYmd(now);
+  const sample = (appointments || []).filter((a) => occupiesSlot(a) && inDateRange(a.date, sinceYmd, untilYmd));
+
+  const byDay = DAY_NAMES.map((name, i) => ({ i, name, count: 0 }));
+  const byHourMap = {};
+  sample.forEach((a) => {
+    const d = new Date(`${a.date}T12:00:00`);
+    if (!Number.isNaN(d.getTime())) byDay[d.getDay()].count += 1;
+    const h = hourFromTime(a.time);
+    if (h != null) byHourMap[h] = (byHourMap[h] || 0) + 1;
+  });
+  const hours = Object.keys(byHourMap).map(Number).sort((a, b) => a - b);
+  const hourMin = hours.length ? hours[0] : 9;
+  const hourMax = hours.length ? hours[hours.length - 1] : 17;
+  const byHour = [];
+  for (let h = Math.min(hourMin, 9); h <= Math.max(hourMax, 17); h += 1) {
+    byHour.push({ hour: h, label: `${h % 12 === 0 ? 12 : h % 12}${h < 12 ? 'ص' : 'م'}`, count: byHourMap[h] || 0 });
+  }
+
+  const peakDay = [...byDay].sort((a, b) => b.count - a.count)[0];
+  const quietDay = [...byDay].filter((d) => d.count > 0).sort((a, b) => a.count - b.count)[0] || [...byDay].sort((a, b) => a.count - b.count)[0];
+  const peakHour = [...byHour].sort((a, b) => b.count - a.count)[0];
+  const quietHour = [...byHour].filter((h) => h.count > 0).sort((a, b) => a.count - b.count)[0];
+
+  const today = toYmd(now);
+  const todayBooked = (appointments || []).filter((a) => a.date === today && occupiesSlot(a) && a.status !== 'noshow').length;
+  const gapsToday = upcomingGaps({ schedules, appointments, branches, dateStr: today });
+  const todaySlots = todayBooked + gapsToday.length;
+  const todayFill = todaySlots ? Math.round((todayBooked / todaySlots) * 100) : null;
+
+  const lookahead = [];
+  for (let i = 0; i < 7; i += 1) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + i);
+    const dateStr = toYmd(d);
+    const booked = (appointments || []).filter((a) => a.date === dateStr && ['pending', 'confirmed'].includes(a.status)).length;
+    const gaps = upcomingGaps({ schedules, appointments, branches, dateStr });
+    const cap = booked + gaps.length;
+    lookahead.push({
+      date: dateStr,
+      name: i === 0 ? 'اليوم' : i === 1 ? 'غداً' : DAY_NAMES[d.getDay()],
+      booked,
+      gaps: gaps.length,
+      cap,
+      fill: cap ? Math.round((booked / cap) * 100) : null,
+    });
+  }
+
+  const mix = {};
+  sample.forEach((a) => {
+    const k = a.service || 'غير مسمّاة';
+    mix[k] = (mix[k] || 0) + 1;
+  });
+  const services = Object.entries(mix).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
+
+  const agenda = (appointments || [])
+    .filter((a) => a.date === today && ['pending', 'confirmed'].includes(a.status))
+    .map((a) => ({ ...a, hour: hourFromTime(a.time) }))
+    .sort((a, b) => (a.hour ?? 99) - (b.hour ?? 99) || String(a.time).localeCompare(String(b.time)));
+
+  const tips = [];
+  if (sample.length >= 5 && peakDay?.count) {
+    tips.push(`${peakDay.name} أعلى يوم حجزاً في آخر 60 يوماً (${peakDay.count}) — لا تخفّضي الدوام فيه دون مراجعة.`);
+  }
+  if (sample.length >= 5 && quietDay && quietDay.count < (peakDay?.count || 0)) {
+    tips.push(`${quietDay.name} الأهدأ (${quietDay.count}) — أنسب لعرض شواغر الانتظار أو حملات العودة.`);
+  }
+  if (peakHour?.count) {
+    tips.push(`ساعة ${peakHour.label} الأكثر ازدحاماً (${peakHour.count} حجز) — ثبّتي تأكيداً مبكراً قبلها.`);
+  }
+  if (todayFill != null) {
+    tips.push(`امتلاء جدول اليوم ${todayFill}% (${todayBooked} محجوز / ${gapsToday.length} شاغر).`);
+  }
+  if (sample.length < 8) {
+    tips.push('الازدحام تقريبي: العيّنة أقل من 8 حجوزات في 60 يوماً.');
+  }
+
+  return {
+    sample: sample.length,
+    byDay,
+    byHour,
+    peakDay,
+    quietDay,
+    peakHour,
+    quietHour,
+    todayFill,
+    todayBooked,
+    gapsToday: gapsToday.length,
+    lookahead,
+    services,
+    agenda,
+    tips,
+  };
+}
+
 function factLine(health) {
   const { curr, prev, windows, deltas } = health;
   return [
@@ -276,7 +394,7 @@ function factLine(health) {
   ];
 }
 
-export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [] }) {
+export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [], occupancy }) {
   const q = String(question || '').trim();
   if (!q) {
     return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو الإيراد أو الشواغر.', facts: [], missing: [] };
@@ -297,6 +415,7 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
   const aboutRev = /إيراد|دخل|فلوس|سعر|مبيع/.test(q);
   const aboutGap = /شاغر|فراغ|انتظار/.test(q);
   const aboutToday = /اليوم|تدخل|مهم/.test(q);
+  const aboutCrowd = /ازدحام|مزدحم|ساعة|ساعات|أيام|يوم |دوام|امتلاء|جدول/.test(q);
 
   let answer = '';
   if (aboutDrop && aboutBook) {
@@ -318,6 +437,12 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
       : `نسبة الحضور (حضر ÷ حضر+غاب) هذا الشهر ${health.curr.attendRate}% مقابل ${health.prev.attendRate == null ? 'غير متاحة' : `${health.prev.attendRate}%`} في الفترة المقارنة.`;
   } else if (aboutRev) {
     answer = `إيراد المواعيد المحتسبة هذا الشهر ${fmtMoney(health.curr.revenue)} مقابل ${fmtMoney(health.prev.revenue)} في الفترة المقارنة.`;
+  } else if (aboutCrowd && occupancy) {
+    const pd = occupancy.peakDay;
+    const ph = occupancy.peakHour;
+    answer = occupancy.sample
+      ? `من الحجوزات غير الملغاة لآخر 60 يوماً (${occupancy.sample}): أكثر يوم ${pd?.name || '—'} (${pd?.count || 0})، أكثر ساعة ${ph?.label || '—'} (${ph?.count || 0}). امتلاء اليوم ${occupancy.todayFill == null ? 'غير محسوب بلا جدول' : `${occupancy.todayFill}%`}. هذا توزيع الحجوزات وليس سبباً خارجياً.`
+      : 'لا حجوزات كافية لحساب الازدحام.';
   } else if (aboutGap) {
     answer = `شواغر اليوم في الجدول: ${tasks.gaps.length}. على الانتظار: ${(waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered').length}.`;
   } else if (aboutToday) {

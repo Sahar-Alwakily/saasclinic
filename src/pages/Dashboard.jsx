@@ -5,7 +5,7 @@ import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { useAuth } from '../context/AuthContext';
 import {
-  clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus,
+  clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus, occupancyInsights,
 } from '../utils/clinicInsights';
 
 const TONES = {
@@ -18,7 +18,7 @@ const TONES = {
 
 const PROMPTS = [
   'ليش انخفضت الحجوزات هذا الشهر؟',
-  'كيف نسبة الحضور؟',
+  'أي ساعات وأيام فيها ازدحام؟',
   'شو يحتاج تدخل اليوم؟',
   'وين الإيراد مقارنة بالشهر الماضي؟',
 ];
@@ -85,11 +85,15 @@ const Dashboard = () => {
     () => siteStatus({ clinicInfo, clinicId, services, blog }),
     [clinicInfo, clinicId, services, blog],
   );
+  const occupancy = useMemo(
+    () => occupancyInsights({ appointments, schedules, branches }),
+    [appointments, schedules, branches],
+  );
 
   const runAsk = (q) => {
     const text = q || ask;
     setAsk(text);
-    setReply(answerFromData(text, { health, tasks, appointments, services, waitlist }));
+    setReply(answerFromData(text, { health, tasks, appointments, services, waitlist, occupancy }));
   };
 
   if (loadingClinic || loadingData) {
@@ -160,6 +164,107 @@ const Dashboard = () => {
           </div>
         </div>
       </section>
+
+      <section className="saas-card p-5 md:p-6">
+        <div className="flex flex-wrap justify-between gap-3 items-start">
+          <div>
+            <h2 className="font-product text-xl">الازدحام والأيام</h2>
+            <p className="text-xs text-stone-500 mt-1">آخر 60 يوماً من الحجوزات غير الملغاة · امتلاء اليوم من الجدول إن وُجد</p>
+          </div>
+          <p className="text-sm font-bold" style={{ color: occupancy.todayFill == null ? TONES.gold : occupancy.todayFill >= 80 ? TONES.coral : TONES.mint }}>
+            اليوم {occupancy.todayFill == null ? 'بلا سعة جدول' : `${occupancy.todayFill}% ممتلئ`}
+          </p>
+        </div>
+        <div className="grid lg:grid-cols-2 gap-6 mt-4">
+          <div>
+            <p className="text-[11px] text-stone-400 mb-2">حسب اليوم</p>
+            <div className="space-y-1.5">
+              {occupancy.byDay.map((d) => (
+                <div key={d.i} className="flex items-center gap-2 text-sm">
+                  <span className="w-16 text-xs shrink-0">{d.name}</span>
+                  <div className="flex-1 h-2 rounded-full bg-[#e4ddd0] dark:bg-white/10 overflow-hidden">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${occupancy.sample ? Math.max(4, (d.count / Math.max(...occupancy.byDay.map((x) => x.count), 1)) * 100) : 0}%`,
+                        background: d.i === occupancy.peakDay?.i ? TONES.coral : TONES.azure,
+                      }}
+                    />
+                  </div>
+                  <span className="w-6 text-left text-xs font-bold">{d.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div>
+            <p className="text-[11px] text-stone-400 mb-2">حسب الساعة</p>
+            <div className="flex items-end gap-1 h-28">
+              {occupancy.byHour.map((h) => {
+                const max = Math.max(...occupancy.byHour.map((x) => x.count), 1);
+                const hot = occupancy.peakHour?.hour === h.hour;
+                return (
+                  <div key={h.hour} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full gap-1">
+                    <div
+                      className="w-full rounded-t-md"
+                      style={{ height: `${Math.max(6, (h.count / max) * 100)}%`, background: hot ? TONES.coral : TONES.azure, opacity: h.count ? 1 : 0.25 }}
+                      title={`${h.label}: ${h.count}`}
+                    />
+                    <span className="text-[9px] text-stone-400 leading-none">{h.hour}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="mt-4 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 min-w-max">
+            {occupancy.lookahead.map((d) => (
+              <div key={d.date} className="w-[4.6rem] rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-2 text-center">
+                <p className="text-[10px] text-stone-400">{d.name}</p>
+                <p className="font-product text-lg leading-none mt-1">{d.fill == null ? '—' : `${d.fill}%`}</p>
+                <p className="text-[10px] text-stone-500 mt-1">{d.booked}/{d.cap || '—'}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+        {occupancy.tips.length > 0 && (
+          <ul className="mt-4 space-y-1.5 text-xs text-stone-600 dark:text-stone-400">
+            {occupancy.tips.map((t) => (
+              <li key={t}>• {t}</li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <div className="grid lg:grid-cols-2 gap-4">
+        <section className="saas-card p-5">
+          <h2 className="font-product text-xl mb-3">وردية اليوم</h2>
+          {occupancy.agenda.length === 0 && <p className="text-sm text-stone-500">لا مواعيد مؤكدة أو معلّقة اليوم.</p>}
+          <div className="space-y-2">
+            {occupancy.agenda.slice(0, 6).map((a) => (
+              <Link key={a.id} to="/appointments" className="flex justify-between gap-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3 text-sm">
+                <span>
+                  <span className="font-bold block">{a.customerName}</span>
+                  <span className="text-xs text-stone-500">{a.service}{a.branchName ? ` · ${a.branchName}` : ''}</span>
+                </span>
+                <span className="text-xs font-bold shrink-0">{a.time}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
+        <section className="saas-card p-5">
+          <h2 className="font-product text-xl mb-3">الخدمات الأكثر حجزاً</h2>
+          {occupancy.services.length === 0 && <p className="text-sm text-stone-500">لا توزيع خدمات بعد.</p>}
+          <div className="space-y-2">
+            {occupancy.services.map((s) => (
+              <div key={s.name} className="flex justify-between text-sm rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] px-3 py-2">
+                <span>{s.name}</span>
+                <span className="font-product">{s.count}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
         <section className="saas-card p-5">
