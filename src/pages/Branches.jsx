@@ -11,7 +11,7 @@ const Branches = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
 
-  const [form, setForm] = useState({ name: '', phone: '', address: '' });
+  const [form, setForm] = useState({ name: '', phone: '', address: '', whatsapp: '', hours: '' });
 
   useEffect(() => {
     if (!clinicPath) return;
@@ -36,11 +36,13 @@ const Branches = () => {
         name: form.name,
         phone: form.phone,
         address: form.address || '',
+        whatsapp: form.whatsapp || '',
+        hours: form.hours || '',
         createdAt: Date.now()
       });
       toast.success('تم إضافة الفرع بنجاح!');
       setShowModal(false);
-      setForm({ name: '', phone: '', address: '' });
+      setForm({ name: '', phone: '', address: '', whatsapp: '', hours: '' });
     } catch (error) {
       toast.error('حدث خطأ أثناء الإضافة');
     }
@@ -106,6 +108,8 @@ const Branches = () => {
                   <p>{branch.address}</p>
                 </div>
               )}
+              {branch.hours && <p className="text-xs text-gray-500 mt-2">ساعات العمل: {branch.hours}</p>}
+              {branch.whatsapp && <p className="text-xs text-gray-500 mt-1" dir="ltr">واتساب: {branch.whatsapp}</p>}
             </div>
           ))}
         </div>
@@ -131,6 +135,14 @@ const Branches = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان (اختياري)</label>
                 <textarea value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} rows={2} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none resize-none dark:text-white" placeholder="الشارع، الحي..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">واتساب (اختياري)</label>
+                <input type="tel" value={form.whatsapp} onChange={(e) => setForm({...form, whatsapp: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none dark:text-white" dir="ltr" placeholder="05..." />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ساعات العمل للعرض (اختياري)</label>
+                <input type="text" value={form.hours} onChange={(e) => setForm({...form, hours: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none dark:text-white" placeholder="مثال: الأحد–الخميس 9:00–17:00" />
               </div>
               
               <button type="submit" className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold hover:bg-pink-600 transition mt-2">

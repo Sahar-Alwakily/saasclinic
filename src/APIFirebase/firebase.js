@@ -1,5 +1,5 @@
-import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getDatabase } from 'firebase/database';
 
 const firebaseConfig = {
@@ -16,4 +16,19 @@ const app = initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
 export const database = getDatabase(app);
+
+/** Creates a staff Auth user without replacing the admin session. */
+export async function createStaffAuthUser(email, password) {
+  const secondary = initializeApp(firebaseConfig, `staff-create-${Date.now()}`);
+  const secondaryAuth = getAuth(secondary);
+  try {
+    const cred = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+    const uid = cred.user.uid;
+    await signOut(secondaryAuth);
+    return uid;
+  } finally {
+    await deleteApp(secondary).catch(() => {});
+  }
+}
+
 export default app;

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiMenu, FiX, FiShoppingBag, FiPlus, FiMapPin, FiInstagram } from "react-icons/fi";
 import { FaWhatsapp, FaFacebookF, FaTiktok } from "react-icons/fa";
@@ -10,6 +11,7 @@ export default function MinimalTheme({
   primaryColor, bgColor, textColor, fontFamily, whyChooseUs, whyChooseUsTitle,
 }) {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const { clinicId } = useParams();
   const name = clinic?.name || "عيادة البشرة";
   const ink = primaryColor || "#1C1917";
   const bg = bgColor || "#FAF8F5";
@@ -121,14 +123,18 @@ export default function MinimalTheme({
           <h2 className="font-display text-4xl mb-10">الجلسات</h2>
           <div className="grid md:grid-cols-2 gap-x-12">
             {services.map((s, i) => (
-              <button key={s.id} onClick={onOpenBooking} className="text-right py-8 border-t border-stone-200 flex items-start justify-between gap-6">
+              <div key={s.id} className="text-right py-8 border-t border-stone-200 flex items-start justify-between gap-6">
                 <div>
                   <p className="text-xs opacity-40 mb-2">{String(i + 1).padStart(2, "0")} · {serviceDuration(s)}</p>
                   <h3 className="text-xl font-medium mb-2">{s.title || s.name}</h3>
-                  {s.description && <p className="text-sm opacity-60">{s.description}</p>}
+                  {s.description && <p className="text-sm opacity-60 mb-3">{s.description}</p>}
+                  <div className="flex gap-4 text-sm">
+                    {clinicId && <Link to={`/book/${clinicId}/service/${s.id}`} className="underline underline-offset-4">التفاصيل</Link>}
+                    <button type="button" onClick={() => onOpenBooking({ serviceId: s.id })} className="underline underline-offset-4">احجزي</button>
+                  </div>
                 </div>
                 <span className="shrink-0 font-medium">{s.price} ₪</span>
-              </button>
+              </div>
             ))}
           </div>
         </section>
@@ -175,10 +181,10 @@ export default function MinimalTheme({
         </div>
         <div className="space-y-4">
           {branches.map((b) => (
-            <div key={b.id} className="flex justify-between gap-4 border-b border-stone-200 pb-4">
+            <Link key={b.id} to={clinicId ? `/book/${clinicId}/branch/${b.id}` : '#'} className="flex justify-between gap-4 border-b border-stone-200 pb-4">
               <span>{b.name}</span>
-              <span className="text-sm opacity-60">{b.address}</span>
-            </div>
+              <span className="text-sm opacity-60">{b.address || b.phone}</span>
+            </Link>
           ))}
         </div>
       </section>

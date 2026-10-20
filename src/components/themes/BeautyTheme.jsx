@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiMenu, FiX, FiShoppingBag, FiPlus, FiMapPin, FiInstagram, FiPhone, FiClock, FiArrowLeft } from "react-icons/fi";
 import { FaWhatsapp, FaFacebookF, FaTiktok } from "react-icons/fa";
@@ -14,6 +15,7 @@ export default function BeautyTheme({
   primaryColor, bgColor, textColor, fontFamily, whyChooseUs, whyChooseUsTitle,
 }) {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const { clinicId } = useParams();
   const name = clinic?.name || "عيادة العناية بالبشرة";
   const mainColor = primaryColor || "#C48B7A";
   const lightBg = bgColor || "#FBF4F0";
@@ -220,18 +222,27 @@ export default function BeautyTheme({
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {services.map((s) => (
-                  <button key={s.id} onClick={onOpenBooking} className="text-right bg-white rounded-[1.75rem] p-6 border shadow-sm hover:-translate-y-1 transition duration-300" style={{ borderColor: withAlpha(mainColor, 0.1) }}>
+                  <article key={s.id} className="text-right bg-white rounded-[1.75rem] p-6 border shadow-sm hover:-translate-y-1 transition duration-300" style={{ borderColor: withAlpha(mainColor, 0.1) }}>
+                    {s.imageUrl && (
+                      <div className="h-36 rounded-2xl overflow-hidden mb-4 bg-[#f6eee9]">
+                        <img src={s.imageUrl} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mb-4">
                       <p className="text-[11px] tracking-widest uppercase opacity-50">جلسة تجميل</p>
                       <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ backgroundColor: withAlpha(mainColor, 0.12), color: mainColor }}>{serviceDuration(s)}</span>
                     </div>
                     <h3 className="text-xl font-bold mb-2">{s.title || s.name}</h3>
-                    {s.description && <p className="text-sm opacity-70 line-clamp-2 mb-6">{s.description}</p>}
-                    <div className="flex items-center justify-between">
+                    {s.description && <p className="text-sm opacity-70 line-clamp-2 mb-4">{s.description}</p>}
+                    {s.specialistName && <p className="text-xs opacity-50 mb-4">تقدّمها {s.specialistName}</p>}
+                    <div className="flex items-center justify-between gap-3">
                       <span className="font-extrabold text-lg" style={{ color: mainColor }}>{s.price} ₪</span>
-                      <span className="text-sm font-bold">احجزي ←</span>
+                      <div className="flex items-center gap-3 text-sm font-bold">
+                        {clinicId && <Link to={`/book/${clinicId}/service/${s.id}`} style={{ color: mainColor }}>التفاصيل</Link>}
+                        <button type="button" onClick={() => onOpenBooking({ serviceId: s.id })}>احجزي ←</button>
+                      </div>
                     </div>
-                  </button>
+                  </article>
                 ))}
               </div>
             )}
@@ -289,13 +300,14 @@ export default function BeautyTheme({
           <div className="md:col-span-2 grid gap-4">
             {branches.length === 0 && <p className="text-sm opacity-60 p-5">أضيفي الفروع من لوحة التحكم لتظهر هنا.</p>}
             {branches.map((b) => (
-              <div key={b.id} className="bg-white/80 rounded-2xl p-5 flex items-center gap-4 border" style={{ borderColor: withAlpha(mainColor, 0.08) }}>
+              <Link key={b.id} to={clinicId ? `/book/${clinicId}/branch/${b.id}` : '#'} className="bg-white/80 rounded-2xl p-5 flex items-center gap-4 border" style={{ borderColor: withAlpha(mainColor, 0.08) }}>
                 <div className="w-11 h-11 rounded-full text-white flex items-center justify-center" style={{ backgroundColor: mainColor }}><FiMapPin /></div>
                 <div>
                   <h3 className="font-bold">{b.name}</h3>
                   <p className="text-sm opacity-70">{b.address}</p>
+                  {b.phone && <p className="text-xs opacity-50 mt-1" dir="ltr">{b.phone}</p>}
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

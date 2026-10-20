@@ -1,8 +1,13 @@
+const previewFaqs = [
+  { q: "كم تستغرق الجلسة؟", a: "المدة مكتوبة في صفحة الجلسة، ويُؤكَّد الوقت عند اختيار الموعد." },
+  { q: "كيف أحجز؟", a: "اختاري الفرع ثم اليوم من جدول دوام المختصة. التفاصيل الطبية تُناقش في العيادة فقط." },
+];
+
 const services = [
-  { id: "s1", title: "تنظيف بشرة عميق", description: "تنقية المسام، إزالة الرؤوس السوداء، وماسك مهدئ يناسب البشرة المختلطة.", price: 180, duration: "60 د" },
-  { id: "s2", title: "جلسة ليزر للوجه", description: "بروتوكول آمن لتوحيد اللون وتقليل الشعر مع حماية للبشرة الملونة.", price: 250, duration: "45 د" },
-  { id: "s3", title: "إشراق وفيتامين", description: "جلسة إشراق للبشرة الباهتة والتعب، بتركيز لطيف بدون تقشير عنيف.", price: 220, duration: "50 د" },
-  { id: "s4", title: "عناية حول العين", description: "تهدئة الانتفاخ وتحسين إشراق النظرة ببروتوكول لطيف للمنطقة الحساسة.", price: 160, duration: "30 د" },
+  { id: "s1", title: "تنظيف بشرة عميق", description: "تنقية المسام، إزالة الرؤوس السوداء، وماسك مهدئ يناسب البشرة المختلطة.", price: 180, duration: "60 د", specialistName: "أ. ليلى منصور", faqs: previewFaqs },
+  { id: "s2", title: "جلسة ليزر للوجه", description: "جلسة ليزر للوجه حسب تقييم الأخصائية في العيادة.", price: 250, duration: "45 د", specialistName: "أ. ليلى منصور", faqs: previewFaqs },
+  { id: "s3", title: "إشراق وفيتامين", description: "جلسة عناية للبشرة الباهتة بتركيز لطيف، دون تقشير عنيف.", price: 220, duration: "50 د", specialistName: "أ. ليلى منصور", faqs: previewFaqs },
+  { id: "s4", title: "عناية حول العين", description: "جلسة لطيفة لمنطقة حول العين. الخطة تُحدَّد بعد المعاينة.", price: 160, duration: "30 د", specialistName: "أ. ليلى منصور", faqs: previewFaqs },
 ];
 
 const products = [
@@ -12,7 +17,7 @@ const products = [
   { id: "p4", title: "كريم ليلي مرطّب", price: 145, imageUrl: "https://images.unsplash.com/photo-1612817288484-6f916006741a?auto=format&fit=crop&w=600&q=80" },
 ];
 
-const branches = [{ id: "b1", name: "الجناح الرئيسي", address: "رهط — شارع العيادات" }];
+const branches = [{ id: "b1", name: "الجناح الرئيسي", address: "رهط — شارع العيادات", phone: "08-0000000", hours: "الأحد–الخميس 9:00–17:00", whatsapp: "972500000000" }];
 
 const posts = [
   { id: "n1", title: "روتين الصباح للبشرة المختلطة", content: "غسول لطيف، سيروم فيتامين، وواقي شمس. ثلاث خطوات تكفي معظم الأيام.", createdAt: Date.now() - 86400000 },

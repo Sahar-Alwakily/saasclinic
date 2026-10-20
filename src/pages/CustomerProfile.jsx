@@ -133,6 +133,17 @@ const CustomerProfile = () => {
               <span className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1" dir="ltr"><FaPhone /> {customer.phone}</span>
               {customer.birthDate && <span className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1"><FaBirthdayCake /> {customer.birthDate}</span>}
             </div>
+            <button
+              type="button"
+              onClick={async () => {
+                const next = !customer.doNotContact;
+                await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
+                toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
+              }}
+              className="mt-3 text-xs bg-white/20 rounded-full px-3 py-1"
+            >
+              {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل / انسحاب من الحملات'}
+            </button>
           </div>
         </div>
       </div>

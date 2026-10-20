@@ -9,6 +9,7 @@ import ElegantTheme from '../components/themes/ElegantTheme';
 import MinimalTheme from '../components/themes/MinimalTheme';
 import { getPreviewClinic } from '../components/themes/previewData';
 import { DRAFT_STORAGE_KEY } from '../components/themes/themeUtils';
+import { slotsForBooking } from '../utils/scheduleSlots';
 
 const PublicBooking = () => {
   const { clinicId } = useParams();
@@ -31,9 +32,12 @@ const PublicBooking = () => {
 
   const [showBooking, setShowBooking] = useState(false);
   const [bookingStep, setBookingStep] = useState(1);
-  const emptyBooking = { service: '', date: '', time: '', name: '', phone: '', branchId: '', branchName: '' };
+  const emptyBooking = { service: '', serviceId: '', specialistId: '', specialistName: '', date: '', time: '', name: '', phone: '', branchId: '', branchName: '' };
   const [bookingData, setBookingData] = useState(emptyBooking);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [schedules, setSchedules] = useState({});
+  const [staff, setStaff] = useState([]);
+  const queryApplied = useRef(false);
 
   useEffect(() => {
     const savedCart = localStorage.getItem(`cart_${clinicId}`);
@@ -97,7 +101,15 @@ const PublicBooking = () => {
       const val = snap.val();
       setPosts(val ? Object.entries(val).map(([id, item]) => ({ id, ...item })) : []);
     });
-    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); };
+    const unsubSched = onValue(ref(database, `clinics/${clinicId}/scheduleSettings`), (snap) => {
+      setSchedules(snap.val() || {});
+    });
+    const unsubUsers = onValue(ref(database, `clinics/${clinicId}/users`), (snap) => {
+      const val = snap.val();
+      const list = val ? Object.entries(val).map(([id, item]) => ({ id, ...item })) : [];
+      setStaff(list.filter((u) => u.role !== 'admin'));
+    });
+    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); unsubSched(); unsubUsers(); };
   }, [clinicId, preview]);
 
   const handleCheckout = async () => {
@@ -135,10 +147,15 @@ const PublicBooking = () => {
         customerName: bookingData.name,
         phoneNumber: bookingData.phone,
         service: bookingData.service,
+        serviceId: bookingData.serviceId || '',
+        specialistId: bookingData.specialistId || '',
+        specialistName: bookingData.specialistName || '',
         date: bookingData.date,
         time: bookingData.time,
         branchId: bookingData.branchId,
         branchName: bookingData.branchName,
+        price: Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0),
+        campaignId: searchParams.get('wb') || '',
         status: 'pending',
         createdAt: Date.now(),
       });
@@ -147,6 +164,63 @@ const PublicBooking = () => {
       alert('حدث خطأ');
     }
   };
+
+  const applyServiceToBooking = (next, serviceId) => {
+    const s = services.find((x) => x.id === serviceId);
+    if (!s) return next;
+    return {
+      ...next,
+      serviceId: s.id,
+      service: s.title,
+      specialistId: s.specialistId || '',
+      specialistName: s.specialistName || '',
+    };
+  };
+
+  const openBooking = (opts = {}) => {
+    let next = { ...emptyBooking };
+    if (opts.serviceId) next = applyServiceToBooking(next, opts.serviceId);
+    if (opts.branchId) {
+      const b = branches.find((x) => x.id === opts.branchId);
+      next.branchId = opts.branchId;
+      next.branchName = b?.name || '';
+    }
+    setBookingData(next);
+    setIsSuccess(false);
+    setShowBooking(true);
+    if (next.branchId && next.serviceId) setBookingStep(3);
+    else if (next.branchId) setBookingStep(2);
+    else setBookingStep(1);
+  };
+
+  useEffect(() => {
+    if (queryApplied.current || loading || !clinic) return;
+    const sid = searchParams.get('service');
+    const bid = searchParams.get('branch');
+    if (searchParams.get('book') !== '1') return;
+    if (sid && services.length === 0) return;
+    if (bid && branches.length === 0) return;
+    queryApplied.current = true;
+    openBooking({ serviceId: sid || undefined, branchId: bid || undefined });
+  }, [loading, clinic, services, branches, searchParams]);
+
+  const selectedService = services.find((s) => s.id === bookingData.serviceId);
+  const resolvedSpecialistId = bookingData.specialistId
+    || staff.find((u) => u.branch === bookingData.branchId && selectedService && (u.category === selectedService.category || u.category === 'all'))?.id
+    || '';
+  let slotInfo = slotsForBooking(schedules, bookingData.branchId, resolvedSpecialistId, bookingData.date);
+  if ((preview || isDraft) && slotInfo.missing && bookingData.date) {
+    const dayIdx = new Date(`${bookingData.date}T12:00:00`).getDay();
+    if (dayIdx === 5 || dayIdx === 6) {
+      slotInfo = { slots: [], closed: true, missing: false, dayName: dayIdx === 5 ? 'الجمعة' : 'السبت' };
+    } else {
+      slotInfo = {
+        slots: ['09:00 ص', '10:00 ص', '11:00 ص', '12:00 م', '01:00 م', '02:00 م', '03:00 م', '04:00 م'],
+        closed: false,
+        missing: false,
+      };
+    }
+  }
 
   if (loading) {
     return (
@@ -166,7 +240,7 @@ const PublicBooking = () => {
 
   const themeProps = {
     clinic, services, products, branches, posts,
-    onOpenBooking: () => { setShowBooking(true); setBookingStep(1); setIsSuccess(false); setBookingData(emptyBooking); },
+    onOpenBooking: (opts) => openBooking(opts || {}),
     cart, setCart, setShowCart,
     primaryColor: clinic.primaryColor || '#C48B7A',
     bgColor: clinic.bgColor || '#FBF4F0',
@@ -305,7 +379,7 @@ const PublicBooking = () => {
                             return (
                               <button
                                 key={b.id}
-                                onClick={() => { setBookingData({ ...bookingData, branchId: b.id, branchName: b.name }); setBookingStep(2); }}
+                                onClick={() => { setBookingData({ ...bookingData, branchId: b.id, branchName: b.name }); setBookingStep(bookingData.serviceId ? 3 : 2); }}
                                 className="p-4 border rounded-2xl text-right hover:shadow-md transition"
                                 style={{ borderColor: selected ? primaryColor : undefined, backgroundColor: selected ? `${primaryColor}18` : 'transparent' }}
                               >
@@ -328,9 +402,10 @@ const PublicBooking = () => {
                           <p className="md:col-span-2 text-center opacity-60 py-8">أضيفي الجلسات من لوحة العيادة لتظهر هنا.</p>
                         )}
                         {services.map((s) => (
-                          <button key={s.id} onClick={() => { setBookingData({ ...bookingData, service: s.title }); setBookingStep(3); }} className="p-4 border rounded-2xl text-right hover:shadow-md transition">
+                          <button key={s.id} onClick={() => { setBookingData(applyServiceToBooking({ ...bookingData }, s.id)); setBookingStep(3); }} className="p-4 border rounded-2xl text-right hover:shadow-md transition">
                             <p className="font-bold">{s.title}</p>
                             {s.description && <p className="text-xs opacity-60 mt-1 line-clamp-2">{s.description}</p>}
+                            {s.duration && <p className="text-xs opacity-50 mt-1">{s.duration}</p>}
                             <p className="text-sm font-bold mt-2" style={{ color: primaryColor }}>{s.price} ₪</p>
                           </button>
                         ))}
@@ -346,10 +421,16 @@ const PublicBooking = () => {
                   )}
                   {bookingStep === 4 && (
                     <div>
-                      <h2 className="font-display text-2xl text-center mb-6">اختاري الساعة</h2>
+                      <h2 className="font-display text-2xl text-center mb-2">اختاري الساعة</h2>
+                      {bookingData.specialistName && <p className="text-center text-sm opacity-60 mb-4">دوام {bookingData.specialistName}</p>}
+                      {slotInfo.missing && <p className="text-center text-sm opacity-70 py-8">لم يُضبط جدول دوام المختصة لهذا الفرع بعد. راجعِ مواعيد الموظفات في لوحة التحكم.</p>}
+                      {slotInfo.closed && <p className="text-center text-sm opacity-70 py-8">لا دوام في {slotInfo.dayName}. اختاري يوماً آخر.</p>}
+                      {!slotInfo.missing && !slotInfo.closed && slotInfo.slots.length === 0 && (
+                        <p className="text-center text-sm opacity-70 py-8">لا توجد ساعات متاحة في هذا اليوم.</p>
+                      )}
                       <div className="grid grid-cols-3 gap-3">
-                        {['10:00 ص', '11:30 ص', '02:00 م', '04:00 م', '06:00 م'].map((t) => (
-                          <button key={t} onClick={() => { setBookingData({ ...bookingData, time: t }); setBookingStep(5); }} className="p-3 border rounded-2xl font-bold" style={{ borderColor: bookingData.time === t ? primaryColor : undefined, backgroundColor: bookingData.time === t ? primaryColor : 'transparent', color: bookingData.time === t ? (isDark ? '#0C0B0A' : '#fff') : undefined }}>{t}</button>
+                        {slotInfo.slots.map((t) => (
+                          <button key={t} onClick={() => { setBookingData({ ...bookingData, time: t, specialistId: resolvedSpecialistId || bookingData.specialistId }); setBookingStep(5); }} className="p-3 border rounded-2xl font-bold" style={{ borderColor: bookingData.time === t ? primaryColor : undefined, backgroundColor: bookingData.time === t ? primaryColor : 'transparent', color: bookingData.time === t ? (isDark ? '#0C0B0A' : '#fff') : undefined }}>{t}</button>
                         ))}
                       </div>
                     </div>

@@ -17,8 +17,10 @@ import TreatmentTracker from './pages/TreatmentTracker';
 import LandingPage from './pages/LandingPage';
 import Blog from './pages/Blog';
 import ServiceDetails from './pages/ServiceDetails';
+import PublicBranch from './pages/PublicBranch';
 import Orders from './pages/Orders';
 import Branches from './pages/Branches';
+import Winback from './pages/Winback';
 const ProtectedApp = ({ children }) => {
   const { loadingClinic } = useClinic();
 
@@ -44,6 +46,7 @@ function App() {
             {/* ✅ مسارات واجهة العملاء (عامة، بدون حماية) */}
             <Route path="/book/:clinicId" element={<PublicBooking />} />
             <Route path="/book/:clinicId/service/:serviceId" element={<ServiceDetails />} />
+            <Route path="/book/:clinicId/branch/:branchId" element={<PublicBranch />} />
 
             {/* مسارات محمية (للعاملين بالعيادة فقط) */}
             <Route element={<ProtectedApp><DashboardLayout /></ProtectedApp>}>
@@ -51,6 +54,7 @@ function App() {
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />
+              <Route path="/winback" element={<Winback />} />
               <Route path="/treatments" element={<TreatmentTracker />} />
               <Route path="/services" element={<Services />} />
               <Route path="/orders" element={<Orders />} />

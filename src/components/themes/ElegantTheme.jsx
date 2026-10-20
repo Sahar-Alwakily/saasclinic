@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { FiMenu, FiX, FiShoppingBag, FiPlus, FiMapPin, FiInstagram } from "react-icons/fi";
 import { FaWhatsapp, FaFacebookF, FaTiktok } from "react-icons/fa";
@@ -10,6 +11,7 @@ export default function ElegantTheme({
   primaryColor, bgColor, textColor, fontFamily, whyChooseUs, whyChooseUsTitle,
 }) {
   const [mobileMenu, setMobileMenu] = useState(false);
+  const { clinicId } = useParams();
   const name = clinic?.name || "Maison de Beauté";
   const gold = primaryColor || "#C9A66B";
   const bg = bgColor || "#0C0B0A";
@@ -147,12 +149,16 @@ export default function ElegantTheme({
             </div>
             <div className="divide-y" style={{ borderColor: withAlpha(gold, 0.15) }}>
               {services.map((s) => (
-                <button key={s.id} onClick={onOpenBooking} className="w-full text-right py-8 flex flex-col md:flex-row md:items-center gap-4 hover:opacity-100 opacity-90">
+                <div key={s.id} className="w-full text-right py-8 flex flex-col md:flex-row md:items-center gap-4 hover:opacity-100 opacity-90">
                   <h3 className="font-display text-3xl flex-1">{s.title || s.name}</h3>
                   {s.description && <p className="text-sm opacity-60 flex-[1.2]">{s.description}</p>}
                   <span className="text-xs tracking-widest opacity-50">{serviceDuration(s)}</span>
                   <span className="font-bold" style={{ color: gold }}>{s.price} ₪</span>
-                </button>
+                  <div className="flex gap-4 text-xs tracking-widest">
+                    {clinicId && <Link to={`/book/${clinicId}/service/${s.id}`}>التفاصيل</Link>}
+                    <button type="button" onClick={() => onOpenBooking({ serviceId: s.id })}>احجزي</button>
+                  </div>
+                </div>
               ))}
               {services.length === 0 && <p className="py-16 text-center opacity-50">القائمة تُحدَّث من لوحة العيادة</p>}
             </div>
@@ -201,10 +207,14 @@ export default function ElegantTheme({
             <h2 className="font-display text-5xl mb-6">فروع العيادة</h2>
             {branches.length === 0 && <p className="opacity-60 text-sm">أضيفي الفروع من لوحة التحكم.</p>}
             {branches.map((b) => (
-              <div key={b.id} className="flex gap-3 py-4 border-t" style={{ borderColor: withAlpha(gold, 0.2) }}>
+              <Link key={b.id} to={clinicId ? `/book/${clinicId}/branch/${b.id}` : '#'} className="flex gap-3 py-4 border-t" style={{ borderColor: withAlpha(gold, 0.2) }}>
                 <FiMapPin style={{ color: gold }} />
-                <div><p className="font-bold">{b.name}</p><p className="text-sm opacity-60">{b.address}</p></div>
-              </div>
+                <div>
+                  <p className="font-bold">{b.name}</p>
+                  <p className="text-sm opacity-60">{b.address}</p>
+                  {b.phone && <p className="text-xs opacity-50 mt-1" dir="ltr">{b.phone}</p>}
+                </div>
+              </Link>
             ))}
           </div>
           <div className="border p-10" style={{ borderColor: gold }}>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ref, onValue, set, remove } from 'firebase/database';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, database } from '../APIFirebase/firebase';
+import { database, createStaffAuthUser } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { FaPlus, FaUserTie, FaTrash, FaTimes, FaEnvelope } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
@@ -68,8 +67,7 @@ const Staff = () => {
     let newUid = null;
 
     try {
-      const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
-      newUid = cred.user.uid;
+      newUid = await createStaffAuthUser(form.email.trim(), form.password);
 
       await set(ref(database, `${clinicPath('users')}/${newUid}`), {
         name: form.name,
