@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
-import { useAuth } from '../context/AuthContext';
 import {
   clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus, occupancyInsights,
 } from '../utils/clinicInsights';
@@ -24,8 +23,7 @@ const PROMPTS = [
 ];
 
 const Dashboard = () => {
-  const { clinicInfo, clinicPath, clinicId, loadingClinic, userRole } = useClinic();
-  const { user } = useAuth();
+  const { clinicInfo, clinicPath, clinicId, loadingClinic, userRole, userCategory, hasCap } = useClinic();
   const navigate = useNavigate();
 
   const [appointments, setAppointments] = useState([]);
@@ -50,8 +48,8 @@ const Dashboard = () => {
     const unsubs = [
       onValue(ref(database, appointmentsPath), (snap) => {
         let all = snap.val() ? Object.entries(snap.val()).map(([id, item]) => ({ id, ...item })) : [];
-        if (userRole === 'worker' && user?.category) {
-          all = all.filter((apt) => apt.category === user.category);
+        if (userRole === 'worker' && userCategory) {
+          all = all.filter((apt) => apt.category === userCategory);
         }
         setAppointments(all);
         setLoadingData(false);
@@ -70,7 +68,7 @@ const Dashboard = () => {
       onValue(ref(database, clinicPath('appointmentSettings')), (s) => setSettings(s.val()), fail),
     ];
     return () => unsubs.forEach((u) => u());
-  }, [clinicPath, clinicId, loadingClinic, userRole, user]);
+  }, [clinicPath, clinicId, loadingClinic, userRole, userCategory]);
 
   const health = useMemo(() => clinicHealth({ appointments, customers }), [appointments, customers]);
   const tasks = useMemo(
@@ -273,7 +271,11 @@ const Dashboard = () => {
             <p className="text-sm text-[#0f766e]">لا بند يحتاج تدخلاً من القواعد الحالية.</p>
           )}
           <div className="space-y-2">
-            {alerts.map((a) => (
+            {alerts.filter((a) => {
+              if (a.to === '/ops' && !hasCap('ops')) return false;
+              if (a.to === '/winback' && !hasCap('winback')) return false;
+              return true;
+            }).map((a) => (
               <button
                 key={a.id}
                 type="button"
@@ -294,10 +296,16 @@ const Dashboard = () => {
           <h2 className="font-product text-xl mb-3">مركز المهام اليومية</h2>
           <ul className="space-y-2 text-sm">
             <TaskRow to="/appointments" label="حجوزات تحتاج تأكيد العميلة" count={tasks.pending.length} tone={tasks.pending.length ? TONES.gold : TONES.mint} />
-            <TaskRow to="/ops" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
-            <TaskRow to="/ops" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
-            <TaskRow to="/ops" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
-            <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} tone={tasks.failed.length ? TONES.coral : TONES.mint} />
+            {hasCap('ops') && (
+              <>
+                <TaskRow to="/ops" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
+                <TaskRow to="/ops" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
+                <TaskRow to="/ops" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
+              </>
+            )}
+            {hasCap('winback') && (
+              <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} tone={tasks.failed.length ? TONES.coral : TONES.mint} />
+            )}
           </ul>
         </section>
       </div>

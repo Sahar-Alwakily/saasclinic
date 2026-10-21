@@ -2,11 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ref, onValue, push, set, remove } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
+import { withinBranchLimit } from '../config/plans';
 import { FaPlus, FaMapMarkerAlt, FaPhone, FaTrash, FaTimes, FaStore } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 
 const Branches = () => {
-  const { clinicPath } = useClinic();
+  const { clinicPath, clinicInfo, plan } = useClinic();
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -28,6 +29,9 @@ const Branches = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name || !form.phone) return toast.error('الرجاء إدخال اسم الفرع ورقم الهاتف');
+    if (!withinBranchLimit(clinicInfo, branches.length)) {
+      return toast.error(`باقة ${plan?.name} تسمح حتى ${Number.isFinite(plan?.maxBranches) ? plan.maxBranches : '—'} فروع`);
+    }
 
     try {
       const branchesRef = ref(database, clinicPath('branches'));
@@ -71,7 +75,15 @@ const Branches = () => {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">إدارة الفروع</h1>
           <p className="text-gray-500 text-sm mt-1">أضف فروع عيادتك لتربط بها الموظفين والمواعيد</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium">
+        <button
+          onClick={() => {
+            if (!withinBranchLimit(clinicInfo, branches.length)) {
+              return toast.error(`باقة ${plan?.name} وصلت حد الفروع — رقّي من المدفوعات`);
+            }
+            setShowModal(true);
+          }}
+          className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium"
+        >
           <FaPlus /> فرع جديد
         </button>
       </div>

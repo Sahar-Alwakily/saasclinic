@@ -5,6 +5,7 @@ import { slotsForBooking } from './scheduleSlots';
 export const APT_STATUSES = [
   { id: 'pending', label: 'تحتاج تأكيد العميلة' },
   { id: 'confirmed', label: 'مؤكد' },
+  { id: 'rescheduled', label: 'أُعيدت جدولته' },
   { id: 'cancelled', label: 'ملغي' },
   { id: 'attended', label: 'حضر' },
   { id: 'noshow', label: 'لم يحضر' },

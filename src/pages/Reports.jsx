@@ -6,7 +6,7 @@ import { recoveredRevenue, statusRates, mergeAptSettings, winbackReturnRate } fr
 import { clinicHealth } from '../utils/clinicInsights';
 
 const Reports = () => {
-  const { clinicPath } = useClinic();
+  const { clinicPath, hasCap } = useClinic();
   const [appointments, setAppointments] = useState([]);
   const [customers, setCustomers] = useState([]);
   const [settingsRaw, setSettingsRaw] = useState(null);
@@ -49,16 +49,20 @@ const Reports = () => {
           <p className="text-[11px] text-stone-400">حضور (حضر÷حضر+غاب)</p>
           <p className="font-product text-3xl">{health.curr.attendRate == null ? '—' : `${health.curr.attendRate}%`}</p>
         </div>
-        <div className="saas-card p-4">
-          <p className="text-[11px] text-stone-400">تحويل استرجاع</p>
-          <p className="font-product text-3xl">{wb.tagged ? `${wb.rate}%` : '—'}</p>
-          <p className="text-xs text-stone-500">{wb.returned} من {wb.tagged} بوسم حملة</p>
-        </div>
+        {hasCap('winback') && (
+          <div className="saas-card p-4">
+            <p className="text-[11px] text-stone-400">تحويل استرجاع</p>
+            <p className="font-product text-3xl">{wb.tagged ? `${wb.rate}%` : '—'}</p>
+            <p className="text-xs text-stone-500">{wb.returned} من {wb.tagged} بوسم حملة</p>
+          </div>
+        )}
       </div>
       <div className="saas-card p-5">
         <h2 className="font-product text-xl mb-2">كل السجل</h2>
         <p className="text-sm text-stone-500">حضر {rates.attended} · غاب {rates.noshow} · أُلغي {rates.cancelled} · معلّق {rates.pending} · مؤكد {rates.confirmed}</p>
-        <p className="text-sm mt-2">إيراد مستعاد من ملء المواعيد الفارغة: {rec.actual.toLocaleString('ar')} (صافي {rec.net.toLocaleString('ar')} بعد تكلفة الرسائل المسجّلة)</p>
+        {hasCap('ops') && (
+          <p className="text-sm mt-2">إيراد مستعاد من ملء المواعيد الفارغة: {rec.actual.toLocaleString('ar')} (صافي {rec.net.toLocaleString('ar')} بعد تكلفة الرسائل المسجّلة)</p>
+        )}
       </div>
     </div>
   );

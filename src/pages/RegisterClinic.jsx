@@ -75,7 +75,7 @@ const RegisterClinic = () => {
         <div className="mb-6">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-xl mb-3">ن</div>
           <h1 className="font-product text-2xl">أنشئ مساحة عمل</h1>
-          <p className="text-sm text-stone-500 mt-1">14 يوماً تجريبياً — بدون بطاقة</p>
+          <p className="text-sm text-stone-500 mt-1">{getPlan('trial').durationDays} يوماً تجريبياً — بدون بطاقة</p>
         </div>
 
         {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl mb-4">{error}</div>}

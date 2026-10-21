@@ -14,6 +14,7 @@ import {
   mergeAptSettings, slotKey, occupiedKeys, claimSlot, makeToken, appendHistory,
   needsExtraConfirm, isHoliday, manageUrl,
 } from '../utils/appointmentOps';
+import { hasCap } from '../config/plans';
 
 const PublicBooking = () => {
   const { clinicId } = useParams();
@@ -279,8 +280,15 @@ const PublicBooking = () => {
     );
   }
 
+  const shopOn = hasCap(clinic, 'marketing');
+  const themesOn = hasCap(clinic, 'websitePro');
+  const publicProducts = shopOn && clinic.showProducts !== false ? products : [];
+  const publicPosts = shopOn && clinic.showBlog !== false ? posts : [];
+  const themeName = themesOn ? clinic.storeTheme : 'beauty';
+
   const themeProps = {
-    clinic, services, products, branches, posts,
+    clinic: { ...clinic, storeTheme: themeName, showProducts: shopOn && clinic.showProducts !== false, showBlog: shopOn && clinic.showBlog !== false },
+    services, products: publicProducts, branches, posts: publicPosts,
     onOpenBooking: (opts) => openBooking(opts || {}),
     cart, setCart, setShowCart,
     primaryColor: clinic.primaryColor || '#C48B7A',
@@ -292,13 +300,13 @@ const PublicBooking = () => {
   };
 
   const renderTheme = () => {
-    if (clinic.storeTheme === 'elegant') return <ElegantTheme {...themeProps} />;
-    if (clinic.storeTheme === 'minimal') return <MinimalTheme {...themeProps} />;
+    if (themeName === 'elegant') return <ElegantTheme {...themeProps} />;
+    if (themeName === 'minimal') return <MinimalTheme {...themeProps} />;
     return <BeautyTheme {...themeProps} />;
   };
 
   const primaryColor = clinic.primaryColor || '#C48B7A';
-  const isDark = clinic.storeTheme === 'elegant';
+  const isDark = themeName === 'elegant';
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
   const panelBg = isDark ? '#141210' : '#fff';
   const panelText = isDark ? '#F5EDE3' : '#3A2A28';

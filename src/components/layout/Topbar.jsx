@@ -6,7 +6,7 @@ import { useShellNav } from './shellNav';
 import { FaBars } from 'react-icons/fa';
 
 const Topbar = () => {
-  const { clinicInfo, userRole } = useClinic();
+  const { clinicInfo, userRole, plan } = useClinic();
   const { user } = useAuth();
   const { setOpen } = useShellNav();
   const today = new Date().toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' });
@@ -30,7 +30,7 @@ const Topbar = () => {
       <div className="flex items-center gap-3">
         <div className="hidden sm:block text-left text-xs text-stone-500 dark:text-stone-400">
           <p>{today}</p>
-          <p className="text-[11px]">{userRole === 'admin' ? 'صلاحية مالك' : 'صلاحية تشغيل'}{user?.email ? ` · ${user.email}` : ''}</p>
+          <p className="text-[11px]">{userRole === 'admin' ? 'صلاحية مالك' : 'صلاحية تشغيل'}{plan?.name ? ` · ${plan.name}` : ''}{user?.email ? ` · ${user.email}` : ''}</p>
         </div>
         <span className="hidden md:inline-flex items-center gap-2 text-xs font-semibold px-3 py-1.5 rounded-full bg-[#22c9a0]/15 text-[#0f766e]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#22c9a0] animate-pulse" /> مباشر

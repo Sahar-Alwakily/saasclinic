@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ref, onValue, set, remove } from 'firebase/database';
 import { database, createStaffAuthUser } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
+import { withinUserLimit } from '../config/plans';
 import { FaPlus, FaUserTie, FaTrash, FaTimes, FaEnvelope } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 
@@ -14,8 +15,9 @@ const CATEGORIES = [
 ];
 
 const Staff = () => {
-  const { clinicPath, clinicId } = useClinic();
+  const { clinicPath, clinicId, clinicInfo, plan } = useClinic();
   const [staff, setStaff] = useState([]);
+  const [userCount, setUserCount] = useState(0);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -37,8 +39,9 @@ const Staff = () => {
 
     const unsubUsers = onValue(ref(database, usersPath), (snap) => {
       const val = snap.val();
-      const usersList = val ? Object.entries(val).map(([id, item]) => ({ id, ...item })).filter(u => u.role !== 'admin') : [];
-      setStaff(usersList);
+      const all = val ? Object.entries(val).map(([id, item]) => ({ id, ...item })) : [];
+      setUserCount(all.length);
+      setStaff(all.filter((u) => u.role !== 'admin'));
     });
 
     const unsubBranches = onValue(ref(database, branchesPath), (snap) => {
@@ -61,6 +64,10 @@ const Staff = () => {
     }
     if (form.password.length < 6) {
       return toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
+    }
+
+    if (!withinUserLimit(clinicInfo, userCount)) {
+      return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات`);
     }
 
     setSubmitting(true);
@@ -123,7 +130,15 @@ const Staff = () => {
           <h1 className="text-2xl font-bold text-gray-800 dark:text-white">إدارة الموظفين</h1>
           <p className="text-gray-500 text-sm mt-1">أضف فريق عملك وحدد أقسامهم وفروعهم</p>
         </div>
-        <button onClick={() => setShowModal(true)} className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium">
+        <button
+          onClick={() => {
+            if (!withinUserLimit(clinicInfo, userCount)) {
+              return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات — من المدفوعات ترقّي الباقة`);
+            }
+            setShowModal(true);
+          }}
+          className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium"
+        >
           <FaPlus /> موظفة جديدة
         </button>
       </div>

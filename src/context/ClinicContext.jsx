@@ -1,7 +1,8 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useAuth } from './AuthContext';
+import { clinicPlan, hasCap as planHasCap, isTrialExpired } from '../config/plans';
 
 const ClinicContext = createContext(null);
 
@@ -47,6 +48,9 @@ export const ClinicProvider = ({ children }) => {
 
   // null حتى تُحمَّل العيادة — حتى لا يُستدعى Firebase بمسار "null"
   const clinicPath = clinicId ? buildClinicPath : null;
+  const plan = useMemo(() => clinicPlan(clinicInfo), [clinicInfo]);
+  const hasCap = useCallback((cap) => planHasCap(clinicInfo, cap), [clinicInfo]);
+  const trialExpired = isTrialExpired(clinicInfo);
 
   return (
     <ClinicContext.Provider
@@ -58,6 +62,9 @@ export const ClinicProvider = ({ children }) => {
         userCategory,
         loadingClinic,
         isAdmin: userRole === 'admin',
+        plan,
+        hasCap,
+        trialExpired,
       }}
     >
       {children}

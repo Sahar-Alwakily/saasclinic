@@ -30,11 +30,11 @@ const NAV = [
   {
     to: '/appointments',
     label: 'المواعيد',
-    hint: 'تقويم، حجوزات، إلغاء، قائمة انتظار',
+    hint: 'تقويم، تأكيد، حضور',
     icon: FaCalendarAlt,
     children: [
       { to: '/appointments', label: 'الحجوزات' },
-      { to: '/ops', label: 'قائمة الانتظار' },
+      { to: '/ops', label: 'قائمة الانتظار', cap: 'ops' },
     ],
   },
   {
@@ -51,7 +51,7 @@ const NAV = [
     icon: FaSpa,
     children: [
       { to: '/services', label: 'الخدمات والأسعار' },
-      { to: '/treatments', label: 'متابعة العلاجات' },
+      { to: '/treatments', label: 'متابعة العلاجات', cap: 'treatments' },
     ],
   },
   {
@@ -60,6 +60,7 @@ const NAV = [
     hint: 'التصميم، الصفحات، الدومين، SEO',
     icon: FaGlobe,
     admin: true,
+    cap: 'website',
   },
   {
     to: '/assistant',
@@ -67,6 +68,7 @@ const NAV = [
     hint: 'واتساب، إعدادات الردود، المحادثات',
     icon: FaRobot,
     admin: true,
+    cap: 'assistant',
   },
   {
     to: '/winback',
@@ -74,6 +76,7 @@ const NAV = [
     hint: 'حملات العودة والنتائج',
     icon: FaPaperPlane,
     admin: true,
+    cap: 'winback',
   },
   {
     to: '/marketing',
@@ -81,6 +84,7 @@ const NAV = [
     hint: 'الحملات، المحتوى، الكوبونات',
     icon: FaBullhorn,
     admin: true,
+    cap: 'marketing',
     children: [
       { to: '/marketing', label: 'نظرة الحملات' },
       { to: '/blog', label: 'المحتوى' },
@@ -122,7 +126,7 @@ const NAV = [
 ];
 
 const Sidebar = () => {
-  const { clinicInfo, isAdmin } = useClinic();
+  const { clinicInfo, isAdmin, hasCap = () => false } = useClinic();
   const { logout } = useAuth();
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -133,7 +137,12 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  const items = NAV.filter((item) => !item.admin || isAdmin);
+  const items = NAV
+    .filter((item) => (!item.admin || isAdmin) && (!item.cap || hasCap(item.cap)))
+    .map((item) => ({
+      ...item,
+      children: item.children?.filter((c) => !c.cap || hasCap(c.cap)),
+    }));
 
   return (
     <aside

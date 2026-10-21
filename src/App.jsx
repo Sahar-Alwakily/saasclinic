@@ -30,6 +30,7 @@ import Marketing from './pages/Marketing';
 import Reports from './pages/Reports';
 import Billing from './pages/Billing';
 import Team from './pages/Team';
+import PlanGate from './components/plan/PlanGate';
 const bootScreen = (
   <div className="min-h-screen flex items-center justify-center bg-[#14121c] text-white/70">جاري فتح مساحة العمل...</div>
 );
@@ -67,21 +68,21 @@ function App() {
             <Route element={<ProtectedApp><DashboardLayout /></ProtectedApp>}>
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/appointments" element={<Appointments />} />
-              <Route path="/ops" element={<FillOps />} />
+              <Route path="/ops" element={<PlanGate cap="ops"><FillOps /></PlanGate>} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />
-              <Route path="/website" element={<Website />} />
-              <Route path="/assistant" element={<Assistant />} />
-              <Route path="/winback" element={<Winback />} />
-              <Route path="/marketing" element={<Marketing />} />
+              <Route path="/website" element={<PlanGate cap="website"><Website /></PlanGate>} />
+              <Route path="/assistant" element={<PlanGate cap="assistant"><Assistant /></PlanGate>} />
+              <Route path="/winback" element={<PlanGate cap="winback"><Winback /></PlanGate>} />
+              <Route path="/marketing" element={<PlanGate cap="marketing"><Marketing /></PlanGate>} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/team" element={<Team />} />
               <Route path="/billing" element={<Billing />} />
-              <Route path="/treatments" element={<TreatmentTracker />} />
+              <Route path="/treatments" element={<PlanGate cap="treatments"><TreatmentTracker /></PlanGate>} />
               <Route path="/services" element={<Services />} />
-              <Route path="/orders" element={<Orders />} />
+              <Route path="/orders" element={<PlanGate cap="marketing"><Orders /></PlanGate>} />
               <Route path="/staff" element={<Staff />} />
-              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog" element={<PlanGate cap="marketing"><Blog /></PlanGate>} />
               <Route path="/branches" element={<Branches />} />
               <Route path="/settings" element={<Settings />} />
             </Route>

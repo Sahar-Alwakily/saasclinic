@@ -105,7 +105,7 @@ const ManageAppointment = () => {
     await save({
       date: newDate,
       time: newTime,
-      status: settings.autoConfirm ? 'confirmed' : 'pending',
+      status: settings.autoConfirm ? 'confirmed' : 'rescheduled',
     }, { action: 'rescheduled', by: 'customer', from: `${apt.date} ${apt.time}`, to: `${newDate} ${newTime}` });
     setMsg('تم تغيير الموعد.');
   };

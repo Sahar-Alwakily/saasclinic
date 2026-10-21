@@ -61,7 +61,9 @@ function ColorField({ label, value, onChange, fallback }) {
 }
 
 const Settings = () => {
-  const { clinicId, clinicInfo, clinicPath } = useClinic();
+  const { clinicId, clinicInfo, clinicPath, hasCap } = useClinic();
+  const websitePro = hasCap('websitePro');
+  const marketingOn = hasCap('marketing');
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'profile');
   const [privacyNote, setPrivacyNote] = useState('');
@@ -305,7 +307,14 @@ const Settings = () => {
                 <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-3">اختر تصميم الواجهة</label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   {THEMES.map((theme) => (
-                    <div key={theme.id} onClick={() => setStoreData({ ...storeData, storeTheme: theme.id, ...THEME_PRESETS[theme.id] })} className={`cursor-pointer rounded-2xl border-2 p-4 transition-all ${storeData.storeTheme === theme.id ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-slate-600'}`}>
+                    <div
+                      key={theme.id}
+                      onClick={() => {
+                        if (!websitePro && theme.id !== 'beauty') return toast.info('الثيمات الإضافية من باقة عيادة');
+                        setStoreData({ ...storeData, storeTheme: theme.id, ...THEME_PRESETS[theme.id] });
+                      }}
+                      className={`cursor-pointer rounded-2xl border-2 p-4 transition-all ${storeData.storeTheme === theme.id ? 'border-pink-500 bg-pink-50 dark:bg-pink-900/20' : 'border-gray-200 dark:border-slate-600'} ${!websitePro && theme.id !== 'beauty' ? 'opacity-50' : ''}`}
+                    >
                       <div className={`w-10 h-10 rounded-xl ${theme.color} text-white flex items-center justify-center mb-3`}><FaStore /></div>
                       <h3 className="font-bold text-gray-800 dark:text-white">{theme.name}</h3>
                       <p className="text-xs text-gray-500 mt-1">{theme.desc}</p>
@@ -485,11 +494,11 @@ const Settings = () => {
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم الجلسات</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={storeData.showProducts} onChange={(e) => setStoreData({...storeData, showProducts: e.target.checked})} className="w-5 h-5 accent-pink-500" />
+                    <input type="checkbox" checked={storeData.showProducts} disabled={!marketingOn} onChange={(e) => setStoreData({...storeData, showProducts: e.target.checked})} className="w-5 h-5 accent-pink-500" />
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم المنتجات</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="checkbox" checked={storeData.showBlog} onChange={(e) => setStoreData({...storeData, showBlog: e.target.checked})} className="w-5 h-5 accent-pink-500" />
+                    <input type="checkbox" checked={storeData.showBlog} disabled={!marketingOn} onChange={(e) => setStoreData({...storeData, showBlog: e.target.checked})} className="w-5 h-5 accent-pink-500" />
                     <span className="text-sm font-bold text-gray-700 dark:text-gray-300">إظهار قسم المدونة</span>
                   </label>
                 </div>

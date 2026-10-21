@@ -20,7 +20,8 @@ moment.locale('ar');
 const CustomerProfile = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { clinicPath } = useClinic();
+  const { clinicPath, hasCap } = useClinic();
+  const careEnabled = hasCap('treatments');
 
   const [customer, setCustomer] = useState(null);
   const [services, setServices] = useState([]);
@@ -54,6 +55,10 @@ const CustomerProfile = () => {
     ];
     return () => unsubs.forEach((u) => u());
   }, [id, clinicPath]);
+
+  useEffect(() => {
+    if (!careEnabled) setActiveTab('medical');
+  }, [careEnabled]);
 
   const sortedSessions = useMemo(
     () => [...(customer?.sessions || [])].sort((a, b) => new Date(b.recordedAt || 0) - new Date(a.recordedAt || 0)),
@@ -249,7 +254,7 @@ const CustomerProfile = () => {
                 await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
                 toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
               }}
-              className="mt-3 text-xs bg-white/20 rounded-full px-3 py-1"
+              className={`mt-3 text-xs bg-white/20 rounded-full px-3 py-1 ${hasCap('winback') ? '' : 'hidden'}`}
             >
               {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل / انسحاب من الحملات'}
             </button>
@@ -258,11 +263,10 @@ const CustomerProfile = () => {
       </div>
 
       <div className="flex overflow-x-auto no-scrollbar border-b border-gray-100 bg-white dark:bg-slate-800 rounded-t-2xl px-2">
-        {[
-          ['sessions', 'سجل الجلسات'],
-          ['treatments', 'العلاجات'],
-          ['medical', 'المعلومات الطبية'],
-        ].map(([tid, label]) => (
+        {(careEnabled
+          ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية']]
+          : [['medical', 'المعلومات الطبية']]
+        ).map(([tid, label]) => (
           <button key={tid} type="button" onClick={() => setActiveTab(tid)} className={`shrink-0 px-4 py-4 font-bold ${activeTab === tid ? 'text-pink-600 border-b-2 border-pink-500' : 'text-gray-400'}`}>{label}</button>
         ))}
       </div>

@@ -25,7 +25,7 @@ const TABS = [
 const field = 'w-full p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] border-0 outline-none focus:ring-2 focus:ring-[#4d7cff]/40';
 
 const FillOps = () => {
-  const { clinicPath, clinicId, clinicInfo, isAdmin } = useClinic();
+  const { clinicPath, clinicId, clinicInfo, isAdmin, hasCap } = useClinic();
   const [tab, setTab] = useState('desk');
   const [appointments, setAppointments] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
@@ -428,7 +428,7 @@ const FillOps = () => {
               ))}
               {!Object.keys(hot.byService).length && <p className="text-sm text-stone-400">لا بيانات.</p>}
             </div>
-            {isAdmin && (
+            {isAdmin && hasCap('branchCompare') && (
               <div className="saas-card p-5">
                 <h3 className="font-product mb-3">الفروع والفريق</h3>
                 {compare.map((r) => <p key={r.label} className="text-sm py-1">{r.label} · {r.attended}/{r.total}</p>)}
