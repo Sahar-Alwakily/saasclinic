@@ -33,7 +33,9 @@ const Assistant = () => {
       <div>
         <p className="text-[11px] tracking-[0.22em] uppercase text-[#22c9a0] font-semibold">inbox</p>
         <h1 className="font-product text-3xl">المساعد الذكي</h1>
-        <p className="text-sm text-stone-500 mt-1">واتساب العيادة، نوافذ الرد الهادئ، ومحادثات الاسترجاع المسجّلة.</p>
+        <p className="text-sm text-stone-500 mt-1">
+          شات الكونسول ثابت أسفل اليسار على كل الشاشات: يقرأ الحجوزات والحضور والإيراد ويقترح الخطوة. هذه الصفحة لوارد واتساب المسجّل وساعات الهدوء.
+        </p>
       </div>
 
       <div className="grid md:grid-cols-3 gap-4">

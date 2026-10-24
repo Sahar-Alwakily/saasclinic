@@ -384,77 +384,111 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
   };
 }
 
+function foldAr(s) {
+  return String(s || '')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/[؟?!.,،]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function detectIntent(question, forced) {
+  if (forced) return forced;
+  const n = foldAr(question);
+  const book = n.includes('حجز') || n.includes('موعد');
+  if ((n.includes('انخفض') || n.includes('ليش') || n.includes('لماذا') || n.includes('سبب')) && book) return 'drop';
+  if (n.includes('ازدحام') || n.includes('ساعه') || n.includes('ساعات') || n.includes('ايام') || n.includes('امتلاء')) return 'crowd';
+  if (n.includes('ايراد') || n.includes('دخل') || n.includes('فلوس') || (n.includes('مقارن') && n.includes('شهر'))) return 'rev';
+  if (n.includes('حضور') || n.includes('غياب') || n.includes('غاب')) return 'attend';
+  if (n.includes('شاغر') || n.includes('فراغ') || n.includes('انتظار')) return 'gap';
+  if (n.includes('تدخل') || n.includes('اليوم')) return 'today';
+  if (book) return 'book';
+  return 'generic';
+}
+
 function factLine(health) {
-  const { curr, prev, windows, deltas } = health;
+  const curr = health?.curr || {};
+  const prev = health?.prev || {};
+  const windows = health?.windows || {};
+  const deltas = health?.deltas || {};
   return [
-    `الفترة الحالية ${windows.thisStart} → ${windows.thisEnd}: ${curr.total} حجز، إيراد ${fmtMoney(curr.revenue)}، حضور ${curr.attendRate == null ? 'غير محسوب' : `${curr.attendRate}%`} (حضر ${curr.attended} / غاب ${curr.noshow})، إلغاء ${curr.cancelled}.`,
-    `نفس عدد الأيام من الشهر السابق ${windows.prevStart} → ${windows.prevEnd}: ${prev.total} حجز، إيراد ${fmtMoney(prev.revenue)}، حضور ${prev.attendRate == null ? 'غير محسوب' : `${prev.attendRate}%`}.`,
+    `الفترة الحالية ${windows.thisStart || '—'} → ${windows.thisEnd || '—'}: ${curr.total || 0} حجز، إيراد ${fmtMoney(curr.revenue)}، حضور ${curr.attendRate == null ? 'غير محسوب' : `${curr.attendRate}%`} (حضر ${curr.attended || 0} / غاب ${curr.noshow || 0})، إلغاء ${curr.cancelled || 0}.`,
+    `نفس عدد الأيام من الشهر السابق ${windows.prevStart || '—'} → ${windows.prevEnd || '—'}: ${prev.total || 0} حجز، إيراد ${fmtMoney(prev.revenue)}، حضور ${prev.attendRate == null ? 'غير محسوب' : `${prev.attendRate}%`}.`,
     deltas.book == null ? 'لا يمكن حساب نسبة تغيّر الحجوزات لأن الفترة السابقة صفر.' : `تغيّر الحجوزات: ${deltas.book > 0 ? '+' : ''}${deltas.book}%.`,
     deltas.rev == null ? 'لا يمكن حساب نسبة تغيّر الإيراد لأن الفترة السابقة صفر.' : `تغيّر الإيراد: ${deltas.rev > 0 ? '+' : ''}${deltas.rev}%.`,
   ];
 }
 
-export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [], occupancy }) {
+export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [], occupancy, intent } = {}) {
   const q = String(question || '').trim();
-  if (!q) {
+  if (!q && !intent) {
     return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو الإيراد أو المواعيد المتاحة.', facts: [], missing: [] };
   }
-  const facts = factLine(health);
+  const curr = health?.curr || {};
+  const prev = health?.prev || {};
+  const deltas = health?.deltas || {};
+  const windows = health?.windows || {};
+  const t = {
+    pending: tasks?.pending || [],
+    gaps: tasks?.gaps || [],
+    followups: tasks?.followups || [],
+    failed: tasks?.failed || [],
+    noshowToday: tasks?.noshowToday || [],
+  };
+  const facts = factLine(health || {});
   const missing = [];
   if (!appointments.length) missing.push('لا توجد مواعيد مخزّنة بعد.');
   const priced = appointments.filter((a) => Number(a.price || 0) > 0).length;
   if (appointments.length && priced / appointments.length < 0.3) {
     missing.push('معظم المواعيد بلا سعر — الإيراد ناقص.');
   }
-  const attendSample = health.curr.attended + health.curr.noshow;
+  const attendSample = (curr.attended || 0) + (curr.noshow || 0);
   if (attendSample < 5) missing.push('عيّنة الحضور هذا الشهر أقل من 5 مواعيد مكتملة — لا استنتاج عن سبب الغياب.');
 
-  const aboutBook = /حجز|حجوز|موعد|مواعيد/.test(q);
-  const aboutDrop = /انخفض|نزل|قلّ|قل |تراجع|ليش|لماذا|سبب/.test(q);
-  const aboutAttend = /حضور|غاب|غياب|لم يحضر|noshow/.test(q);
-  const aboutRev = /إيراد|دخل|فلوس|سعر|مبيع/.test(q);
-  const aboutGap = /شاغر|فراغ|انتظار/.test(q);
-  const aboutToday = /اليوم|تدخل|مهم/.test(q);
-  const aboutCrowd = /ازدحام|مزدحم|ساعة|ساعات|أيام|يوم |دوام|امتلاء|جدول/.test(q);
-
+  const kind = detectIntent(q, intent);
   let answer = '';
-  if (aboutDrop && aboutBook) {
-    if (health.deltas.book == null) {
+
+  if (kind === 'drop') {
+    if (deltas.book == null) {
       answer = 'لا أستطيع تفسير انخفاض الحجوزات: الفترة السابقة لا تحتوي حجوزات كافية للمقارنة.';
-    } else if (health.deltas.book >= 0) {
-      answer = `البيانات لا تُظهر انخفاضاً. الحجوزات من أول الشهر حتى اليوم ${health.curr.total} مقابل ${health.prev.total} في نفس الأيام من الشهر الماضي (${health.deltas.book > 0 ? '+' : ''}${health.deltas.book}%).`;
+    } else if (deltas.book >= 0) {
+      answer = `لا انخفاض: ${curr.total || 0} مقابل ${prev.total || 0} (${deltas.book > 0 ? '+' : ''}${deltas.book}%).`;
     } else {
-      answer = `الحجوزات أقل ${Math.abs(health.deltas.book)}% (${health.prev.total} → ${health.curr.total}) عند مقارنة أول الشهر حتى اليوم مع نفس الأيام من الشهر الماضي. السجلات لا تحتوي سبب الحملة أو الإعلان أو الطقس أو العطل — فقط العدد والحالة والسعر.`;
+      answer = `الحجوزات أقل ${Math.abs(deltas.book)}% (${prev.total || 0} → ${curr.total || 0}).`;
       const hot = {};
-      (appointments || []).filter((a) => a.status === 'cancelled' && inDateRange(a.date, health.windows.thisStart, health.windows.thisEnd))
+      (appointments || []).filter((a) => a.status === 'cancelled' && inDateRange(a.date, windows.thisStart, windows.thisEnd))
         .forEach((a) => { hot[a.service || '—'] = (hot[a.service || '—'] || 0) + 1; });
       const top = Object.entries(hot).sort((a, b) => b[1] - a[1])[0];
       if (top) answer += ` الإلغاءات هذا الشهر أعلى خدمة مسجّلة: ${top[0]} (${top[1]}).`;
     }
-  } else if (aboutAttend) {
-    answer = health.curr.attendRate == null
+  } else if (kind === 'attend') {
+    answer = curr.attendRate == null
       ? 'لا نسبة حضور هذا الشهر لأن لا مواعيد بحالة حضر/لم يحضر.'
-      : `نسبة الحضور (حضر ÷ حضر+غاب) هذا الشهر ${health.curr.attendRate}% مقابل ${health.prev.attendRate == null ? 'غير متاحة' : `${health.prev.attendRate}%`} في الفترة المقارنة.`;
-  } else if (aboutRev) {
-    answer = `إيراد المواعيد المحتسبة هذا الشهر ${fmtMoney(health.curr.revenue)} مقابل ${fmtMoney(health.prev.revenue)} في الفترة المقارنة.`;
-  } else if (aboutCrowd && occupancy) {
-    const pd = occupancy.peakDay;
-    const ph = occupancy.peakHour;
-    answer = occupancy.sample
-      ? `من الحجوزات غير الملغاة لآخر 60 يوماً (${occupancy.sample}): أكثر يوم ${pd?.name || '—'} (${pd?.count || 0})، أكثر ساعة ${ph?.label || '—'} (${ph?.count || 0}). امتلاء اليوم ${occupancy.todayFill == null ? 'غير محسوب بلا جدول' : `${occupancy.todayFill}%`}. هذا توزيع الحجوزات وليس سبباً خارجياً.`
-      : 'لا حجوزات كافية لحساب الازدحام.';
-  } else if (aboutGap) {
-    answer = `مواعيد متاحة اليوم: ${tasks.gaps.length}. بالطابور: ${(waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered').length}.`;
-  } else if (aboutToday) {
-    answer = `يحتاج تدخلاً اليوم: ${tasks.pending.length} بحاجة لتأكيد العميلة، ${tasks.gaps.length} موعد متاح، ${tasks.followups.length} تذكير، ${tasks.failed.length} رسالة فاشلة، ${tasks.noshowToday.length} غياب اليوم بلا متابعة.`;
-  } else if (aboutBook) {
-    answer = `حجوزات الفترة الحالية ${health.curr.total} (مؤكد ${health.curr.confirmed}، معلّق ${health.curr.pending}، ملغي ${health.curr.cancelled}).`;
+      : `نسبة الحضور (حضر ÷ حضر+غاب) هذا الشهر ${curr.attendRate}% مقابل ${prev.attendRate == null ? 'غير متاحة' : `${prev.attendRate}%`} في الفترة المقارنة.`;
+  } else if (kind === 'rev') {
+    const change = deltas.rev == null ? 'لا نسبة مقارنة لأن إيراد الفترة السابقة صفر.' : `التغيّر ${deltas.rev > 0 ? '+' : ''}${deltas.rev}%.`;
+    answer = `إيراد ${fmtMoney(curr.revenue)} مقابل ${fmtMoney(prev.revenue)}. ${change}`;
+  } else if (kind === 'crowd') {
+    const pd = occupancy?.peakDay;
+    const ph = occupancy?.peakHour;
+    const qd = occupancy?.quietDay;
+    answer = occupancy?.sample
+      ? `الذروة: ${pd?.name || '—'} / ${ph?.label || '—'} (${occupancy.sample} حجز). الأهدأ ${qd?.name || '—'}. امتلاء اليوم ${occupancy.todayFill == null ? '—' : `${occupancy.todayFill}%`}.`
+      : 'لا حجوزات كافية في آخر 60 يوماً لحساب الازدحام.';
+  } else if (kind === 'gap') {
+    answer = `مواعيد متاحة اليوم: ${t.gaps.length}. بالطابور: ${(waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered').length}.`;
+  } else if (kind === 'today') {
+    answer = `يحتاج تدخلاً اليوم: ${t.pending.length} بحاجة لتأكيد العميلة، ${t.gaps.length} موعد متاح، ${t.followups.length} تذكير، ${t.failed.length} رسالة فاشلة، ${t.noshowToday.length} غياب اليوم بلا متابعة.`;
+  } else if (kind === 'book') {
+    answer = `حجوزات الفترة الحالية ${curr.total || 0} (مؤكد ${curr.confirmed || 0}، معلّق ${curr.pending || 0}، ملغي ${curr.cancelled || 0}).`;
   } else {
-    answer = 'أقدر أجاوب من الأرقام المخزّنة فقط: الحجوزات، الحضور، الإلغاء، الإيراد من السعر، المواعيد المتاحة، الرسائل الفاشلة. ما في سبب خارجي في قاعدة البيانات.';
+    answer = `حجوزات ${curr.total || 0} · إيراد ${fmtMoney(curr.revenue)} · حضور ${curr.attendRate == null ? '—' : `${curr.attendRate}%`}.`;
   }
 
-  answer += ' ما بخترع أسباب غير موجودة في السجلات.';
-  return { answer, facts, missing, servicesCount: services.length };
+  return { answer, facts, missing, servicesCount: (services || []).length, intent: kind };
 }
 
 export function siteStatus({ clinicInfo, clinicId, services = [], blog = [] }) {

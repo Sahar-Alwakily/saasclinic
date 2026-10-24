@@ -4,9 +4,13 @@ import { ref, set } from 'firebase/database';
 import { auth, database } from '../APIFirebase/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { getPlan } from '../config/plans';
+import { createDefaultSections } from '../sections/defaultSections';
+import { useLocale } from '../context/LocaleContext';
+import LangSwitcher from '../components/i18n/LangSwitcher';
 
 const RegisterClinic = () => {
   const navigate = useNavigate();
+  const { t, dir } = useLocale();
   const [form, setForm] = useState({
     clinicName: '', ownerName: '', email: '', password: '', phone: '',
   });
@@ -19,8 +23,8 @@ const RegisterClinic = () => {
     e.preventDefault();
     setError('');
 
-    if (form.password.length < 6) return setError('كلمة المرور لازم 6 أحرف على الأقل');
-    if (!form.clinicName.trim() || !form.ownerName.trim()) return setError('اسم العيادة والمالك مطلوبان');
+    if (form.password.length < 6) return setError(t('register.shortPass'));
+    if (!form.clinicName.trim() || !form.ownerName.trim()) return setError(t('register.required'));
 
     setLoading(true);
 
@@ -44,6 +48,8 @@ const RegisterClinic = () => {
         createdAt: now,
         trialEndsAt,
         isActive: true,
+        storeTheme: 'beauty',
+        sections: createDefaultSections(),
       });
 
       // 4. المستخدم كأدمن داخل العيادة
@@ -63,35 +69,38 @@ const RegisterClinic = () => {
 
       navigate('/dashboard');
     } catch (err) {
-      setError(err.code === 'auth/email-already-in-use' ? 'هذا الإيميل مستخدم مسبقاً' : err.message);
+      setError(err.code === 'auth/email-already-in-use' ? t('register.emailUsed') : err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div dir="rtl" className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f3efe6' }}>
+    <div dir={dir} className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f3efe6' }}>
       <div className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-8 border border-[#e4ddd0]">
         <div className="mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-xl mb-3">ن</div>
-          <h1 className="font-product text-2xl">أنشئ مساحة عمل</h1>
-          <p className="text-sm text-stone-500 mt-1">{getPlan('trial').durationDays} يوماً تجريبياً — بدون بطاقة</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-xl mb-3">{t('brandMark')}</div>
+            <LangSwitcher tone="light" />
+          </div>
+          <h1 className="font-product text-2xl">{t('register.title')}</h1>
+          <p className="text-sm text-stone-500 mt-1">{t('register.trial', { n: getPlan('trial').durationDays })}</p>
         </div>
 
         {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl mb-4">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input type="text" placeholder="اسم العيادة" onChange={update('clinicName')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
-          <input type="text" placeholder="اسم المالك" onChange={update('ownerName')} required className="w-full p-3 border rounded-xl border-[#e4ddd0] outline-none focus:border-[#4d7cff]" />
-          <input type="tel" placeholder="رقم الهاتف" onChange={update('phone')} className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
-          <input type="email" placeholder="الإيميل" onChange={update('email')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
-          <input type="password" placeholder="كلمة المرور" onChange={update('password')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
+          <input type="text" placeholder={t('register.clinic')} onChange={update('clinicName')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
+          <input type="text" placeholder={t('register.owner')} onChange={update('ownerName')} required className="w-full p-3 border rounded-xl border-[#e4ddd0] outline-none focus:border-[#4d7cff]" />
+          <input type="tel" placeholder={t('register.phone')} onChange={update('phone')} className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
+          <input type="email" placeholder={t('register.email')} onChange={update('email')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
+          <input type="password" placeholder={t('register.password')} onChange={update('password')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
           
           <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
-            {loading ? 'جاري الإنشاء...' : 'ابدئي الكونسول'}
+            {loading ? t('register.creating') : t('register.submit')}
           </button>
         </form>
-        <p className="text-center text-sm text-stone-500 mt-5">عندك حساب؟ <Link to="/login" className="text-[#4d7cff] font-semibold">دخول</Link></p>
+        <p className="text-center text-sm text-stone-500 mt-5">{t('register.hasAccount')} <Link to="/login" className="text-[#4d7cff] font-semibold">{t('register.login')}</Link></p>
       </div>
     </div>
   );

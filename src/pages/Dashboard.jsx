@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
@@ -16,10 +16,10 @@ const TONES = {
 };
 
 const PROMPTS = [
-  'ليش انخفضت الحجوزات هذا الشهر؟',
-  'أي ساعات وأيام فيها ازدحام؟',
-  'شو يحتاج تدخل اليوم؟',
-  'وين الإيراد مقارنة بالشهر الماضي؟',
+  { id: 'drop', text: 'ليش انخفضت الحجوزات هذا الشهر؟' },
+  { id: 'crowd', text: 'أي ساعات وأيام فيها ازدحام؟' },
+  { id: 'today', text: 'شو يحتاج تدخل اليوم؟' },
+  { id: 'rev', text: 'وين الإيراد مقارنة بالشهر الماضي؟' },
 ];
 
 const Dashboard = () => {
@@ -36,8 +36,9 @@ const Dashboard = () => {
   const [blog, setBlog] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
-  const [ask, setAsk] = useState(PROMPTS[0]);
+  const [ask, setAsk] = useState(PROMPTS[0].text);
   const [reply, setReply] = useState(null);
+  const replyRef = useRef(null);
 
   useEffect(() => {
     if (loadingClinic || !clinicId || !clinicPath) return undefined;
@@ -88,10 +89,18 @@ const Dashboard = () => {
     [appointments, schedules, branches],
   );
 
-  const runAsk = (q) => {
-    const text = q || ask;
+  const runAsk = (prompt) => {
+    const text = typeof prompt === 'object' && prompt?.text ? prompt.text : (typeof prompt === 'string' && prompt ? prompt : ask);
+    const intent = typeof prompt === 'object' ? prompt.id : undefined;
     setAsk(text);
-    setReply(answerFromData(text, { health, tasks, appointments, services, waitlist, occupancy }));
+    try {
+      const next = answerFromData(text, { health, tasks, appointments, services, waitlist, occupancy, intent });
+      setReply(next || { answer: 'لا رد من الأرقام المخزّنة.', facts: [], missing: [] });
+    } catch (err) {
+      console.error(err);
+      setReply({ answer: 'تعذّر قراءة الأرقام. حدّثي الصفحة إن استمرّ.', facts: [], missing: [] });
+    }
+    setTimeout(() => replyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
   };
 
   if (loadingClinic || loadingData) {
@@ -315,8 +324,13 @@ const Dashboard = () => {
         <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والإيراد والمواعيد المتاحة المخزّنة. لا يخترع سبباً خارج السجل.</p>
         <div className="flex flex-wrap gap-2 mt-3">
           {PROMPTS.map((p) => (
-            <button key={p} type="button" onClick={() => runAsk(p)} className="text-xs px-3 py-1.5 rounded-full bg-[#f3efe6] dark:bg-[#1e1b28]">
-              {p}
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => runAsk(p)}
+              className={`text-xs px-3 py-1.5 rounded-full ${ask === p.text ? 'bg-[#4d7cff] text-white' : 'bg-[#f3efe6] dark:bg-[#1e1b28]'}`}
+            >
+              {p.text}
             </button>
           ))}
         </div>
@@ -324,22 +338,27 @@ const Dashboard = () => {
           <input
             value={ask}
             onChange={(e) => setAsk(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runAsk(ask); } }}
             className="flex-1 min-w-0 p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none"
             placeholder="اسألي عن الحجوزات أو الحضور..."
           />
-          <button type="button" onClick={() => runAsk()} className="px-4 py-3 rounded-xl bg-[#14121c] text-white text-sm shrink-0">اسألي</button>
+          <button type="button" onClick={() => runAsk(ask)} className="px-4 py-3 rounded-xl bg-[#14121c] text-white text-sm shrink-0">اسألي</button>
         </div>
-        {reply && (
-          <div className="mt-4 rounded-2xl border border-[#e4ddd0] dark:border-white/10 p-4 space-y-2">
-            <p className="text-sm leading-relaxed">{reply.answer}</p>
-            {reply.facts?.map((f) => (
-              <p key={f} className="text-[11px] text-stone-500">{f}</p>
-            ))}
-            {reply.missing?.length > 0 && (
-              <p className="text-[11px] text-[#c2410c]">{reply.missing.join(' ')}</p>
-            )}
-          </div>
-        )}
+        <div ref={replyRef} className="mt-4 rounded-2xl bg-[#f3efe6] dark:bg-[#1e1b28] p-4 space-y-2 min-h-[5.5rem]">
+          {reply ? (
+            <>
+              <p className="text-sm leading-relaxed text-[#14121c] dark:text-white">{reply.answer}</p>
+              {reply.facts?.map((f) => (
+                <p key={f} className="text-[11px] text-stone-500">{f}</p>
+              ))}
+              {reply.missing?.length > 0 && (
+                <p className="text-[11px] text-[#c2410c]">{reply.missing.join(' ')}</p>
+              )}
+            </>
+          ) : (
+            <p className="text-sm text-stone-400">اضغطي سؤالاً جاهزاً أو اكتبي واضغطي اسألي — الجواب يظهر هنا من سجل العيادة.</p>
+          )}
+        </div>
       </section>
 
       {userRole !== 'worker' && (

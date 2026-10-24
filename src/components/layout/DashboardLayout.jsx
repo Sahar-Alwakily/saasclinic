@@ -4,6 +4,7 @@ import Sidebar from './Sidebar';
 import Topbar from './Topbar';
 import { ShellNavContext } from './shellNav';
 import { useClinic } from '../../context/ClinicContext';
+import ConsoleChat from '../assistant/ConsoleChat';
 
 const DashboardLayout = () => {
   const [open, setOpen] = useState(false);
@@ -46,6 +47,7 @@ const DashboardLayout = () => {
           <main className="p-3 sm:p-5 lg:p-8 max-w-7xl mx-auto w-full pb-[max(1.25rem,env(safe-area-inset-bottom))]">
             <Outlet />
           </main>
+          <ConsoleChat />
         </div>
       </div>
     </ShellNavContext.Provider>

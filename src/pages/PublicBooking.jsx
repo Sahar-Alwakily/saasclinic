@@ -4,9 +4,8 @@ import { ref, onValue, push, set } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { FaTimes, FaCheck, FaArrowLeft, FaShoppingBag, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
 
-import BeautyTheme from '../components/themes/BeautyTheme';
-import ElegantTheme from '../components/themes/ElegantTheme';
-import MinimalTheme from '../components/themes/MinimalTheme';
+import SectionRenderer from '../engine/SectionRenderer';
+import { clinicSections } from '../utils/clinicDraft';
 import { getPreviewClinic } from '../components/themes/previewData';
 import { DRAFT_STORAGE_KEY } from '../components/themes/themeUtils';
 import { slotsForBooking } from '../utils/scheduleSlots';
@@ -15,8 +14,11 @@ import {
   needsExtraConfirm, isHoliday, manageUrl,
 } from '../utils/appointmentOps';
 import { hasCap } from '../config/plans';
+import { useLocale } from '../context/LocaleContext';
+import LangSwitcher from '../components/i18n/LangSwitcher';
 
 const PublicBooking = () => {
+  const { t, dir } = useLocale();
   const { clinicId } = useParams();
   const [searchParams] = useSearchParams();
   const isDraft = searchParams.get('draft') === '1';
@@ -129,7 +131,7 @@ const PublicBooking = () => {
   }, [clinicId, preview]);
 
   const handleCheckout = async () => {
-    if (!orderData.name || !orderData.phone || !orderData.address) return alert('الرجاء تعبئة جميع البيانات');
+    if (!orderData.name || !orderData.phone || !orderData.address) return alert(t('book.fillAll'));
     if (preview || isDraft) {
       setCart([]);
       setCheckoutStep(3);
@@ -147,25 +149,25 @@ const PublicBooking = () => {
       setCart([]);
       setCheckoutStep(3);
     } catch (error) {
-      alert('حدث خطأ');
+      alert(t('book.error'));
     }
   };
 
   const handleBookSubmit = async () => {
-    if (!bookingData.branchId) return alert('الرجاء اختيار الفرع أولاً');
+    if (!bookingData.branchId) return alert(t('book.pickBranchFirst'));
     if (preview || isDraft) {
       setIsSuccess(true);
       return;
     }
     try {
       const price = Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0);
-      if (needsExtraConfirm(price, aptSettings) && !extraOk) return alert('هذا الموعد يتطلب تأكيداً إضافياً وفق سياسة العيادة');
-      if (!policyOk) return alert('الرجاء الموافقة على سياسة الإلغاء والتأخير');
+      if (needsExtraConfirm(price, aptSettings) && !extraOk) return alert(t('book.extraAlert'));
+      if (!policyOk) return alert(t('book.policyAlert'));
       const specialistId = bookingData.specialistId || '';
       const key = slotKey(bookingData.branchId, specialistId, bookingData.date, bookingData.time);
       const aptRef = push(ref(database, `clinics/${clinicId}/appointments`));
       const locked = await claimSlot(database, clinicId, key, aptRef.key);
-      if (!locked) return alert('هذا الوقت لم يعد متاحاً. اختاري ساعة أخرى.');
+      if (!locked) return alert(t('book.slotGone'));
       const token = makeToken();
       const status = aptSettings.autoConfirm && !needsExtraConfirm(price, aptSettings) ? 'confirmed' : 'pending';
       await set(aptRef, {
@@ -193,7 +195,7 @@ const PublicBooking = () => {
       setManageLink(manageUrl(clinicId, token));
       setIsSuccess(true);
     } catch (error) {
-      alert('حدث خطأ');
+      alert(t('book.error'));
     }
   };
 
@@ -249,12 +251,12 @@ const PublicBooking = () => {
     };
   }
   if (bookingData.date && isHoliday(bookingData.date, aptSettings)) {
-    slotInfo = { ...slotInfo, slots: [], closed: true, missing: false, dayName: 'عطلة العيادة' };
+    slotInfo = { ...slotInfo, slots: [], closed: true, missing: false, dayName: t('book.holiday') };
   }
   if ((preview || isDraft) && slotInfo.missing && bookingData.date) {
     const dayIdx = new Date(`${bookingData.date}T12:00:00`).getDay();
     if (dayIdx === 5 || dayIdx === 6) {
-      slotInfo = { slots: [], closed: true, missing: false, dayName: dayIdx === 5 ? 'الجمعة' : 'السبت' };
+      slotInfo = { slots: [], closed: true, missing: false, dayName: dayIdx === 5 ? t('book.friday') : t('book.saturday') };
     } else {
       slotInfo = {
         slots: ['09:00 ص', '10:00 ص', '11:00 ص', '12:00 م', '01:00 م', '02:00 م', '03:00 م', '04:00 م'],
@@ -266,16 +268,16 @@ const PublicBooking = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FBF4F0] text-[#3A2A28]" dir="rtl">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FBF4F0] text-[#3A2A28]" dir={dir}>
         <p className="font-display text-4xl mb-3">✦</p>
-        <p className="tracking-[0.3em] text-xs uppercase opacity-60">جاري تحضير عيادتكِ</p>
+        <p className="tracking-[0.3em] text-xs uppercase opacity-60">{t('book.preparing')}</p>
       </div>
     );
   }
   if (!clinic) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FBF4F0] text-[#8a6f68]" dir="rtl">
-        العيادة غير موجودة
+      <div className="min-h-screen flex items-center justify-center bg-[#FBF4F0] text-[#8a6f68]" dir={dir}>
+        {t('book.missing')}
       </div>
     );
   }
@@ -286,24 +288,8 @@ const PublicBooking = () => {
   const publicPosts = shopOn && clinic.showBlog !== false ? posts : [];
   const themeName = themesOn ? clinic.storeTheme : 'beauty';
 
-  const themeProps = {
-    clinic: { ...clinic, storeTheme: themeName, showProducts: shopOn && clinic.showProducts !== false, showBlog: shopOn && clinic.showBlog !== false },
-    services, products: publicProducts, branches, posts: publicPosts,
-    onOpenBooking: (opts) => openBooking(opts || {}),
-    cart, setCart, setShowCart,
-    primaryColor: clinic.primaryColor || '#C48B7A',
-    bgColor: clinic.bgColor || '#FBF4F0',
-    textColor: clinic.textColor || '#3A2A28',
-    fontFamily: clinic.fontFamily || 'Tajawal',
-    whyChooseUs: clinic.whyChooseUs || '',
-    whyChooseUsTitle: clinic.whyChooseUsTitle || '',
-  };
-
-  const renderTheme = () => {
-    if (themeName === 'elegant') return <ElegantTheme {...themeProps} />;
-    if (themeName === 'minimal') return <MinimalTheme {...themeProps} />;
-    return <BeautyTheme {...themeProps} />;
-  };
+  const pageClinic = { ...clinic, storeTheme: themeName, showProducts: shopOn && clinic.showProducts !== false, showBlog: shopOn && clinic.showBlog !== false };
+  const pageSections = clinicSections(clinic);
 
   const primaryColor = clinic.primaryColor || '#C48B7A';
   const isDark = themeName === 'elegant';
@@ -312,23 +298,36 @@ const PublicBooking = () => {
   const panelText = isDark ? '#F5EDE3' : '#3A2A28';
 
   return (
-    <div className="relative">
-      {renderTheme()}
+    <div className="relative" dir={dir}>
+      <div className="fixed top-3 left-3 z-[90]"><LangSwitcher tone="light" /></div>
+      <SectionRenderer
+        sections={pageSections}
+        clinic={pageClinic}
+        services={services}
+        products={publicProducts}
+        branches={branches}
+        posts={publicPosts}
+        onOpenBooking={(opts) => openBooking(opts || {})}
+        cart={cart}
+        setCart={setCart}
+        setShowCart={setShowCart}
+        themeVariant={themeName}
+      />
 
       {showCart && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-[100]" dir="rtl">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-[100]" dir={dir}>
           <div className="rounded-[2rem] shadow-2xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]" style={{ backgroundColor: panelBg, color: panelText }}>
             <div className="p-6 border-b flex justify-between items-center" style={{ borderColor: `${primaryColor}33` }}>
               <h3 className="font-display text-2xl flex items-center gap-3">
                 <span className="w-10 h-10 rounded-full text-white flex items-center justify-center" style={{ backgroundColor: primaryColor }}><FaShoppingBag size={14} /></span>
-                سلة العناية
+                {t('book.cart')}
               </h3>
               <button onClick={() => { setShowCart(false); setCheckoutStep(1); }} className="w-10 h-10 rounded-full flex items-center justify-center opacity-60"><FaTimes /></button>
             </div>
             <div className="p-6 overflow-y-auto flex-1">
               {checkoutStep === 1 && (
                 cart.length === 0
-                  ? <div className="text-center py-16 opacity-60"><p className="font-display text-3xl mb-2">سلتكِ فارغة</p><p className="text-sm">أضيفي منتجات العناية من البوتيك</p></div>
+                  ? <div className="text-center py-16 opacity-60"><p className="font-display text-3xl mb-2">{t('book.cartEmpty')}</p><p className="text-sm">{t('book.cartHint')}</p></div>
                   : (
                     <div className="space-y-4">
                       {cart.map((item) => (
@@ -355,33 +354,33 @@ const PublicBooking = () => {
               )}
               {checkoutStep === 2 && (
                 <div className="space-y-4">
-                  <h3 className="font-display text-2xl text-center">بيانات التوصيل</h3>
-                  <input type="text" placeholder="الاسم" value={orderData.name} onChange={(e) => setOrderData({ ...orderData, name: e.target.value })} className="w-full p-4 rounded-2xl outline-none border bg-transparent" />
-                  <input type="tel" placeholder="الهاتف" value={orderData.phone} onChange={(e) => setOrderData({ ...orderData, phone: e.target.value })} className="w-full p-4 rounded-2xl outline-none border bg-transparent" dir="ltr" />
-                  <textarea placeholder="العنوان" value={orderData.address} onChange={(e) => setOrderData({ ...orderData, address: e.target.value })} rows={3} className="w-full p-4 rounded-2xl outline-none border bg-transparent resize-none" />
+                  <h3 className="font-display text-2xl text-center">{t('book.delivery')}</h3>
+                  <input type="text" placeholder={t('book.name')} value={orderData.name} onChange={(e) => setOrderData({ ...orderData, name: e.target.value })} className="w-full p-4 rounded-2xl outline-none border bg-transparent" />
+                  <input type="tel" placeholder={t('book.phone')} value={orderData.phone} onChange={(e) => setOrderData({ ...orderData, phone: e.target.value })} className="w-full p-4 rounded-2xl outline-none border bg-transparent" dir="ltr" />
+                  <textarea placeholder={t('book.address')} value={orderData.address} onChange={(e) => setOrderData({ ...orderData, address: e.target.value })} rows={3} className="w-full p-4 rounded-2xl outline-none border bg-transparent resize-none" />
                 </div>
               )}
               {checkoutStep === 3 && (
                 <div className="text-center py-12">
                   <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${primaryColor}22`, color: primaryColor }}><FaCheck className="text-3xl" /></div>
-                  <h3 className="font-display text-3xl mb-2">تم استلام طلبكِ</h3>
-                  <p className="opacity-70 mb-6 text-sm">سنتواصل معكِ لتأكيد توصيل منتجات العناية</p>
-                  <button onClick={() => { setShowCart(false); setCheckoutStep(1); setOrderData({ name: '', phone: '', address: '' }); }} className="px-8 py-3 text-white rounded-full font-bold" style={{ backgroundColor: primaryColor }}>مواصلة التسوق</button>
+                  <h3 className="font-display text-3xl mb-2">{t('book.orderOk')}</h3>
+                  <p className="opacity-70 mb-6 text-sm">{t('book.orderNote')}</p>
+                  <button onClick={() => { setShowCart(false); setCheckoutStep(1); setOrderData({ name: '', phone: '', address: '' }); }} className="px-8 py-3 text-white rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.shopMore')}</button>
                 </div>
               )}
             </div>
             {checkoutStep !== 3 && cart.length > 0 && (
               <div className="p-6 border-t" style={{ borderColor: `${primaryColor}33` }}>
                 <div className="flex justify-between mb-5">
-                  <span>المجموع</span>
+                  <span>{t('book.total')}</span>
                   <span className="text-2xl font-extrabold" style={{ color: primaryColor }}>{cartTotal} ₪</span>
                 </div>
                 {checkoutStep === 1
-                  ? <button onClick={() => setCheckoutStep(2)} className="w-full text-white py-4 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>متابعة الطلب</button>
+                  ? <button onClick={() => setCheckoutStep(2)} className="w-full text-white py-4 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.continue')}</button>
                   : (
                     <div className="flex gap-3">
-                      <button onClick={() => setCheckoutStep(1)} className="w-1/3 border py-4 rounded-full font-bold">رجوع</button>
-                      <button onClick={handleCheckout} className="w-2/3 text-white py-4 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>تأكيد</button>
+                      <button onClick={() => setCheckoutStep(1)} className="w-1/3 border py-4 rounded-full font-bold">{t('book.back')}</button>
+                      <button onClick={handleCheckout} className="w-2/3 text-white py-4 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.confirm')}</button>
                     </div>
                   )}
               </div>
@@ -391,21 +390,21 @@ const PublicBooking = () => {
       )}
 
       {showBooking && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto" dir="rtl" style={{ backgroundColor: isDark ? '#0C0B0A' : '#FBF4F0', color: panelText }}>
+        <div className="fixed inset-0 z-[100] overflow-y-auto" dir={dir} style={{ backgroundColor: isDark ? '#0C0B0A' : '#FBF4F0', color: panelText }}>
           <div className="sticky top-0 backdrop-blur px-5 py-4 flex justify-between items-center border-b" style={{ borderColor: `${primaryColor}33`, backgroundColor: isDark ? '#0C0B0A' : '#FBF4F0' }}>
             <div>
-              <p className="text-[10px] tracking-[0.3em] uppercase opacity-50">حجز جلسة</p>
+              <p className="text-[10px] tracking-[0.3em] uppercase opacity-50">{t('book.session')}</p>
               <div className="font-bold">{clinic.name}</div>
             </div>
-            <button onClick={() => setShowBooking(false)} className="opacity-60">إغلاق</button>
+            <button onClick={() => setShowBooking(false)} className="opacity-60">{t('book.close')}</button>
           </div>
           <div className="max-w-3xl mx-auto p-5 md:p-10">
             {!isSuccess ? (
               <>
-                <h1 className="font-display text-2xl sm:text-4xl text-center mb-6 sm:mb-10">احجزي جلستكِ</h1>
+                <h1 className="font-display text-2xl sm:text-4xl text-center mb-6 sm:mb-10">{t('book.bookTitle')}</h1>
                 <div className="flex justify-between items-center mb-6 sm:mb-10 relative px-0 sm:px-2">
                   <div className="absolute top-4 sm:top-1/2 left-4 right-4 h-px -z-10" style={{ backgroundColor: `${primaryColor}33` }} />
-                  {['الفرع', 'الجلسة', 'اليوم', 'الوقت', 'بياناتكِ'].map((label, idx) => {
+                  {(t('book.steps') || []).map((label, idx) => {
                     const step = idx + 1;
                     return (
                       <div key={label} className="flex flex-col items-center gap-1 sm:gap-2">
@@ -418,9 +417,9 @@ const PublicBooking = () => {
                 <div className="rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 md:p-8 min-h-[280px]" style={{ backgroundColor: panelBg }}>
                   {bookingStep === 1 && (
                     <div>
-                      <h2 className="font-display text-2xl text-center mb-6">اختاري الفرع</h2>
+                      <h2 className="font-display text-2xl text-center mb-6">{t('book.pickBranch')}</h2>
                       {branches.length === 0 ? (
-                        <p className="text-center opacity-60 py-8">لا توجد فروع بعد. أضيفي فرعاً من لوحة التحكم قبل استقبال الحجوزات.</p>
+                        <p className="text-center opacity-60 py-8">{t('book.noBranches')}</p>
                       ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {branches.map((b) => {
@@ -429,7 +428,7 @@ const PublicBooking = () => {
                               <button
                                 key={b.id}
                                 onClick={() => { setBookingData({ ...bookingData, branchId: b.id, branchName: b.name }); setBookingStep(bookingData.serviceId ? 3 : 2); }}
-                                className="p-4 border rounded-2xl text-right hover:shadow-md transition"
+                                className={`p-4 border rounded-2xl hover:shadow-md transition ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
                                 style={{ borderColor: selected ? primaryColor : undefined, backgroundColor: selected ? `${primaryColor}18` : 'transparent' }}
                               >
                                 <p className="font-bold">{b.name}</p>
@@ -444,14 +443,14 @@ const PublicBooking = () => {
                   )}
                   {bookingStep === 2 && (
                     <div>
-                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-4">الفرع: {bookingData.branchName}</p>}
-                      <h2 className="font-display text-2xl text-center mb-6">أي جلسة تناسب بشرتكِ؟</h2>
+                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-4">{t('book.branch')}: {bookingData.branchName}</p>}
+                      <h2 className="font-display text-2xl text-center mb-6">{t('book.pickService')}</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {services.length === 0 && (
-                          <p className="md:col-span-2 text-center opacity-60 py-8">أضيفي الجلسات من لوحة العيادة لتظهر هنا.</p>
+                          <p className="md:col-span-2 text-center opacity-60 py-8">{t('book.noServices')}</p>
                         )}
                         {services.map((s) => (
-                          <button key={s.id} onClick={() => { setBookingData(applyServiceToBooking({ ...bookingData }, s.id)); setBookingStep(3); }} className="p-4 border rounded-2xl text-right hover:shadow-md transition">
+                          <button key={s.id} onClick={() => { setBookingData(applyServiceToBooking({ ...bookingData }, s.id)); setBookingStep(3); }} className={`p-4 border rounded-2xl hover:shadow-md transition ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
                             <p className="font-bold">{s.title}</p>
                             {s.description && <p className="text-xs opacity-60 mt-1 line-clamp-2">{s.description}</p>}
                             {s.duration && <p className="text-xs opacity-50 mt-1">{s.duration}</p>}
@@ -463,19 +462,19 @@ const PublicBooking = () => {
                   )}
                   {bookingStep === 3 && (
                     <div>
-                      <h2 className="font-display text-2xl text-center mb-6">متى يناسبكِ؟</h2>
+                      <h2 className="font-display text-2xl text-center mb-6">{t('book.when')}</h2>
                       <input type="date" value={bookingData.date} onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })} className="w-full p-4 border rounded-2xl text-center text-lg outline-none bg-transparent" />
-                      <button onClick={() => bookingData.date && setBookingStep(4)} className="w-full mt-6 text-white py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>التالي</button>
+                      <button onClick={() => bookingData.date && setBookingStep(4)} className="w-full mt-6 text-white py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.next')}</button>
                     </div>
                   )}
                   {bookingStep === 4 && (
                     <div>
-                      <h2 className="font-display text-2xl text-center mb-2">اختاري الساعة</h2>
-                      {bookingData.specialistName && <p className="text-center text-sm opacity-60 mb-4">دوام {bookingData.specialistName}</p>}
-                      {slotInfo.missing && <p className="text-center text-sm opacity-70 py-8">لم يُضبط جدول دوام المختصة لهذا الفرع بعد. راجعِ مواعيد الموظفات في لوحة التحكم.</p>}
-                      {slotInfo.closed && <p className="text-center text-sm opacity-70 py-8">لا دوام في {slotInfo.dayName}. اختاري يوماً آخر.</p>}
+                      <h2 className="font-display text-2xl text-center mb-2">{t('book.pickHour')}</h2>
+                      {bookingData.specialistName && <p className="text-center text-sm opacity-60 mb-4">{t('book.schedule', { name: bookingData.specialistName })}</p>}
+                      {slotInfo.missing && <p className="text-center text-sm opacity-70 py-8">{t('book.noSchedule')}</p>}
+                      {slotInfo.closed && <p className="text-center text-sm opacity-70 py-8">{t('book.closedDay', { day: slotInfo.dayName })}</p>}
                       {!slotInfo.missing && !slotInfo.closed && slotInfo.slots.length === 0 && (
-                        <p className="text-center text-sm opacity-70 py-8">لا توجد ساعات متاحة في هذا اليوم.</p>
+                        <p className="text-center text-sm opacity-70 py-8">{t('book.noSlots')}</p>
                       )}
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                         {slotInfo.slots.map((t) => (
@@ -486,11 +485,11 @@ const PublicBooking = () => {
                   )}
                   {bookingStep === 5 && (
                     <div>
-                      <h2 className="font-display text-2xl text-center mb-2">بياناتكِ</h2>
-                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-6">الفرع: {bookingData.branchName}</p>}
+                      <h2 className="font-display text-2xl text-center mb-2">{t('book.yourData')}</h2>
+                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-6">{t('book.branch')}: {bookingData.branchName}</p>}
                       <div className="space-y-4">
-                        <input type="text" placeholder="الاسم" value={bookingData.name} onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" />
-                        <input type="tel" placeholder="الهاتف" value={bookingData.phone} onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" dir="ltr" />
+                        <input type="text" placeholder={t('book.name')} value={bookingData.name} onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" />
+                        <input type="tel" placeholder={t('book.phone')} value={bookingData.phone} onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" dir="ltr" />
                         {aptSettings.cancellationPolicy && (
                           <label className="flex items-start gap-2 text-xs opacity-70">
                             <input type="checkbox" checked={policyOk} onChange={(e) => setPolicyOk(e.target.checked)} className="mt-1" />
@@ -500,23 +499,23 @@ const PublicBooking = () => {
                         {needsExtraConfirm(Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0), aptSettings) && (
                           <label className="flex items-start gap-2 text-xs opacity-70">
                             <input type="checkbox" checked={extraOk} onChange={(e) => setExtraOk(e.target.checked)} className="mt-1" />
-                            أؤكّد هذا الموعد مرتفع القيمة وفق سياسة العيادة.
+                            {t('book.extraConfirm')}
                           </label>
                         )}
-                        <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId || !policyOk} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>تأكيد الجلسة</button>
+                        <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId || !policyOk} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>{t('book.confirmSession')}</button>
                       </div>
                     </div>
                   )}
-                  {bookingStep > 1 && <button onClick={() => setBookingStep(bookingStep - 1)} className="mt-6 opacity-60 font-bold"><FaArrowLeft className="inline" /> رجوع</button>}
+                  {bookingStep > 1 && <button onClick={() => setBookingStep(bookingStep - 1)} className="mt-6 opacity-60 font-bold"><FaArrowLeft className="inline" /> {t('book.back')}</button>}
                 </div>
               </>
             ) : (
               <div className="text-center p-12 mt-8 rounded-[2rem]" style={{ backgroundColor: panelBg }}>
                 <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${primaryColor}22`, color: primaryColor }}><FaCheck className="text-3xl" /></div>
-                <h2 className="font-display text-4xl mb-2">تم حجز جلستكِ</h2>
-                <p className="opacity-70 mb-6">{aptSettings.autoConfirm ? 'الموعد مؤكد وفق سياسة العيادة.' : 'سنتواصل معكِ لتأكيد الموعد'}{bookingData.branchName ? ` في فرع ${bookingData.branchName}` : ''}</p>
-                {manageLink && <a href={manageLink} className="block mb-4 text-sm font-bold underline">تأكيد / إلغاء / تغيير الموعد</a>}
-                <button onClick={() => setShowBooking(false)} className="text-white px-8 py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>العودة للعيادة</button>
+                <h2 className="font-display text-4xl mb-2">{t('book.booked')}</h2>
+                <p className="opacity-70 mb-6">{aptSettings.autoConfirm ? t('book.confirmedPolicy') : t('book.willConfirm')}{bookingData.branchName ? t('book.atBranch', { name: bookingData.branchName }) : ''}</p>
+                {manageLink && <a href={manageLink} className="block mb-4 text-sm font-bold underline">{t('book.manage')}</a>}
+                <button onClick={() => setShowBooking(false)} className="text-white px-8 py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.backClinic')}</button>
               </div>
             )}
           </div>

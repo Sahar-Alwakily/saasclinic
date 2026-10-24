@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
+import { LocaleProvider } from './context/LocaleContext';
 import RegisterClinic from './pages/RegisterClinic';
 import Login from './pages/Login';
 import DashboardLayout from './components/layout/DashboardLayout';
@@ -47,6 +48,7 @@ const ProtectedApp = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
+      <LocaleProvider>
       <AuthProvider>
         <ClinicProvider>
 <Routes>
@@ -72,6 +74,7 @@ function App() {
               <Route path="/customers" element={<Customers />} />
               <Route path="/customers/:id" element={<CustomerProfile />} />
               <Route path="/website" element={<PlanGate cap="website"><Website /></PlanGate>} />
+              <Route path="/website/editor" element={<Navigate to="/settings?tab=store" replace />} />
               <Route path="/assistant" element={<PlanGate cap="assistant"><Assistant /></PlanGate>} />
               <Route path="/winback" element={<PlanGate cap="winback"><Winback /></PlanGate>} />
               <Route path="/marketing" element={<PlanGate cap="marketing"><Marketing /></PlanGate>} />
@@ -92,6 +95,7 @@ function App() {
           </Routes>
         </ClinicProvider>
       </AuthProvider>
+      </LocaleProvider>
     </BrowserRouter>
   );
 }

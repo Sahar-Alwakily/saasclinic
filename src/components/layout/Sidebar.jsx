@@ -65,7 +65,7 @@ const NAV = [
   {
     to: '/assistant',
     label: 'المساعد الذكي',
-    hint: 'واتساب، إعدادات الردود، المحادثات',
+    hint: 'شات الكونسول ووارد واتساب',
     icon: FaRobot,
     admin: true,
     cap: 'assistant',
