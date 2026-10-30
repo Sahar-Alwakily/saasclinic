@@ -41,12 +41,9 @@ export default function SectionServices({ settings = {} }) {
                 <h3 className="text-xl font-bold mb-2">{s.title || s.name}</h3>
                 {s.description && <p className="text-sm opacity-70 line-clamp-2 mb-4">{s.description}</p>}
                 {s.specialistName && <p className="text-xs opacity-50 mb-4">تقدّمها {s.specialistName}</p>}
-                <div className="flex items-center justify-between gap-3">
-                  <span className="font-extrabold text-lg" style={{ color: primaryColor }}>{s.price} ₪</span>
-                  <div className="flex items-center gap-3 text-sm font-bold">
-                    {clinicId && <Link to={`/book/${clinicId}/service/${s.id}`} style={{ color: primaryColor }}>التفاصيل</Link>}
-                    <button type="button" onClick={() => onOpenBooking({ serviceId: s.id })}>احجزي ←</button>
-                  </div>
+                <div className="flex items-center justify-end gap-3 text-sm font-bold">
+                  {clinicId && <Link to={`/book/${clinicId}/service/${s.id}`} style={{ color: primaryColor }}>التفاصيل</Link>}
+                  <button type="button" onClick={() => onOpenBooking({ serviceId: s.id })}>احجزي ←</button>
                 </div>
               </article>
             ))}

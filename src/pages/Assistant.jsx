@@ -31,10 +31,10 @@ const Assistant = () => {
   return (
     <div className="space-y-6">
       <div>
-        <p className="text-[11px] tracking-[0.22em] uppercase text-[#22c9a0] font-semibold">inbox</p>
+        <p className="text-[11px] tracking-[0.22em] uppercase text-[#658B83] font-semibold">inbox</p>
         <h1 className="font-product text-3xl">المساعد الذكي</h1>
         <p className="text-sm text-stone-500 mt-1">
-          شات الكونسول ثابت أسفل اليسار على كل الشاشات: يقرأ الحجوزات والحضور والإيراد ويقترح الخطوة. هذه الصفحة لوارد واتساب المسجّل وساعات الهدوء.
+          شات الكونسول ثابت أسفل اليسار على كل الشاشات: يقرأ الحجوزات والحضور ويقترح الخطوة. هذه الصفحة لوارد واتساب المسجّل وساعات الهدوء.
         </p>
       </div>
 
@@ -42,17 +42,17 @@ const Assistant = () => {
         <div className="saas-card p-5">
           <p className="text-[11px] text-stone-400">واتساب</p>
           <p className="font-product text-2xl mt-1" dir="ltr">{wa || 'غير مربوط'}</p>
-          <Link to="/settings?tab=store" className="text-xs text-[#4d7cff] font-bold">تعديل الرقم من الإعدادات</Link>
+          <p className="text-xs text-stone-400 mt-1">ربط واتساب من إدارة المنصة</p>
         </div>
         <div className="saas-card p-5">
           <p className="text-[11px] text-stone-400">ساعات الهدوء</p>
           <p className="font-product text-2xl mt-1">{apt.quietStart}:00 – {apt.quietEnd}:00</p>
-          <Link to="/ops" className="text-xs text-[#4d7cff] font-bold">قواعد المواعيد</Link>
+          <Link to="/appointments/reminders" className="text-xs text-[#172B3A] font-bold">قواعد المواعيد</Link>
         </div>
         <div className="saas-card p-5">
           <p className="text-[11px] text-stone-400">حد التواصل / شهر</p>
           <p className="font-product text-2xl mt-1">{wb.contactCapPerMonth ?? '—'}</p>
-          <Link to="/winback" className="text-xs text-[#4d7cff] font-bold">إعدادات الحملات</Link>
+          <Link to="/winback" className="text-xs text-[#172B3A] font-bold">إعدادات الحملات</Link>
         </div>
       </div>
 
@@ -61,7 +61,7 @@ const Assistant = () => {
         {inbox.length === 0 && <p className="text-sm text-stone-500">لا وارد بعد — يظهر هنا ما يُسجَّل من استرجاع العميلات.</p>}
         <div className="space-y-2">
           {inbox.slice(0, 20).map((row) => (
-            <div key={row.id} className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3 text-sm">
+            <div key={row.id} className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3 text-sm">
               <p className="font-bold">{row.name || row.phone || 'محادثة'}</p>
               <p className="text-xs text-stone-500 mt-1 line-clamp-2">{row.body || row.message || row.preview || 'بدون نص'}</p>
             </div>

@@ -2,68 +2,68 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
-import { recoveredRevenue, statusRates, mergeAptSettings, winbackReturnRate } from '../utils/appointmentOps';
+import { statusRates, winbackReturnRate } from '../utils/appointmentOps';
 import { clinicHealth } from '../utils/clinicInsights';
 
 const Reports = () => {
   const { clinicPath, hasCap } = useClinic();
   const [appointments, setAppointments] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [settingsRaw, setSettingsRaw] = useState(null);
 
   useEffect(() => {
     if (!clinicPath) return undefined;
     const u = [
       onValue(ref(database, clinicPath('appointments')), (s) => setAppointments(s.val() ? Object.entries(s.val()).map(([id, v]) => ({ id, ...v })) : [])),
       onValue(ref(database, clinicPath('customers')), (s) => setCustomers(s.val() ? Object.entries(s.val()).map(([id, v]) => ({ id, ...v })) : [])),
-      onValue(ref(database, clinicPath('appointmentSettings')), (s) => setSettingsRaw(s.val())),
     ];
     return () => u.forEach((fn) => fn());
   }, [clinicPath]);
 
-  const settings = useMemo(() => mergeAptSettings(settingsRaw), [settingsRaw]);
   const health = useMemo(() => clinicHealth({ appointments, customers }), [appointments, customers]);
   const rates = statusRates(appointments);
-  const rec = recoveredRevenue(appointments, settings);
   const wb = winbackReturnRate(appointments);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5" dir="rtl">
       <div>
-        <p className="text-[11px] tracking-[0.22em] uppercase text-[#4d7cff] font-semibold">analytics</p>
-        <h1 className="font-product text-3xl">التقارير والتحليلات</h1>
-        <p className="text-sm text-stone-500 mt-1">مقارنة أول الشهر حتى اليوم مع نفس الأيام من الشهر الماضي.</p>
+        <h1 className="text-[22px] font-bold text-[#111827]">التقارير والتحليلات</h1>
+        <p className="text-sm text-[#8a9199] mt-1">مقارنة أول الشهر حتى اليوم مع نفس الأيام من الشهر الماضي. المبالغ فقط في طلبات المنتجات.</p>
       </div>
-      <div className="grid md:grid-cols-4 gap-3">
-        <div className="saas-card p-4">
-          <p className="text-[11px] text-stone-400">حجوزات الفترة</p>
-          <p className="font-product text-3xl">{health.curr.total}</p>
-          <p className="text-xs text-stone-500">السابق {health.prev.total}</p>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="saas-card stat-card-mint p-4">
+          <p className="text-xs text-[#047857]">حجوزات الفترة</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{health.curr.total}</p>
+          <p className="text-xs text-[#8a9199] mt-2">السابق {health.prev.total}</p>
         </div>
-        <div className="saas-card p-4">
-          <p className="text-[11px] text-stone-400">إيراد الفترة</p>
-          <p className="font-product text-3xl">{health.curr.revenue.toLocaleString('ar')}</p>
-          <p className="text-xs text-stone-500">السابق {health.prev.revenue.toLocaleString('ar')}</p>
+        <div className="saas-card stat-card-sky p-4">
+          <p className="text-xs text-[#0369a1]">حضور</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{health.curr.attendRate == null ? '—' : `${health.curr.attendRate}%`}</p>
+          <p className="text-xs text-[#8a9199] mt-2">حضر ÷ حضر+غاب</p>
         </div>
-        <div className="saas-card p-4">
-          <p className="text-[11px] text-stone-400">حضور (حضر÷حضر+غاب)</p>
-          <p className="font-product text-3xl">{health.curr.attendRate == null ? '—' : `${health.curr.attendRate}%`}</p>
+        <div className="saas-card stat-card-gold p-4">
+          <p className="text-xs text-[#b45309]">العميلات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{customers.length}</p>
         </div>
         {hasCap('winback') && (
-          <div className="saas-card p-4">
-            <p className="text-[11px] text-stone-400">تحويل استرجاع</p>
-            <p className="font-product text-3xl">{wb.tagged ? `${wb.rate}%` : '—'}</p>
-            <p className="text-xs text-stone-500">{wb.returned} من {wb.tagged} بوسم حملة</p>
+          <div className="saas-card stat-card-lilac p-4">
+            <p className="text-xs text-[#6d28d9]">تحويل استرجاع</p>
+            <p className="stat-num text-[28px] leading-none mt-2">{wb.tagged ? `${wb.rate}%` : '—'}</p>
+            <p className="text-xs text-[#8a9199] mt-2">{wb.returned} من {wb.tagged} بوسم حملة</p>
           </div>
         )}
       </div>
-      <div className="saas-card p-5">
-        <h2 className="font-product text-xl mb-2">كل السجل</h2>
-        <p className="text-sm text-stone-500">حضر {rates.attended} · غاب {rates.noshow} · أُلغي {rates.cancelled} · معلّق {rates.pending} · مؤكد {rates.confirmed}</p>
-        {hasCap('ops') && (
-          <p className="text-sm mt-2">إيراد مستعاد من ملء المواعيد الفارغة: {rec.actual.toLocaleString('ar')} (صافي {rec.net.toLocaleString('ar')} بعد تكلفة الرسائل المسجّلة)</p>
-        )}
-      </div>
+
+      <section className="saas-card p-5">
+        <h2 className="font-bold text-[#111827] mb-3">كل السجل</h2>
+        <div className="flex flex-wrap gap-2">
+          <span className="nura-chip nura-chip-mint">حضر {rates.attended}</span>
+          <span className="nura-chip nura-chip-rose">غاب {rates.noshow}</span>
+          <span className="nura-chip nura-chip-gold">أُلغي {rates.cancelled}</span>
+          <span className="nura-chip nura-chip-sky">معلّق {rates.pending}</span>
+          <span className="nura-chip nura-chip-lilac">مؤكد {rates.confirmed}</span>
+        </div>
+      </section>
     </div>
   );
 };

@@ -1,107 +1,90 @@
 import React from 'react';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import {
-  FaChartPie, FaCalendarAlt, FaUsers, FaSpa, FaGlobe, FaRobot, FaPaperPlane,
-  FaBullhorn, FaChartBar, FaUserTie, FaCreditCard, FaCog, FaSignOutAlt, FaTimes,
+  FaChartPie, FaCalendarAlt, FaUsers, FaSpa, FaRobot, FaPaperPlane, FaGlobe,
+  FaBullhorn, FaChartBar, FaUserTie, FaCreditCard, FaCog, FaSignOutAlt, FaTimes, FaClipboardList,
+  FaBoxOpen,
 } from 'react-icons/fa';
 import { useClinic } from '../../context/ClinicContext';
 import { useAuth } from '../../context/AuthContext';
 import { useShellNav } from './shellNav';
 
 const linkClass = ({ isActive }) =>
-  `flex flex-col px-3 py-2 rounded-xl text-sm transition-all ${
+  `flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-[13.5px] font-medium transition-colors ${
     isActive
-      ? 'bg-white/10 text-white shadow-[inset_3px_0_0_#4d7cff]'
-      : 'text-white/70 hover:text-white hover:bg-white/5'
+      ? 'bg-[#10b981] text-white shadow-sm'
+      : 'text-[#6b7280] hover:text-[#047857] hover:bg-[#ecfdf5]'
   }`;
 
 const childClass = ({ isActive }) =>
-  `block px-3 py-1.5 rounded-lg text-[12px] ${
-    isActive ? 'text-white bg-white/10' : 'text-white/45 hover:text-white/80'
+  `block px-3 py-1.5 rounded-xl text-[12px] ${
+    isActive ? 'text-[#047857] font-semibold bg-[#ecfdf5]' : 'text-[#9ca3af] hover:text-[#047857]'
   }`;
 
 const NAV = [
-  {
-    to: '/dashboard',
-    label: 'الرئيسية',
-    hint: 'ملخص الأداء والتنبيهات',
-    icon: FaChartPie,
-  },
+  { group: 'القائمة' },
+  { to: '/dashboard', label: 'الرئيسية', icon: FaChartPie },
   {
     to: '/appointments',
     label: 'المواعيد',
-    hint: 'تقويم، تأكيد، حضور',
     icon: FaCalendarAlt,
     children: [
       { to: '/appointments', label: 'الحجوزات' },
-      { to: '/ops', label: 'قائمة الانتظار', cap: 'ops' },
+      { to: '/appointments/waitlist', label: 'قائمة الانتظار', cap: 'ops' },
+      { to: '/appointments/gaps', label: 'المواعيد المتاحة', cap: 'ops' },
+      { to: '/appointments/reminders', label: 'التذكيرات والقواعد', cap: 'ops' },
+      { to: '/appointments/schedule', label: 'دوام الموظفين' },
+      { to: '/appointments/attendance', label: 'الحضور' },
     ],
   },
   {
     to: '/customers',
     label: 'العميلات',
-    hint: 'الملفات، الزيارات، سجل التواصل',
     icon: FaUsers,
     admin: true,
-  },
-  {
-    to: '/services',
-    label: 'العلاجات والخدمات',
-    hint: 'الخدمات والأسعار والباقات',
-    icon: FaSpa,
     children: [
-      { to: '/services', label: 'الخدمات والأسعار' },
+      { to: '/customers', label: 'الملفات' },
       { to: '/treatments', label: 'متابعة العلاجات', cap: 'treatments' },
+    ],
+  },
+  { to: '/services', label: 'الخدمات', icon: FaSpa },
+  {
+    to: '/products',
+    label: 'المنتجات',
+    icon: FaBoxOpen,
+    admin: true,
+    children: [
+      { to: '/products', label: 'الكتالوج' },
+      { to: '/products?tab=orders', label: 'الطلبيات' },
     ],
   },
   {
     to: '/website',
     label: 'موقع العيادة',
-    hint: 'التصميم، الصفحات، الدومين، SEO',
     icon: FaGlobe,
     admin: true,
-    cap: 'website',
+    children: [
+      { to: '/website', label: 'معلومات الموقع' },
+      { to: '/website?tab=blog', label: 'المدونة' },
+    ],
   },
-  {
-    to: '/assistant',
-    label: 'المساعد الذكي',
-    hint: 'شات الكونسول ووارد واتساب',
-    icon: FaRobot,
-    admin: true,
-    cap: 'assistant',
-  },
-  {
-    to: '/winback',
-    label: 'استرجاع العميلات',
-    hint: 'حملات العودة والنتائج',
-    icon: FaPaperPlane,
-    admin: true,
-    cap: 'winback',
-  },
+  { to: '/assistant', label: 'المساعد الذكي', icon: FaRobot, admin: true, cap: 'assistant' },
+  { to: '/winback', label: 'استرجاع العميلات', icon: FaPaperPlane, admin: true, cap: 'winback' },
   {
     to: '/marketing',
     label: 'التسويق',
-    hint: 'الحملات، المحتوى، الكوبونات',
     icon: FaBullhorn,
     admin: true,
     cap: 'marketing',
     children: [
       { to: '/marketing', label: 'نظرة الحملات' },
-      { to: '/blog', label: 'المحتوى' },
-      { to: '/orders', label: 'الطلبات' },
     ],
   },
-  {
-    to: '/reports',
-    label: 'التقارير والتحليلات',
-    hint: 'الإيرادات والتحويل والحضور',
-    icon: FaChartBar,
-    admin: true,
-  },
+  { group: 'الإعدادات' },
+  { to: '/reports', label: 'التقارير', icon: FaChartBar, admin: true },
   {
     to: '/team',
     label: 'الفريق والفروع',
-    hint: 'الموظفات، الصلاحيات، الجداول',
     icon: FaUserTie,
     admin: true,
     children: [
@@ -109,19 +92,18 @@ const NAV = [
       { to: '/branches', label: 'الفروع والجداول' },
     ],
   },
-  {
-    to: '/billing',
-    label: 'المدفوعات والاشتراكات',
-    hint: 'الفواتير، العربون، الاشتراك',
-    icon: FaCreditCard,
-    admin: true,
-  },
+  { to: '/billing', label: 'المدفوعات', icon: FaCreditCard, admin: true },
+  { to: '/support', label: 'طلبات المنصة', icon: FaClipboardList, admin: true },
   {
     to: '/settings',
     label: 'الإعدادات',
-    hint: 'بيانات العيادة، الخصوصية، التكاملات',
     icon: FaCog,
     admin: true,
+    children: [
+      { to: '/settings', label: 'بيانات العيادة' },
+      { to: '/settings?tab=privacy', label: 'الخصوصية' },
+      { to: '/settings?tab=integrations', label: 'التكاملات' },
+    ],
   },
 ];
 
@@ -129,7 +111,19 @@ const Sidebar = () => {
   const { clinicInfo, isAdmin, hasCap = () => false } = useClinic();
   const { logout } = useAuth();
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  const { pathname, search } = useLocation();
+
+  const childIsActive = (to) => {
+    const [path, qs] = String(to).split('?');
+    if (path === '/appointments') return pathname === '/appointments';
+    if (path === '/customers') return pathname === '/customers' || pathname.startsWith('/customers/');
+    if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
+    const want = new URLSearchParams(qs || '');
+    const have = new URLSearchParams(search);
+    if (!qs) return !have.get('tab');
+    return [...want.entries()].every(([k, v]) => have.get(k) === v);
+  };
+
   const { open, setOpen } = useShellNav();
 
   const handleLogout = async () => {
@@ -137,69 +131,84 @@ const Sidebar = () => {
     navigate('/login');
   };
 
-  const items = NAV
-    .filter((item) => (!item.admin || isAdmin) && (!item.cap || hasCap(item.cap)))
-    .map((item) => ({
-      ...item,
-      children: item.children?.filter((c) => !c.cap || hasCap(c.cap)),
-    }));
+  const visible = NAV.filter((item) => {
+    if (item.group) return true;
+    return (!item.admin || isAdmin) && (!item.cap || hasCap(item.cap));
+  }).map((item) => (
+    item.group ? item : { ...item, children: item.children?.filter((c) => !c.cap || hasCap(c.cap)) }
+  ));
+
+  const groups = [];
+  let current = null;
+  visible.forEach((item) => {
+    if (item.group) {
+      current = { label: item.group, items: [] };
+      groups.push(current);
+      return;
+    }
+    if (!current) {
+      current = { label: '', items: [] };
+      groups.push(current);
+    }
+    current.items.push(item);
+  });
 
   return (
     <aside
-      className={`saas-rail fixed lg:sticky top-0 right-0 z-50 h-dvh w-[min(17.5rem,88vw)] flex flex-col border-l border-white/5 pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200 lg:translate-x-0 ${
+      className={`saas-rail fixed lg:sticky top-0 right-0 z-50 h-dvh w-[min(15.5rem,88vw)] flex flex-col border-l pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] transition-transform duration-200 lg:translate-x-0 ${
         open ? 'translate-x-0' : 'translate-x-full'
       }`}
     >
-      <div className="p-5 flex items-center gap-3">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-lg">
-          ن
-        </div>
+      <div className="px-4 py-5 flex items-center gap-2.5">
+        <div className="w-8 h-8 rounded-lg bg-[#16a34a] text-white text-sm font-bold flex items-center justify-center">ن</div>
         <div className="min-w-0 flex-1">
-          <p className="font-product text-xl leading-none">نورا</p>
-          <p className="text-[11px] text-white/45 mt-1 truncate">{clinicInfo?.name || 'منصة تشغيل العيادة'}</p>
+          <p className="text-sm font-bold leading-none text-[#111827]">نورا</p>
+          <p className="text-[11px] text-[#9ca3af] mt-1 truncate">{clinicInfo?.name || 'تشغيل العيادة'}</p>
         </div>
-        <button type="button" className="lg:hidden p-2 text-white/70" aria-label="إغلاق" onClick={() => setOpen(false)}>
+        <button type="button" className="lg:hidden p-2 text-[#6b7280]" aria-label="إغلاق" onClick={() => setOpen(false)}>
           <FaTimes />
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-4 space-y-1">
-        {items.map((item) => {
-          const Icon = item.icon;
-          const childActive = item.children?.some((c) => pathname === c.to || pathname.startsWith(`${c.to}/`));
-          const open = pathname === item.to || pathname.startsWith(`${item.to}/`) || childActive;
-          return (
-            <div key={item.to}>
-              <NavLink
-                to={item.to}
-                className={({ isActive }) => linkClass({ isActive: isActive || open })}
-              >
-                <span className="flex items-center gap-3 font-medium">
-                  <Icon className="shrink-0 opacity-80" />
-                  {item.label}
-                </span>
-                <span className={`text-[10px] leading-snug mt-0.5 pr-7 ${open ? 'text-white/50' : 'text-white/30'}`}>
-                  {item.hint}
-                </span>
-              </NavLink>
-              {item.children && open && (
-                <div className="pr-9 pb-1 space-y-0.5">
-                  {item.children.map((c) => (
-                    <NavLink key={c.to} to={c.to} className={childClass} end={c.to === item.to}>
-                      {c.label}
+      <nav className="flex-1 overflow-y-auto no-scrollbar px-3 pb-4">
+        {groups.filter((g) => g.items.length).map((group) => (
+          <div key={group.label || 'root'} className="mb-4">
+            {group.label && (
+              <p className="px-3 pt-2 pb-2 text-[10px] tracking-[0.18em] uppercase text-[#c0c5cc]">{group.label}</p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const Icon = item.icon;
+                const childActive = item.children?.some((c) => childIsActive(c.to));
+                const sectionOpen = pathname === item.to || pathname.startsWith(`${item.to}/`) || childActive;
+                return (
+                  <div key={item.to}>
+                    <NavLink to={item.to} className={({ isActive }) => linkClass({ isActive: isActive || sectionOpen })}>
+                      <Icon className="shrink-0 text-[13px] opacity-80" />
+                      <span className="truncate">{item.label}</span>
                     </NavLink>
-                  ))}
-                </div>
-              )}
+                    {item.children && sectionOpen && (
+                      <div className="me-3 ms-8 my-1 space-y-0.5">
+                        {item.children.map((c) => (
+                          <Link key={c.to} to={c.to} className={childClass({ isActive: childIsActive(c.to) })}>
+                            {c.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
       </nav>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="p-3">
         <button
+          type="button"
           onClick={handleLogout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm text-[#ff8d78] hover:bg-white/5"
+          className="w-full flex items-center gap-2 px-3 py-2.5 rounded-2xl text-[13px] text-[#6b7280] hover:bg-[#f3f5f7]"
         >
           <FaSignOutAlt /> خروج
         </button>

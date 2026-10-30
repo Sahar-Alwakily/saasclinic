@@ -3,8 +3,10 @@ import { toast } from 'react-toastify';
 import { FaCheckCircle, FaLink } from 'react-icons/fa';
 import { fontStack } from '../components/themes/themeUtils';
 import { FONT_OPTIONS, THEME_PRESETS, THEMES, safeHex } from './storeIdentity';
+import { templatesForPlan } from '../utils/platformTemplates';
+import { useClinic } from '../context/ClinicContext';
 
-const fieldClass = 'w-full p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none text-sm';
+const fieldClass = 'w-full p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none text-sm';
 
 function ColorField({ label, value, onChange, fallback }) {
   const hex = safeHex(value, fallback);
@@ -23,13 +25,18 @@ function ColorField({ label, value, onChange, fallback }) {
 }
 
 export default function StoreIdentityPanel({ store, setStore, clinicId, websitePro, marketingOn }) {
+  const { templates, clinicInfo } = useClinic();
   const storeUrl = clinicId ? `${window.location.origin}/book/${clinicId}` : '';
   const patch = (partial) => setStore({ ...store, ...partial });
+  const available = templatesForPlan(templates, clinicInfo?.plan, websitePro);
+  const themeCards = available.length
+    ? available.map((t) => ({ id: t.id, name: t.name, color: t.renderer === 'elegant' ? 'bg-amber-700' : t.renderer === 'minimal' ? 'bg-stone-800' : 'bg-rose-400', renderer: t.renderer }))
+    : THEMES.map((t) => ({ ...t, renderer: t.id }));
 
   return (
     <div className="p-5 space-y-5" dir="rtl">
       <div>
-        <p className="text-[11px] tracking-[0.18em] uppercase text-[#4d7cff] font-semibold">هوية</p>
+        <p className="text-[11px] tracking-[0.18em] uppercase text-[#172B3A] font-semibold">هوية</p>
         <h2 className="font-product text-xl">الثيم والعيادة</h2>
       </div>
 
@@ -38,7 +45,7 @@ export default function StoreIdentityPanel({ store, setStore, clinicId, websiteP
           <span className="text-xs font-bold flex items-center gap-1 mb-1"><FaLink /> رابط الحجز</span>
           <div className="flex gap-2">
             <input readOnly value={storeUrl} className={fieldClass} dir="ltr" />
-            <button type="button" onClick={() => { navigator.clipboard.writeText(storeUrl); toast.info('تم نسخ الرابط'); }} className="shrink-0 text-xs font-bold px-3 rounded-xl bg-[#f3efe6]">نسخ</button>
+            <button type="button" onClick={() => { navigator.clipboard.writeText(storeUrl); toast.info('تم نسخ الرابط'); }} className="shrink-0 text-xs font-bold px-3 rounded-xl bg-[#F7F8F6]">نسخ</button>
           </div>
         </div>
       )}
@@ -46,25 +53,36 @@ export default function StoreIdentityPanel({ store, setStore, clinicId, websiteP
       <div>
         <p className="text-xs font-bold mb-2">تصميم الواجهة</p>
         <div className="grid grid-cols-3 gap-2">
-          {THEMES.map((theme) => {
+          {themeCards.map((theme) => {
             const active = store.storeTheme === theme.id;
             return (
               <button
                 key={theme.id}
                 type="button"
                 onClick={() => {
-                  if (!websitePro && theme.id !== 'beauty') return toast.info('الثيمات الإضافية من باقة عيادة');
-                  patch({ storeTheme: theme.id, ...THEME_PRESETS[theme.id] });
+                  if (!websitePro && theme.renderer !== 'beauty' && theme.id !== 'beauty') return toast.info('الثيمات الإضافية من باقة عيادة أو من قوالب السوبر أدمن');
+                  patch({ storeTheme: theme.id });
                 }}
-                className={`rounded-xl border p-2 text-center ${active ? 'border-[#4d7cff] ring-2 ring-[#4d7cff]/20' : 'border-[#e4ddd0]'}`}
+                className={`rounded-xl border p-2 text-center ${active ? 'border-[#172B3A] ring-2 ring-[#172B3A]/20' : 'border-[#E5E9EC]'}`}
               >
                 <span className={`mx-auto mb-1 block w-7 h-7 rounded-lg ${theme.color}`} />
                 <span className="block text-[11px] font-bold">{theme.name}</span>
-                {active && <FaCheckCircle className="mx-auto mt-1 text-[#4d7cff] text-xs" />}
+                {active && <FaCheckCircle className="mx-auto mt-1 text-[#172B3A] text-xs" />}
               </button>
             );
           })}
         </div>
+        <button
+          type="button"
+          className="mt-2 text-[11px] font-bold text-[#172B3A]"
+          onClick={() => {
+            const preset = THEME_PRESETS[store.storeTheme] || THEME_PRESETS.beauty;
+            patch(preset);
+            toast.info('طُبّقت ألوان القالب فقط — الأقسام والمحتوى لم تُمسَح');
+          }}
+        >
+          تطبيق ألوان القالب بدون مسح المحتوى
+        </button>
       </div>
 
       <ColorField label="اللون الأساسي" value={store.primaryColor} fallback="#C48B7A" onChange={(primaryColor) => patch({ primaryColor })} />
@@ -79,7 +97,7 @@ export default function StoreIdentityPanel({ store, setStore, clinicId, websiteP
               key={font.value}
               type="button"
               onClick={() => patch({ fontFamily: font.value })}
-              className={`rounded-xl border py-2 text-xs font-bold ${store.fontFamily === font.value ? 'border-[#4d7cff]' : 'border-[#e4ddd0]'}`}
+              className={`rounded-xl border py-2 text-xs font-bold ${store.fontFamily === font.value ? 'border-[#172B3A]' : 'border-[#E5E9EC]'}`}
               style={{ fontFamily: fontStack(font.value) }}
             >
               {font.label}
@@ -88,9 +106,19 @@ export default function StoreIdentityPanel({ store, setStore, clinicId, websiteP
         </div>
       </div>
 
+      <label className="flex items-center gap-2 text-sm font-bold">
+        <input type="checkbox" checked={store.websitePublished !== false} onChange={(e) => patch({ websitePublished: e.target.checked })} />
+        نشر الموقع العام
+      </label>
+      {storeUrl && <p className="text-[11px] text-stone-500">الرابط العام يعمل فقط إذا الموقع منشور والعيادة غير موقوفة.</p>}
+
       <div className="space-y-1">
         <span className="text-xs font-bold">اللوجو</span>
         <input type="url" dir="ltr" value={store.logoUrl} onChange={(e) => patch({ logoUrl: e.target.value })} className={fieldClass} placeholder="https://" />
+      </div>
+      <div className="space-y-1">
+        <span className="text-xs font-bold">صورة الغلاف</span>
+        <input type="url" dir="ltr" value={store.heroImage || ''} onChange={(e) => patch({ heroImage: e.target.value })} className={fieldClass} placeholder="https://" />
       </div>
       <div className="space-y-1">
         <span className="text-xs font-bold">اسم الأخصائية</span>

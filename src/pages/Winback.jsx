@@ -13,6 +13,8 @@ import {
   channelInsights, monthlyReport, publicServiceLabel, normalizePhone,
 } from '../utils/winback';
 
+const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
+
 const TABS = [
   { id: 'detect', label: 'الاكتشاف' },
   { id: 'chance', label: 'فرصة العودة' },
@@ -269,38 +271,38 @@ const Winback = () => {
     toast.info('شُحنت الشريحة للمراجعة');
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500" /></div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-5" dir="rtl">
       <ToastContainer position="top-left" rtl />
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">استرجاع العميلات المنقطعات</h1>
-        <p className="text-sm text-gray-500 mt-1">اكتشاف، مراجعة، حملة مصرّح بها، دون توصيات طبية آلية.</p>
+        <h1 className="text-[22px] font-bold text-[#111827]">استرجاع العميلات المنقطعات</h1>
+        <p className="text-sm text-[#8a9199] mt-1">اكتشاف، مراجعة، حملة مصرّح بها، دون توصيات طبية آلية.</p>
       </div>
 
-      <div className="flex gap-1 bg-white dark:bg-slate-800 p-1.5 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-x-auto no-scrollbar">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
         {TABS.map((t) => (
-          <button key={t.id} onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-2 rounded-xl text-sm font-bold ${tab === t.id ? 'bg-pink-50 text-pink-600 dark:bg-pink-900/30' : 'text-gray-500'}`}>{t.label}</button>
+          <button key={t.id} type="button" onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${tab === t.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>{t.label}</button>
         ))}
       </div>
 
       {tab === 'detect' && (
         <div className="space-y-4">
           <div className="grid md:grid-cols-4 gap-3">
-            <Stat label="منقطعات" value={lapsed.length} />
-            <Stat label="مؤهلات للحملة" value={ranked.length} />
-            <Stat label="قادم لديهن موعد" value={journeys.filter((j) => j.upcoming.length).length} />
-            <Stat label="طلبن عدم التواصل" value={journeys.filter((j) => j.doNotContact).length} />
+            <Stat label="منقطعات" value={lapsed.length} tone="gold" />
+            <Stat label="مؤهلات للحملة" value={ranked.length} tone="mint" />
+            <Stat label="قادم لديهن موعد" value={journeys.filter((j) => j.upcoming.length).length} tone="sky" />
+            <Stat label="طلبن عدم التواصل" value={journeys.filter((j) => j.doNotContact).length} tone="rose" />
           </div>
           <div className="grid md:grid-cols-2 gap-4">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold mb-3 dark:text-white">حسب الخدمة السابقة</h3>
+            <div className="saas-card p-4">
+              <h3 className="font-bold mb-3 text-[#111827]">حسب الخدمة السابقة</h3>
               {Object.entries(groups.byService).map(([k, n]) => <p key={k} className="text-sm flex justify-between py-1"><span>{k}</span><span className="font-bold">{n}</span></p>)}
               {!Object.keys(groups.byService).length && <p className="text-sm text-gray-400">لا بيانات بعد</p>}
             </div>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700">
-              <h3 className="font-bold mb-3 dark:text-white">حسب الفرع وآخر زيارة</h3>
+            <div className="saas-card p-4">
+              <h3 className="font-bold mb-3 text-[#111827]">حسب الفرع وآخر زيارة</h3>
               {lapsed.slice(0, 8).map((j) => (
                 <p key={j.phoneKey} className="text-sm flex justify-between py-1 gap-2">
                   <span className="truncate">{j.displayName} · {j.lastBranch || '—'}</span>
@@ -309,9 +311,9 @@ const Winback = () => {
               ))}
             </div>
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-700">
+          <div className="saas-card overflow-hidden">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 dark:bg-slate-700 text-gray-500">
+              <thead className="bg-[#f8faf9] text-[#8a9199]">
                 <tr>
                   <th className="p-3 text-right">العميلة</th>
                   <th className="p-3 text-right">آخر خدمة / فرع</th>
@@ -341,31 +343,31 @@ const Winback = () => {
 
       {tab === 'chance' && (
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700 space-y-3">
-            <h3 className="font-bold dark:text-white">مراجعة المستهدفات قبل الإطلاق</h3>
+          <div className="saas-card p-4 space-y-3">
+            <h3 className="font-bold text-[#111827]">مراجعة المستهدفات قبل الإطلاق</h3>
             <div className="grid md:grid-cols-3 gap-3">
-              <input value={draftName} onChange={(e) => setDraftName(e.target.value)} className="p-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600" />
-              <select value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)} className="p-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600">
+              <input value={draftName} onChange={(e) => setDraftName(e.target.value)} className={field} />
+              <select value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)} className={field}>
                 {settings.channels.whatsapp && <option value="whatsapp">واتساب</option>}
                 {settings.channels.sms && <option value="sms">رسالة نصية</option>}
                 {settings.channels.email && <option value="email">بريد</option>}
               </select>
-              <select value={draftOffer} onChange={(e) => setDraftOffer(e.target.value)} className="p-2.5 border rounded-xl dark:bg-slate-700 dark:border-slate-600">
+              <select value={draftOffer} onChange={(e) => setDraftOffer(e.target.value)} className={field}>
                 <option value="">بدون عرض</option>
                 {offers.filter((o) => o.adminApproved).map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
               </select>
             </div>
             <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={draftVariant} onChange={(e) => setDraftVariant(e.target.checked)} /> اختبار صيغتين (أ/ب)</label>
-            <button onClick={() => createCampaign('review')} className="bg-pink-500 text-white px-4 py-2 rounded-xl font-bold">حفظ للمراجعة</button>
+            <button type="button" onClick={() => createCampaign('review')} className="bg-[#10b981] text-white px-4 py-2 rounded-xl font-bold">حفظ للمراجعة</button>
           </div>
           {ranked.map((j) => (
-            <label key={j.phoneKey} className="flex gap-3 bg-white dark:bg-slate-800 p-4 rounded-2xl border border-gray-100 dark:border-slate-700">
+            <label key={j.phoneKey} className="flex gap-3 saas-card p-4">
               <input type="checkbox" checked={!!selected[j.phoneKey]} onChange={() => toggleSelect(j.phoneKey)} />
               <div className="flex-1">
                 <p className="font-bold dark:text-white">{j.displayName} <span className="text-xs text-gray-400">نقاط {j.score}</span></p>
                 <p className="text-xs text-gray-500">انقطاع {j.daysSince} يوم · {j.visitCount} حجوزات · احتمال عودة {j.returnChance}% ({j.confidence})</p>
                 <p className="text-xs text-gray-400 mt-1">توقيت مقترح: {j.suggestedAt.toLocaleString('ar')}</p>
-                {j.customerId && <Link className="text-xs text-pink-600" to={`/customers/${j.customerId}`}>الملف</Link>}
+                {j.customerId && <Link className="text-xs text-emerald-700 font-bold" to={`/customers/${j.customerId}`}>الملف</Link>}
               </div>
               <button type="button" onClick={() => optOut(j)} className="text-xs text-rose-500 flex items-center gap-1"><FaBan /> انسحاب</button>
             </label>
@@ -380,14 +382,14 @@ const Winback = () => {
           {campaigns.map((c) => {
             const campMsgs = messages.filter((m) => m.campaignId === c.id);
             return (
-              <div key={c.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700">
+              <div key={c.id} className="saas-card p-4">
                 <div className="flex flex-wrap justify-between gap-2 mb-3">
                   <div>
                     <h3 className="font-bold dark:text-white">{c.name}</h3>
                     <p className="text-xs text-gray-400">{c.status} · {c.channel} · { (c.targetIds || []).length } مستهدفة · مقارنة {(c.holdoutIds || []).length}</p>
                   </div>
                   <div className="flex gap-2">
-                    {c.status === 'review' && <button onClick={() => launchCampaign(c)} className="px-3 py-1.5 bg-pink-500 text-white rounded-lg text-sm font-bold"><FaPlay className="inline ml-1" /> إطلاق</button>}
+                    {c.status === 'review' && <button type="button" onClick={() => launchCampaign(c)} className="px-3 py-1.5 bg-[#10b981] text-white rounded-lg text-sm font-bold"><FaPlay className="inline ml-1" /> إطلاق</button>}
                     {c.status === 'active' && <button onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'paused' })} className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm"><FaPause /></button>}
                     {c.status === 'paused' && <button onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'active' })} className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm"><FaPlay /></button>}
                     {c.status !== 'stopped' && <button onClick={() => stopCampaign(c.id)} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-sm"><FaStop /></button>}
@@ -434,36 +436,33 @@ const Winback = () => {
 
       {tab === 'offers' && (
         <div className="grid md:grid-cols-2 gap-4">
-          <form onSubmit={saveOffer} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border space-y-3">
+          <form onSubmit={saveOffer} className="saas-card p-4 space-y-3">
             <h3 className="font-bold dark:text-white">عرض عودة (موافقة الإدارة)</h3>
-            <input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} placeholder="اسم العرض" className="w-full p-2.5 border rounded-xl dark:bg-slate-700" />
+            <input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} placeholder="اسم العرض" className={field} />
             <div className="flex gap-2">
-              <select value={offerForm.discountType} onChange={(e) => setOfferForm({ ...offerForm, discountType: e.target.value })} className="flex-1 p-2.5 border rounded-xl dark:bg-slate-700">
+              <select value={offerForm.discountType} onChange={(e) => setOfferForm({ ...offerForm, discountType: e.target.value })} className={`flex-1 ${field}`}>
                 <option value="percent">نسبة خصم</option>
                 <option value="amount">قيمة ثابتة ₪</option>
               </select>
-              <input type="number" value={offerForm.value} onChange={(e) => setOfferForm({ ...offerForm, value: e.target.value })} className="w-28 p-2.5 border rounded-xl dark:bg-slate-700" />
+              <input type="number" value={offerForm.value} onChange={(e) => setOfferForm({ ...offerForm, value: e.target.value })} className="w-28 p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
             </div>
-            <input type="date" value={offerForm.expiresAt} onChange={(e) => setOfferForm({ ...offerForm, expiresAt: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" />
-            <select value={offerForm.serviceId} onChange={(e) => setOfferForm({ ...offerForm, serviceId: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700">
+            <input type="date" value={offerForm.expiresAt} onChange={(e) => setOfferForm({ ...offerForm, expiresAt: e.target.value })} className={field} />
+            <select value={offerForm.serviceId} onChange={(e) => setOfferForm({ ...offerForm, serviceId: e.target.value })} className={field}>
               <option value="">كل الخدمات المؤهلة</option>
               {services.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
             </select>
             <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={offerForm.adminApproved} onChange={(e) => setOfferForm({ ...offerForm, adminApproved: e.target.checked })} /> موافقة الإدارة</label>
             <p className="text-xs text-amber-700">لا تكتبي نتائج علاجية. العرض تنظيمي لجلسة محددة وينتهي بتاريخ الصلاحية. الكوبون يُستخدم مرة لكل عميلة.</p>
-            <button className="w-full bg-pink-500 text-white py-2.5 rounded-xl font-bold">حفظ العرض</button>
+            <button type="submit" className="w-full bg-[#10b981] text-white py-2.5 rounded-xl font-bold">حفظ العرض</button>
           </form>
           <div className="space-y-3">
             {offers.map((o) => {
               const used = Object.keys(o.usedBy || {}).length;
               const camp = campaigns.filter((c) => c.offerId === o.id);
-              const relatedApt = appointments.filter((a) => camp.some((c) => a.campaignId === c.id));
-              const revenue = relatedApt.reduce((s, a) => s + Number(a.price || 0), 0);
-              const cost = o.discountType === 'percent' ? revenue * (Number(o.value) / 100) : relatedApt.length * Number(o.value || 0);
               return (
-                <div key={o.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border">
+                <div key={o.id} className="saas-card p-4">
                   <p className="font-bold dark:text-white">{o.title}</p>
-                  <p className="text-xs text-gray-500">ينتهي {o.expiresAt || '—'} · استخدامات {used} · إيراد {Math.round(revenue)} ₪ · تكلفة خصم {Math.round(cost)} ₪</p>
+                  <p className="text-xs text-gray-500">ينتهي {o.expiresAt || '—'} · استخدامات {used} · حجوزات مرتبطة {camp.length}</p>
                 </div>
               );
             })}
@@ -472,14 +471,14 @@ const Winback = () => {
       )}
 
       {tab === 'auto' && (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 border space-y-4 max-w-2xl">
+        <div className="saas-card p-5 space-y-4 max-w-2xl">
           <h3 className="font-bold dark:text-white">قواعد تحددها العيادة</h3>
           <label className="text-sm">مدة الانقطاع الافتراضية (يوم)
-            <input type="number" value={settingsForm.defaultLapseDays} onChange={(e) => setSettingsForm({ ...settingsForm, defaultLapseDays: Number(e.target.value) })} className="w-full mt-1 p-2.5 border rounded-xl dark:bg-slate-700" />
+            <input type="number" value={settingsForm.defaultLapseDays} onChange={(e) => setSettingsForm({ ...settingsForm, defaultLapseDays: Number(e.target.value) })} className={`${field} mt-1`} />
           </label>
           {Object.keys(CATEGORY_LABELS).map((cat) => (
             <label key={cat} className="text-sm block">انقطاع {CATEGORY_LABELS[cat]}
-              <input type="number" value={settingsForm.lapseByCategory?.[cat] ?? ''} onChange={(e) => setSettingsForm({ ...settingsForm, lapseByCategory: { ...settingsForm.lapseByCategory, [cat]: Number(e.target.value) } })} className="w-full mt-1 p-2.5 border rounded-xl dark:bg-slate-700" />
+              <input type="number" value={settingsForm.lapseByCategory?.[cat] ?? ''} onChange={(e) => setSettingsForm({ ...settingsForm, lapseByCategory: { ...settingsForm.lapseByCategory, [cat]: Number(e.target.value) } })} className={`${field} mt-1`} />
             </label>
           ))}
           <div className="flex gap-3 text-sm">
@@ -488,18 +487,18 @@ const Winback = () => {
             ))}
           </div>
           <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!settingsForm.reminderEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, reminderEnabled: e.target.checked })} /> تذكير واحد بعد أيام
-            <input type="number" className="w-16 p-1 border rounded" value={settingsForm.reminderAfterDays} onChange={(e) => setSettingsForm({ ...settingsForm, reminderAfterDays: Number(e.target.value) })} />
+            <input type="number" className="w-20 p-2 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none" value={settingsForm.reminderAfterDays} onChange={(e) => setSettingsForm({ ...settingsForm, reminderAfterDays: Number(e.target.value) })} />
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <label className="text-sm">سقف أيام بين الرسائل<input type="number" value={settingsForm.contactCapDays} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapDays: Number(e.target.value) })} className="w-full p-2 border rounded-xl dark:bg-slate-700" /></label>
-            <label className="text-sm">حد الرسائل شهرياً<input type="number" value={settingsForm.contactCapPerMonth} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapPerMonth: Number(e.target.value) })} className="w-full p-2 border rounded-xl dark:bg-slate-700" /></label>
-            <label className="text-sm">نسبة مجموعة المقارنة<input type="number" value={settingsForm.holdoutPercent} onChange={(e) => setSettingsForm({ ...settingsForm, holdoutPercent: Number(e.target.value) })} className="w-full p-2 border rounded-xl dark:bg-slate-700" /></label>
-            <label className="text-sm">حد النقاط للأتمتة<input type="number" value={settingsForm.autoMinScore} onChange={(e) => setSettingsForm({ ...settingsForm, autoMinScore: Number(e.target.value) })} className="w-full p-2 border rounded-xl dark:bg-slate-700" /></label>
+            <label className="text-sm">سقف أيام بين الرسائل<input type="number" value={settingsForm.contactCapDays} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapDays: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+            <label className="text-sm">حد الرسائل شهرياً<input type="number" value={settingsForm.contactCapPerMonth} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapPerMonth: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+            <label className="text-sm">نسبة مجموعة المقارنة<input type="number" value={settingsForm.holdoutPercent} onChange={(e) => setSettingsForm({ ...settingsForm, holdoutPercent: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+            <label className="text-sm">حد النقاط للأتمتة<input type="number" value={settingsForm.autoMinScore} onChange={(e) => setSettingsForm({ ...settingsForm, autoMinScore: Number(e.target.value) })} className={`${field} mt-1`} /></label>
           </div>
           <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!settingsForm.autoRulesEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, autoRulesEnabled: e.target.checked })} /> تشغيل مسودة تلقائية للمؤهلات فوق حد النقاط (تبقى للمراجعة)</label>
-          <button type="button" onClick={saveSettings} className="bg-pink-500 text-white px-4 py-2 rounded-xl font-bold">حفظ القواعد</button>
+          <button type="button" onClick={saveSettings} className="bg-[#10b981] text-white px-4 py-2 rounded-xl font-bold">حفظ القواعد</button>
           {settings.autoRulesEnabled && (
-            <button type="button" className="block text-sm text-pink-600 font-bold" onClick={() => {
+            <button type="button" className="block text-sm text-emerald-700 font-bold" onClick={() => {
               const next = {};
               ranked.filter((j) => j.score >= settings.autoMinScore).forEach((j) => { next[j.phoneKey] = true; });
               setSelected(next);
@@ -516,18 +515,18 @@ const Winback = () => {
 
       {tab === 'advanced' && (
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border">
-            <h3 className="font-bold mb-2 dark:text-white">شرائح مقترحة لحملة جديدة</h3>
+          <div className="saas-card p-4">
+            <h3 className="font-bold mb-2 text-[#111827]">شرائح مقترحة لحملة جديدة</h3>
             {segments.map((s) => (
               <div key={s.id} className="flex justify-between items-center py-2 text-sm">
                 <span>{s.title} ({s.count})</span>
-                <button onClick={() => applySegment(s)} className="text-pink-600 font-bold">مراجعة</button>
+                <button type="button" onClick={() => applySegment(s)} className="text-emerald-700 font-bold">مراجعة</button>
               </div>
             ))}
             {!segments.length && <p className="text-sm text-gray-400">لا شرائح كافية بعد.</p>}
           </div>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border">
-            <h3 className="font-bold mb-2 dark:text-white">أداء القنوات والصيغ</h3>
+          <div className="saas-card p-4">
+            <h3 className="font-bold mb-2 text-[#111827]">أداء القنوات والصيغ</h3>
             {channelInsights(messages).map((c) => (
               <p key={c.channel} className="text-sm">{c.channel}: إرسال {c.sent} · رد {c.replyRate}%</p>
             ))}
@@ -541,11 +540,12 @@ const Winback = () => {
   );
 };
 
-function Stat({ label, value }) {
+function Stat({ label, value, tone = '' }) {
+  const card = { mint: 'stat-card-mint', sky: 'stat-card-sky', gold: 'stat-card-gold', rose: 'stat-card-rose' }[tone] || '';
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border border-gray-100 dark:border-slate-700">
-      <p className="text-xs text-gray-400">{label}</p>
-      <p className="text-2xl font-bold dark:text-white">{value}</p>
+    <div className={`saas-card p-4 ${card}`}>
+      <p className="text-xs text-[#8a9199]">{label}</p>
+      <p className="stat-num text-[28px] leading-none mt-2">{value}</p>
     </div>
   );
 }
@@ -557,16 +557,13 @@ function ResultsPanel({ campaigns, messages, appointments, journeys, offers }) {
       {campaigns.map((c) => {
         const m = campaignMetrics(c, messages.filter((x) => x.campaignId === c.id), appointments, journeys, offers.find((o) => o.id === c.offerId));
         return (
-          <div key={c.id} className="bg-white dark:bg-slate-800 rounded-2xl p-4 border grid md:grid-cols-4 gap-3 text-sm">
+          <div key={c.id} className="saas-card p-4 grid md:grid-cols-4 gap-3 text-sm">
             <p className="md:col-span-4 font-bold dark:text-white">{c.name}</p>
             <p>مستهدفات {m.targeted}</p>
             <p>تسليم {m.deliveryRate}%</p>
             <p>استجابة {m.responseRate}%</p>
             <p>حجوزات {m.bookings}</p>
             <p>حضور {m.attended}</p>
-            <p>إيراد {m.revenue} ₪</p>
-            <p>تكلفة خصم {m.discountCost} ₪</p>
-            <p>صافي {m.net} ₪</p>
             <p className="md:col-span-4 text-xs text-gray-400">عودة مجموعة المقارنة {m.holdoutReturned} · أثر محتمل (فرق النسب) {m.incrementalRate} نقطة</p>
           </div>
         );
@@ -579,10 +576,9 @@ function MonthlyPanel({ campaigns, messages, appointments, journeys, offers }) {
   const list = campaigns.map((c) => campaignMetrics(c, messages.filter((x) => x.campaignId === c.id), appointments, journeys, offers.find((o) => o.id === c.offerId)));
   const r = monthlyReport(campaigns, list);
   return (
-    <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 border">
-      <h3 className="font-bold mb-2 dark:text-white">تقرير شهري تقديري</h3>
-      <p className="text-sm">إيرادات إضافية مقدّرة (صافي بعد الخصم): {r.extra} ₪</p>
-      <p className="text-xs text-gray-400 mt-1">موثوقية التقدير: {r.reliability}. ليست ضمان إيراد ولا نتيجة علاجية.</p>
+    <div className="saas-card p-4">
+      <h3 className="font-bold mb-2 text-[#111827]">تقرير شهري</h3>
+      <p className="text-sm">حملات {r.campaigns} · موثوقية السجل: {r.reliability}</p>
     </div>
   );
 }

@@ -6,21 +6,26 @@ import {
 export const CONSOLE_PAGES = [
   { path: '/dashboard', label: 'الرئيسية', about: 'ملخص الأرقام والتنبيهات ومساعد الأرقام' },
   { path: '/appointments', label: 'الحجوزات', about: 'تقويم أسبوعي، تأكيد، إلغاء، إعادة جدولة، حضور وغياب' },
-  { path: '/ops', label: 'قائمة الانتظار', about: 'مواعيد شاغرة، عرض أول من يقبل، تشغيل الفراغ', cap: 'ops' },
-  { path: '/customers', label: 'العميلات', about: 'الملفات الطبية، الجلسات، التوقيع، التعليمات' },
-  { path: '/services', label: 'الخدمات', about: 'أسماء الخدمات والأسعار والمدد' },
-  { path: '/treatments', label: 'متابعة العلاجات', about: 'مراحل أثناء/بعد العلاج', cap: 'treatments' },
-  { path: '/website', label: 'موقع العيادة', about: 'ثيم صفحة الحجز العامة والوصف', cap: 'website' },
+  { path: '/appointments/waitlist', label: 'قائمة الانتظار', about: 'طابور العميلات وعروض أول من يقبل', cap: 'ops' },
+  { path: '/appointments/gaps', label: 'المواعيد المتاحة', about: 'ساعات الجدول الفارغة والمواعيد المفتوحة بعد إلغاء', cap: 'ops' },
+  { path: '/appointments/reminders', label: 'التذكيرات والقواعد', about: 'تذكيرات مستحقة، قواعد العيادة، وقوالب واتساب الخمسة', cap: 'ops' },
+  { path: '/appointments/attendance', label: 'الحضور', about: 'حضور العميلات للعلاج وحضور العاملات للشغل' },
+  { path: '/appointments/schedule', label: 'دوام الموظفين', about: 'أيام وساعات عمل كل موظفة حسب الفرع' },
+  { path: '/customers', label: 'العميلات', about: 'الملفات الطبية، الجلسات، التوقيع' },
+  { path: '/treatments', label: 'متابعة العلاجات', about: 'مراحل أثناء/بعد العلاج وتعليمات الخدمات', cap: 'treatments' },
+  { path: '/services', label: 'الخدمات', about: 'جلسات العيادة: الاسم والمدة والمختصة' },
+  { path: '/products', label: 'المنتجات', about: 'كتالوج المتجر وطلبيات العميلات' },
+  { path: '/website', label: 'موقع العيادة', about: 'معلومات الصفحة والمدونة وإظهارها أو إخفاؤها' },
   { path: '/assistant', label: 'المساعد الذكي', about: 'شات الكونسول ووارد واتساب المسجّل', cap: 'assistant' },
   { path: '/winback', label: 'استرجاع العميلات', about: 'حملات العودة وحد التواصل', cap: 'winback' },
   { path: '/marketing', label: 'التسويق', about: 'حملات، كوبونات', cap: 'marketing' },
-  { path: '/blog', label: 'المحتوى', about: 'مقالات المدونة', cap: 'marketing' },
-  { path: '/orders', label: 'الطلبات', about: 'طلبات المنتجات للعيادة', cap: 'marketing' },
-  { path: '/reports', label: 'التقارير', about: 'حضور وإيراد من السجل' },
+  { path: '/website?tab=blog', label: 'المدونة', about: 'مقالات الموقع وإظهارها أو إخفاؤها' },
+  { path: '/products?tab=orders', label: 'طلبيات المنتجات', about: 'طلبات متجر المنتجات' },
+      { path: '/reports', label: 'التقارير', about: 'حضور وحجوزات من السجل' },
   { path: '/staff', label: 'الموظفات', about: 'حسابات الفريق' },
   { path: '/branches', label: 'الفروع والجداول', about: 'الفروع وساعات الدوام' },
   { path: '/billing', label: 'الاشتراك', about: 'تفعيل الباقة يدوياً' },
-  { path: '/settings', label: 'الإعدادات', about: 'بيانات العيادة، الخصوصية، التكاملات، مفتاح Gemini' },
+  { path: '/settings', label: 'الإعدادات', about: 'بيانات العيادة، الخصوصية، مفتاح Gemini' },
 ];
 
 function slimApts(list) {
@@ -182,7 +187,7 @@ export function spokenLocal(brief, question = '') {
         : '2) الاسترجاع مقفل على الباقة — رجوع العميلات من الفوترة إذا فتحتيه.',
       site.url
         ? `3) رابط الحجز العام: ${site.url}${missing.length ? ` — ناقص بالصفحة: ${missing.join('، ')}.` : ' — كمّلي الواتساب والوصف إذا ناقصين حتى يسهل الحجز.'}`
-        : '3) كمّلي موقع العيادة من الإعدادات حتى يصير في رابط حجز.',
+        : '3) افتحي موقع العيادة وقدّمي طلب تصميم حتى يصير رابط الحجز جاهز.',
     ];
     const links = [
       { path: '/ops', label: 'التشغيل' },
@@ -264,9 +269,8 @@ export function localConsoleAnswer(question, brief) {
       : 'عيّنة الازدحام ناقصة');
     links.push({ path: '/appointments', label: 'تقويم' });
   } else if (kind === 'rev') {
-    const change = d.rev == null ? 'لا نسبة' : `${d.rev > 0 ? '+' : ''}${d.rev}%`;
-    lines.push(`إيراد ${Number(curr.revenue || 0).toLocaleString('ar')} ₪ مقابل ${Number(prev.revenue || 0).toLocaleString('ar')} ₪ (${change})`);
-    links.push({ path: '/reports', label: 'تقارير' }, { path: '/services', label: 'أسعار' });
+    lines.push('المبالغ على المنتجات وطلبات المتجر فقط، مو على الجلسات');
+    links.push({ path: '/products?tab=orders', label: 'طلبات' }, { path: '/products', label: 'منتجات' });
   } else if (kind === 'confirm') {
     lines.push(t.pending.length ? `${t.pending.length} معلّق → جدول → تأكيد` : 'لا معلّق');
     links.push({ path: '/appointments', label: 'تأكيد' });

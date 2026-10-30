@@ -84,15 +84,15 @@ const ConsoleChat = () => {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`fixed z-[55] bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] w-14 h-14 rounded-2xl bg-[#14121c] text-white shadow-lg flex items-center justify-center ${open ? 'hidden' : ''}`}
+        className={`fixed z-[55] bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-[max(1rem,env(safe-area-inset-left))] w-14 h-14 rounded-2xl bg-[#111827] text-white shadow-lg flex items-center justify-center ${open ? 'hidden' : ''}`}
         aria-label="فتح المساعد"
       >
         <FaComments />
       </button>
 
       {open && (
-        <div className="fixed z-[60] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] w-[min(24rem,calc(100vw-1.5rem))] h-[min(36rem,calc(100dvh-5rem))] rounded-3xl bg-white dark:bg-[#14121c] border border-[#e4ddd0] dark:border-white/10 shadow-2xl flex flex-col overflow-hidden">
-          <header className="px-4 py-3 bg-[#14121c] text-white flex items-center justify-between gap-2">
+        <div className="fixed z-[60] bottom-[max(0.75rem,env(safe-area-inset-bottom))] left-[max(0.75rem,env(safe-area-inset-left))] w-[min(24rem,calc(100vw-1.5rem))] h-[min(36rem,calc(100dvh-5rem))] rounded-3xl bg-white dark:bg-[#111827] border border-[#E5E9EC] dark:border-white/10 shadow-2xl flex flex-col overflow-hidden">
+          <header className="px-4 py-3 bg-[#111827] text-white flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="font-product text-lg leading-none">المساعد</p>
               <p className="text-[11px] text-white/50 mt-1">{hasKey ? 'يحكي معك من سجل العيادة' : 'فعّلي المفتاح حتى يساير الحكي'}</p>
@@ -108,7 +108,7 @@ const ConsoleChat = () => {
           </header>
 
           {showKey && (
-            <div className="px-3 py-2 bg-[#f3efe6] dark:bg-[#1e1b28] space-y-2 text-xs">
+            <div className="px-3 py-2 bg-[#F7F8F6] dark:bg-[#1A2C38] space-y-2 text-xs">
               <p>مفتاح Google AI Studio — اختياري إذا ما كان محمّل من المشروع.</p>
               <div className="flex gap-2">
                 <input
@@ -116,10 +116,10 @@ const ConsoleChat = () => {
                   value={keyDraft}
                   onChange={(e) => setKeyDraft(e.target.value)}
                   placeholder="AIza… أو AQ."
-                  className="flex-1 p-2 rounded-xl outline-none bg-white dark:bg-[#14121c]"
+                  className="flex-1 p-2 rounded-xl outline-none bg-white dark:bg-[#111827]"
                   dir="ltr"
                 />
-                <button type="button" onClick={saveKey} className="px-3 rounded-xl bg-[#4d7cff] text-white font-bold">حفظ</button>
+                <button type="button" onClick={saveKey} className="px-3 rounded-xl bg-[#111827] text-white font-bold">حفظ</button>
               </div>
             </div>
           )}
@@ -127,7 +127,7 @@ const ConsoleChat = () => {
           <div ref={scroller} className="flex-1 overflow-y-auto p-3 space-y-3">
             {messages.map((m, i) => (
               <div key={`${m.role}-${i}`} className={`text-sm leading-relaxed ${m.role === 'user' ? 'mr-8' : 'ml-4'}`}>
-                <div className={`rounded-2xl px-3 py-2 whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#4d7cff] text-white' : 'bg-[#f3efe6] dark:bg-[#1e1b28]'}`}>
+                <div className={`rounded-2xl px-3 py-2 whitespace-pre-wrap ${m.role === 'user' ? 'bg-[#111827] text-white' : 'bg-[#F7F8F6] dark:bg-[#1A2C38]'}`}>
                   {m.text}
                 </div>
                 {m.links?.length > 0 && (
@@ -136,7 +136,7 @@ const ConsoleChat = () => {
                       <Link
                         key={`${l.path}-${l.label}`}
                         to={l.path}
-                        className="text-[11px] px-2 py-1 rounded-full bg-[#14121c] text-white"
+                        className="text-[11px] px-2 py-1 rounded-full bg-[#111827] text-white"
                         onClick={() => setOpen(false)}
                       >
                         {l.label}
@@ -157,11 +157,11 @@ const ConsoleChat = () => {
               ref={inputRef}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              className="flex-1 p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none text-sm"
+              className="flex-1 p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none text-sm"
               placeholder="اكتبي اللي بدك ياه..."
               disabled={busy}
             />
-            <button type="submit" disabled={busy || !draft.trim()} className="w-12 rounded-xl bg-[#14121c] text-white flex items-center justify-center disabled:opacity-40" aria-label="إرسال">
+            <button type="submit" disabled={busy || !draft.trim()} className="w-12 rounded-xl bg-[#111827] text-white flex items-center justify-center disabled:opacity-40" aria-label="إرسال">
               <FaPaperPlane />
             </button>
           </form>

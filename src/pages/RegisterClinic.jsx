@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { ref, set } from 'firebase/database';
+import { ref, set, push } from 'firebase/database';
 import { auth, database } from '../APIFirebase/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { getPlan } from '../config/plans';
@@ -46,9 +46,13 @@ const RegisterClinic = () => {
         phone: form.phone.trim(),
         plan: 'trial',
         createdAt: now,
+        trialStartedAt: now,
         trialEndsAt,
         isActive: true,
         storeTheme: 'beauty',
+        websitePublished: true,
+        subscriptionStatus: 'trial',
+        paymentStatus: 'none',
         sections: createDefaultSections(),
       });
 
@@ -64,7 +68,30 @@ const RegisterClinic = () => {
 
       // 6. فهرس العيادات
       await set(ref(database, `meta/clinics/${clinicId}`), {
-        name: form.clinicName.trim(), ownerEmail: form.email.trim(), plan: 'trial', createdAt: now, isActive: true,
+        name: form.clinicName.trim(),
+        ownerEmail: form.email.trim(),
+        ownerName: form.ownerName.trim(),
+        phone: form.phone.trim(),
+        plan: 'trial',
+        createdAt: now,
+        trialStartedAt: now,
+        trialEndsAt,
+        isActive: true,
+        storeTheme: 'beauty',
+        websitePublished: true,
+        subscriptionStatus: 'trial',
+        staffCount: 1,
+        bookingCount: 0,
+        clientCount: 0,
+        orderCount: 0,
+        lastActivityAt: now,
+      });
+      await push(ref(database, 'platform/activity'), {
+        type: 'clinic_registered',
+        title: 'تسجيل عيادة جديدة',
+        clinicId,
+        clinicName: form.clinicName.trim(),
+        at: now,
       });
 
       navigate('/dashboard');
@@ -76,31 +103,31 @@ const RegisterClinic = () => {
   };
 
   return (
-    <div dir={dir} className="min-h-screen flex items-center justify-center p-4" style={{ background: '#f3efe6' }}>
-      <div className="w-full max-w-md bg-[#fffcf7] rounded-[1.75rem] p-8 border border-[#e4ddd0]">
+    <div dir={dir} className="min-h-screen flex items-center justify-center p-4 bg-[#F7F8F6]">
+      <div className="w-full max-w-md bg-white rounded-lg p-8 border border-[#E5E9EC]">
         <div className="mb-6">
           <div className="flex items-start justify-between gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#4d7cff] via-[#a78bfa] to-[#ff6b4a] text-white font-product font-extrabold flex items-center justify-center text-xl mb-3">{t('brandMark')}</div>
+            <div className="w-9 h-9 rounded-md bg-[#172B3A] text-white text-sm font-semibold flex items-center justify-center mb-3">{t('brandMark')}</div>
             <LangSwitcher tone="light" />
           </div>
-          <h1 className="font-product text-2xl">{t('register.title')}</h1>
-          <p className="text-sm text-stone-500 mt-1">{t('register.trial', { n: getPlan('trial').durationDays })}</p>
+          <h1 className="text-xl font-semibold text-[#202A32]">{t('register.title')}</h1>
+          <p className="text-sm text-[#75818B] mt-1">{t('register.trial', { n: getPlan('trial').durationDays })}</p>
         </div>
 
-        {error && <div className="bg-[#ff6b4a]/10 text-[#c2410c] text-sm p-3 rounded-xl mb-4">{error}</div>}
+        {error && <div className="bg-[#f8ecea] text-[#9A3F32] text-sm p-3 rounded-md mb-4" role="alert">{error}</div>}
 
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input type="text" placeholder={t('register.clinic')} onChange={update('clinicName')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
-          <input type="text" placeholder={t('register.owner')} onChange={update('ownerName')} required className="w-full p-3 border rounded-xl border-[#e4ddd0] outline-none focus:border-[#4d7cff]" />
-          <input type="tel" placeholder={t('register.phone')} onChange={update('phone')} className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" />
-          <input type="email" placeholder={t('register.email')} onChange={update('email')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
-          <input type="password" placeholder={t('register.password')} onChange={update('password')} required className="w-full p-3 border border-[#e4ddd0] rounded-xl outline-none focus:border-[#4d7cff]" dir="ltr" />
+          <input type="text" placeholder={t('register.clinic')} onChange={update('clinicName')} required className="w-full p-2.5 border border-[#E5E9EC] rounded-md outline-none focus:border-[#658B83] text-sm" />
+          <input type="text" placeholder={t('register.owner')} onChange={update('ownerName')} required className="w-full p-2.5 border rounded-md border-[#E5E9EC] outline-none focus:border-[#658B83] text-sm" />
+          <input type="tel" placeholder={t('register.phone')} onChange={update('phone')} className="w-full p-2.5 border border-[#E5E9EC] rounded-md outline-none focus:border-[#658B83] text-sm" />
+          <input type="email" placeholder={t('register.email')} onChange={update('email')} required className="w-full p-2.5 border border-[#E5E9EC] rounded-md outline-none focus:border-[#658B83] text-sm" dir="ltr" />
+          <input type="password" placeholder={t('register.password')} onChange={update('password')} required className="w-full p-2.5 border border-[#E5E9EC] rounded-md outline-none focus:border-[#658B83] text-sm" dir="ltr" />
           
-          <button type="submit" disabled={loading} className="w-full py-3 rounded-xl bg-[#4d7cff] text-white font-bold hover:bg-[#3b6af0] disabled:opacity-60">
+          <button type="submit" disabled={loading} className="w-full py-2.5 rounded-md bg-[#172B3A] text-white text-sm font-semibold hover:bg-[#122330] disabled:opacity-60">
             {loading ? t('register.creating') : t('register.submit')}
           </button>
         </form>
-        <p className="text-center text-sm text-stone-500 mt-5">{t('register.hasAccount')} <Link to="/login" className="text-[#4d7cff] font-semibold">{t('register.login')}</Link></p>
+        <p className="text-center text-sm text-stone-500 mt-5">{t('register.hasAccount')} <Link to="/login" className="text-[#172B3A] font-semibold">{t('register.login')}</Link></p>
       </div>
     </div>
   );

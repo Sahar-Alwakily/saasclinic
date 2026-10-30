@@ -6,14 +6,13 @@ import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   FaArrowRight, FaPhone, FaBirthdayCake, FaSyringe, FaPlus, FaPen, FaTrash,
-  FaPlayCircle, FaCheckCircle, FaWhatsapp, FaList,
+  FaPlayCircle, FaCheckCircle, FaWhatsapp,
 } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/ar';
 import SessionStampModal from '../components/customers/SessionStampModal';
 import WhatsAppInstructionsModal, { WHATSAPP_TEMPLATE_ID } from '../components/customers/WhatsAppInstructionsModal';
-import AddServiceModal from '../components/customers/AddServiceModal';
-import InstructionsList from '../components/customers/InstructionsList';
+import CustomerFormModal from '../components/customers/CustomerFormModal';
 
 moment.locale('ar');
 
@@ -29,9 +28,9 @@ const CustomerProfile = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('sessions');
   const [showSessionModal, setShowSessionModal] = useState(false);
-  const [showAddService, setShowAddService] = useState(false);
-  const [showInstructions, setShowInstructions] = useState(false);
   const [waModal, setWaModal] = useState({ show: false, client: null, treatment: null });
+  const [showMedicalForm, setShowMedicalForm] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
   const migrationDoneRef = useRef(false);
 
   useEffect(() => {
@@ -226,77 +225,111 @@ const CustomerProfile = () => {
     return rows;
   }, [customer]);
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500" /></div>;
-  if (!customer) return <div className="text-center py-20 text-gray-500">العميلة غير موجودة</div>;
+  const afterCount = treatmentsList.filter((t) => t.currentPhase === 'after').length;
+
+  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
+  if (!customer) return <div className="text-center py-20 text-[#8a9199]">العميلة غير موجودة</div>;
+
+  const tabs = careEnabled
+    ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية']]
+    : [['medical', 'المعلومات الطبية']];
 
   return (
-    <div dir="rtl" className="space-y-6 max-w-4xl mx-auto">
+    <div dir="rtl" className="space-y-5 max-w-4xl mx-auto">
       <ToastContainer position="top-left" rtl />
-      <button onClick={() => navigate('/customers')} className="flex items-center gap-2 text-gray-500 hover:text-pink-500">
-        <FaArrowRight /> العودة لملفات العملاء
+      <button type="button" onClick={() => navigate('/customers')} className="flex items-center gap-2 text-[#8a9199] hover:text-emerald-700 text-sm font-bold">
+        <FaArrowRight /> العودة للعميلات
       </button>
 
-      <div className="bg-gradient-to-l from-pink-500 to-rose-400 text-white rounded-3xl p-6 shadow-lg">
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-3xl bg-white/20 flex items-center justify-center text-3xl font-bold">
-            {(customer.firstName || '?')[0]}
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold mb-2">{customer.firstName} {customer.lastName}</h1>
-            <div className="flex flex-wrap gap-3 text-sm">
-              <span className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1" dir="ltr"><FaPhone /> {customer.phone}</span>
-              {customer.birthDate && <span className="flex items-center gap-2 bg-white/20 rounded-full px-3 py-1"><FaBirthdayCake /> {customer.birthDate}</span>}
+      <section className="saas-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
+              {(customer.firstName || '?')[0]}
             </div>
-            <button
-              type="button"
-              onClick={async () => {
-                const next = !customer.doNotContact;
-                await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
-                toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
-              }}
-              className={`mt-3 text-xs bg-white/20 rounded-full px-3 py-1 ${hasCap('winback') ? '' : 'hidden'}`}
-            >
-              {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل / انسحاب من الحملات'}
-            </button>
+            <div>
+              <h1 className="text-[22px] font-bold text-[#111827]">{customer.firstName} {customer.lastName}</h1>
+              <div className="flex flex-wrap gap-2 mt-2">
+                <span className="nura-chip nura-chip-mint" dir="ltr"><FaPhone className="text-[11px]" /> {customer.phone}</span>
+                {customer.birthDate && <span className="nura-chip nura-chip-gold"><FaBirthdayCake className="text-[11px]" /> {customer.birthDate}</span>}
+                {customer.idNumber && <span className="nura-chip nura-chip-sky" dir="ltr">{customer.idNumber}</span>}
+              </div>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowEditForm(true)}
+            className="nura-chip nura-chip-lilac"
+          >
+            <FaPen className="text-[11px]" /> تعديل البيانات
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={async () => {
+            const next = !customer.doNotContact;
+            await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
+            toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
+          }}
+          className={`mt-3 nura-chip ${customer.doNotContact || customer.winbackOptOut ? 'nura-chip-rose' : 'nura-chip-sky'} ${hasCap('winback') ? '' : 'hidden'}`}
+        >
+          {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل / انسحاب من الحملات'}
+        </button>
+      </section>
+
+      <div className="grid grid-cols-3 gap-3">
+        <div className="saas-card stat-card-mint p-4">
+          <p className="text-xs text-[#047857]">الجلسات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{sortedSessions.length}</p>
+        </div>
+        <div className="saas-card stat-card-sky p-4">
+          <p className="text-xs text-[#0369a1]">العلاجات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{treatmentsList.length}</p>
+        </div>
+        <div className="saas-card stat-card-gold p-4">
+          <p className="text-xs text-[#b45309]">بعد العلاج</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{afterCount}</p>
         </div>
       </div>
 
-      <div className="flex overflow-x-auto no-scrollbar border-b border-gray-100 bg-white dark:bg-slate-800 rounded-t-2xl px-2">
-        {(careEnabled
-          ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية']]
-          : [['medical', 'المعلومات الطبية']]
-        ).map(([tid, label]) => (
-          <button key={tid} type="button" onClick={() => setActiveTab(tid)} className={`shrink-0 px-4 py-4 font-bold ${activeTab === tid ? 'text-pink-600 border-b-2 border-pink-500' : 'text-gray-400'}`}>{label}</button>
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+        {tabs.map(([tid, label]) => (
+          <button
+            key={tid}
+            type="button"
+            onClick={() => setActiveTab(tid)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${activeTab === tid ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}
+          >
+            {label}
+          </button>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-slate-800 rounded-b-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-6 min-h-[300px]">
+      <section className="saas-card p-5 min-h-[280px]">
         {activeTab === 'sessions' && (
           <div>
-            <div className="flex flex-wrap gap-2 mb-6">
-              <button type="button" onClick={() => setShowSessionModal(true)} className="flex-1 min-w-[12rem] bg-pink-50 dark:bg-pink-900/20 text-pink-600 py-3 rounded-xl flex items-center justify-center gap-2 font-bold">
-                <FaPlus /> تسجيل جلسة جديدة (مع توقيع)
-              </button>
-              <button type="button" onClick={() => setShowAddService(true)} className="px-4 py-3 rounded-xl bg-violet-50 text-violet-700 font-bold text-sm">➕ إضافة خدمة جديدة</button>
-              <button type="button" onClick={() => setShowInstructions(true)} className="px-4 py-3 rounded-xl bg-stone-100 dark:bg-slate-700 font-bold text-sm flex items-center gap-1"><FaList /> التعليمات</button>
-            </div>
+            <button type="button" onClick={() => setShowSessionModal(true)} className="w-full mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold">
+              <FaPlus /> تسجيل جلسة جديدة
+            </button>
             {sortedSessions.length === 0 ? (
-              <div className="text-center py-10 text-gray-400">لا توجد جلسات مسجلة بعد</div>
+              <div className="text-center py-12">
+                <p className="font-bold text-[#111827]">لا جلسات بعد</p>
+                <p className="text-sm text-[#8a9199] mt-1">سجّلي أول جلسة لتظهر هنا وفي متابعة العلاجات.</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 {sortedSessions.map((session) => (
-                  <div key={session.id} className="p-4 border border-pink-100 dark:border-slate-700 bg-pink-50/50 dark:bg-slate-700/50 rounded-xl flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-pink-200 dark:bg-pink-900/50 text-pink-600 flex items-center justify-center shrink-0"><FaSyringe /></div>
+                  <div key={session.id} className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e4eee8] flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0"><FaSyringe /></div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-gray-800 dark:text-white">{session.serviceTitle || 'جلسة عامة'}</p>
-                      <p className="text-xs text-gray-500">{moment(session.recordedAt).format('dddd، D MMMM YYYY — HH:mm')} · {session.recordedBy || '—'}</p>
-                      {session.note && <p className="text-xs text-gray-600 dark:text-gray-300 mt-1 bg-white dark:bg-slate-800 p-1 rounded">📝 {session.note}</p>}
-                      {session.signature && <img src={session.signature} alt="توقيع" className="mt-2 h-12 bg-white rounded border" />}
+                      <p className="font-bold text-[#111827]">{session.serviceTitle || 'جلسة عامة'}</p>
+                      <p className="text-xs text-[#8a9199] mt-0.5">{moment(session.recordedAt).format('dddd، D MMMM YYYY — HH:mm')} · {session.recordedBy || '—'}</p>
+                      {session.note && <p className="text-xs text-[#111827] mt-2 bg-white p-2 rounded-xl border border-[#e4eee8]">{session.note}</p>}
+                      {session.signature && <img src={session.signature} alt="توقيع" className="mt-2 h-12 bg-white rounded-lg border border-[#e4eee8]" />}
                     </div>
                     <div className="flex gap-2">
-                      <button type="button" onClick={() => handleEditSessionNote(session)} className="w-9 h-9 rounded-full bg-white text-violet-600 flex items-center justify-center"><FaPen /></button>
-                      <button type="button" onClick={() => handleDeleteSession(session)} className="w-9 h-9 rounded-full bg-white text-rose-500 flex items-center justify-center"><FaTrash /></button>
+                      <button type="button" onClick={() => handleEditSessionNote(session)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-emerald-700 flex items-center justify-center"><FaPen /></button>
+                      <button type="button" onClick={() => handleDeleteSession(session)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-rose-500 flex items-center justify-center"><FaTrash /></button>
                     </div>
                   </div>
                 ))}
@@ -307,22 +340,30 @@ const CustomerProfile = () => {
 
         {activeTab === 'treatments' && (
           <div className="space-y-4">
-            {treatmentsList.length === 0 && <p className="text-center text-gray-400 py-10">لا علاجات بعد — تُنشأ تلقائياً مع أول جلسة.</p>}
+            {treatmentsList.length === 0 && (
+              <div className="text-center py-12">
+                <p className="font-bold text-[#111827]">لا علاجات بعد</p>
+                <p className="text-sm text-[#8a9199] mt-1">تُنشأ تلقائياً مع أول جلسة. تعليمات الخدمات من متابعة العلاجات.</p>
+              </div>
+            )}
             {treatmentsList.map((t) => {
               const after = t.currentPhase === 'after';
               return (
-                <div key={t.id} className="rounded-2xl overflow-hidden border border-gray-100 dark:border-slate-700">
-                  <div className={`text-white p-4 bg-gradient-to-l ${after ? 'from-emerald-400 to-teal-500' : 'from-blue-400 to-indigo-500'}`}>
-                    <p className="font-bold flex items-center gap-2">
-                      {after ? <FaCheckCircle /> : <FaPlayCircle />}
-                      {t.serviceName}
-                    </p>
-                    <p className="text-xs opacity-80 mt-1">{after ? 'بعد العلاج' : 'أثناء العلاج'} · {t.sessions?.length || 0} جلسة</p>
+                <article key={t.id} className={`saas-card overflow-hidden ${after ? 'stat-card-mint' : 'stat-card-sky'}`}>
+                  <div className="p-4 flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="font-bold text-[#111827] flex items-center gap-2">
+                        {after ? <FaCheckCircle className="text-emerald-600" /> : <FaPlayCircle className="text-sky-600" />}
+                        {t.serviceName}
+                      </p>
+                      <p className="text-xs text-[#8a9199] mt-1">{t.sessions?.length || 0} جلسة مسجّلة</p>
+                    </div>
+                    <span className={`nura-chip ${after ? 'nura-chip-mint' : 'nura-chip-sky'}`}>{after ? 'بعد العلاج' : 'أثناء العلاج'}</span>
                   </div>
-                  <div className="p-4 space-y-2 bg-white dark:bg-slate-800">
+                  <div className="px-4 pb-4 space-y-3">
                     <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => handleChangePhase(t.id, 'during')} className={`text-xs px-3 py-1.5 rounded-full ${!after ? 'bg-blue-600 text-white' : 'bg-blue-50 text-blue-700'}`}>أثناء العلاج</button>
-                      <button type="button" onClick={() => handleChangePhase(t.id, 'after')} className={`text-xs px-3 py-1.5 rounded-full ${after ? 'bg-emerald-600 text-white' : 'bg-emerald-50 text-emerald-700'}`}>بعد العلاج</button>
+                      <button type="button" onClick={() => handleChangePhase(t.id, 'during')} className={`text-xs px-3 py-1.5 rounded-full font-bold ${!after ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'}`}>أثناء العلاج</button>
+                      <button type="button" onClick={() => handleChangePhase(t.id, 'after')} className={`text-xs px-3 py-1.5 rounded-full font-bold ${after ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-700'}`}>بعد العلاج</button>
                       <button
                         type="button"
                         onClick={() => setWaModal({
@@ -330,37 +371,46 @@ const CustomerProfile = () => {
                           client: { clientId: id, customerName: `${customer.firstName} ${customer.lastName}`.trim(), phoneNumber: customer.phone },
                           treatment: { ...t, templateId: WHATSAPP_TEMPLATE_ID },
                         })}
-                        className="text-xs px-3 py-1.5 rounded-full bg-emerald-100 text-emerald-800 font-bold flex items-center gap-1"
+                        className="text-xs px-3 py-1.5 rounded-full bg-[#10b981] text-white font-bold flex items-center gap-1"
                       >
                         <FaWhatsapp /> إرسال تعليمات المرحلة
                       </button>
-                      <button type="button" onClick={() => handleDeleteTreatment(t.id)} className="text-xs px-3 py-1.5 rounded-full text-rose-500">حذف العلاج</button>
+                      <button type="button" onClick={() => handleDeleteTreatment(t.id)} className="nura-chip nura-chip-rose text-xs">حذف العلاج</button>
                     </div>
                     {(t.sessions || []).map((s, i) => (
-                      <p key={i} className="text-xs text-stone-500">جلسة {s.sessionNumber || i + 1} · {s.date} {s.time} {s.notes ? `· ${s.notes}` : ''}</p>
+                      <p key={i} className="text-xs text-[#8a9199]">جلسة {s.sessionNumber || i + 1} · {s.date} {s.time} {s.notes ? `· ${s.notes}` : ''}</p>
                     ))}
                   </div>
-                </div>
+                </article>
               );
             })}
           </div>
         )}
 
         {activeTab === 'medical' && (
-          medicalRows.length === 0
-            ? <p className="text-center text-gray-400 py-10">لا معلومات طبية مسجّلة. عدّلي الملف من قائمة العميلات.</p>
-            : (
-              <div className="space-y-3">
-                {medicalRows.map(([label, val]) => (
-                  <div key={label} className="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-xl">
-                    <p className="text-xs text-gray-400 mb-1">{label}</p>
-                    <p className="text-sm font-medium dark:text-white">{String(val)}</p>
-                  </div>
-                ))}
-              </div>
-            )
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowMedicalForm(true)}
+              className="w-full mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold"
+            >
+              <FaPen /> ملء المعلومات الطبية
+            </button>
+            {medicalRows.length === 0
+              ? <p className="text-center text-[#8a9199] py-10">لا معلومات طبية مسجّلة بعد.</p>
+              : (
+                <div className="grid sm:grid-cols-2 gap-3">
+                  {medicalRows.map(([label, val]) => (
+                    <div key={label} className="rounded-2xl bg-[#f8faf9] border border-[#e4eee8] p-4">
+                      <p className="text-xs text-[#8a9199] mb-1">{label}</p>
+                      <p className="text-sm font-medium text-[#111827]">{String(val)}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+          </div>
         )}
-      </div>
+      </section>
 
       <SessionStampModal
         show={showSessionModal}
@@ -368,8 +418,52 @@ const CustomerProfile = () => {
         onSave={handleSaveSession}
         services={services}
       />
-      <AddServiceModal show={showAddService} onClose={() => setShowAddService(false)} onAdded={() => {}} />
-      <InstructionsList show={showInstructions} onClose={() => setShowInstructions(false)} />
+      <CustomerFormModal
+        show={showEditForm}
+        title={`تعديل — ${customer.firstName || ''} ${customer.lastName || ''}`.trim()}
+        initial={customer}
+        onClose={() => setShowEditForm(false)}
+        onSubmit={async (form) => {
+          try {
+            await update(ref(database, clinicPath(`customers/${id}`)), {
+              firstName: form.firstName,
+              lastName: form.lastName || '',
+              phone: form.phone,
+              birthDate: form.birthDate || '',
+              idNumber: form.idNumber || '',
+              gender: form.gender || 'female',
+              medicalInfo: form.medicalInfo || {},
+              adsStamp: form.adsStamp || null,
+              updatedAt: Date.now(),
+            });
+            toast.success('عُدّل الملف');
+            setShowEditForm(false);
+          } catch {
+            toast.error('تعذّر حفظ البيانات');
+          }
+        }}
+      />
+      <CustomerFormModal
+        show={showMedicalForm}
+        medicalOnly
+        startTab="medical"
+        title={`معلومات طبية — ${customer.firstName || ''} ${customer.lastName || ''}`.trim()}
+        initial={customer}
+        onClose={() => setShowMedicalForm(false)}
+        onSubmit={async (form) => {
+          try {
+            await update(ref(database, clinicPath(`customers/${id}`)), {
+              medicalInfo: form.medicalInfo || {},
+              gender: form.gender || customer.gender || 'female',
+              updatedAt: Date.now(),
+            });
+            toast.success('حُفظت المعلومات الطبية لهذا الملف');
+            setShowMedicalForm(false);
+          } catch {
+            toast.error('تعذّر حفظ المعلومات الطبية');
+          }
+        }}
+      />
       <WhatsAppInstructionsModal
         show={waModal.show}
         onClose={() => setWaModal({ show: false, client: null, treatment: null })}

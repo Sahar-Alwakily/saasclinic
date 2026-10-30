@@ -109,9 +109,6 @@ const PublicBranch = () => {
                     <p className="font-bold text-gray-800">{s.title}</p>
                     {s.duration && <p className="text-xs text-gray-400 mt-1">{s.duration}</p>}
                   </div>
-                  {s.price !== undefined && s.price !== '' && (
-                    <span className="font-bold" style={{ color: primaryColor }}>{s.price} ₪</span>
-                  )}
                 </Link>
               ))}
             </div>

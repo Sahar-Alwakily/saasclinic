@@ -25,11 +25,6 @@ export function comparisonWindows(now = new Date()) {
   return { thisStart, thisEnd, prevStart, prevEnd };
 }
 
-function money(apt) {
-  if (['cancelled', 'noshow'].includes(apt.status)) return 0;
-  return Number(apt.price || 0);
-}
-
 export function sliceMetrics(appointments, start, end) {
   const list = (appointments || []).filter((a) => inDateRange(a.date, start, end));
   const attended = list.filter((a) => a.status === 'attended').length;
@@ -46,7 +41,6 @@ export function sliceMetrics(appointments, start, end) {
     cancelled,
     pending,
     confirmed,
-    revenue: list.reduce((s, a) => s + money(a), 0),
     attendRate: showDenom ? Math.round((attended / showDenom) * 100) : null,
     uniquePhones: phones.size,
   };
@@ -91,14 +85,6 @@ export function clinicHealth({ appointments = [], customers = [] }, now = new Da
       note: null,
     },
     {
-      id: 'rev',
-      label: 'الإيراد',
-      value: curr.revenue,
-      prev: prev.revenue,
-      unit: '',
-      note: 'من سعر المواعيد غير الملغاة وغير الغياب فقط',
-    },
-    {
       id: 'keep',
       label: 'الاحتفاظ',
       value: retained,
@@ -134,7 +120,6 @@ export function clinicHealth({ appointments = [], customers = [] }, now = new Da
     customerCount: customers.length,
     deltas: {
       book: delta(curr.total, prev.total),
-      rev: delta(curr.revenue, prev.revenue),
       attend: delta(curr.attendRate, prev.attendRate),
     },
   };
@@ -190,7 +175,7 @@ export function interventionAlerts({
       tone: 'azure',
       title: `${tasks.gaps.length} موعد متاح اليوم`,
       detail: 'فترات لم تُحجز — يمكن عرضها على قائمة الانتظار.',
-      to: '/ops',
+      to: '/appointments/gaps',
     });
   }
   const waiting = (waitlist || []).filter((w) => w.status === 'waiting' || w.status === 'offered');
@@ -200,7 +185,7 @@ export function interventionAlerts({
       tone: 'mint',
       title: `${waiting.length} بالطابور مقابل مواعيد متاحة اليوم`,
       detail: 'أول عميلة تقبل العرض تسكر الساعة.',
-      to: '/ops',
+      to: '/appointments/waitlist',
     });
   }
   if (tasks.failed.length) {
@@ -218,7 +203,7 @@ export function interventionAlerts({
       tone: 'lilac',
       title: `${tasks.followups.length} تذكير مستحق`,
       detail: 'مواعيد مؤكدة أو معلّقة دخلت نافذة التذكير.',
-      to: '/ops',
+      to: '/appointments/reminders',
     });
   }
   const highRisk = (appointments || [])
@@ -231,7 +216,7 @@ export function interventionAlerts({
       tone: 'coral',
       title: `${highRisk.length} موعد باحتمال غياب بدون إشعار`,
       detail: 'الدرجة مبنية على سجل الهاتف عند توفر 5+ مواعيد مكتملة.',
-      to: '/ops',
+      to: '/appointments/reminders',
     });
   }
   if (health.deltas.book != null && health.deltas.book <= -20) {
@@ -262,10 +247,6 @@ export function interventionAlerts({
     });
   }
   return list;
-}
-
-function fmtMoney(n) {
-  return `${Number(n || 0).toLocaleString('ar')} ₪`;
 }
 
 export function hourFromTime(t) {
@@ -415,17 +396,16 @@ function factLine(health) {
   const windows = health?.windows || {};
   const deltas = health?.deltas || {};
   return [
-    `الفترة الحالية ${windows.thisStart || '—'} → ${windows.thisEnd || '—'}: ${curr.total || 0} حجز، إيراد ${fmtMoney(curr.revenue)}، حضور ${curr.attendRate == null ? 'غير محسوب' : `${curr.attendRate}%`} (حضر ${curr.attended || 0} / غاب ${curr.noshow || 0})، إلغاء ${curr.cancelled || 0}.`,
-    `نفس عدد الأيام من الشهر السابق ${windows.prevStart || '—'} → ${windows.prevEnd || '—'}: ${prev.total || 0} حجز، إيراد ${fmtMoney(prev.revenue)}، حضور ${prev.attendRate == null ? 'غير محسوب' : `${prev.attendRate}%`}.`,
+    `الفترة الحالية ${windows.thisStart || '—'} → ${windows.thisEnd || '—'}: ${curr.total || 0} حجز، حضور ${curr.attendRate == null ? 'غير محسوب' : `${curr.attendRate}%`} (حضر ${curr.attended || 0} / غاب ${curr.noshow || 0})، إلغاء ${curr.cancelled || 0}.`,
+    `نفس عدد الأيام من الشهر السابق ${windows.prevStart || '—'} → ${windows.prevEnd || '—'}: ${prev.total || 0} حجز، حضور ${prev.attendRate == null ? 'غير محسوب' : `${prev.attendRate}%`}.`,
     deltas.book == null ? 'لا يمكن حساب نسبة تغيّر الحجوزات لأن الفترة السابقة صفر.' : `تغيّر الحجوزات: ${deltas.book > 0 ? '+' : ''}${deltas.book}%.`,
-    deltas.rev == null ? 'لا يمكن حساب نسبة تغيّر الإيراد لأن الفترة السابقة صفر.' : `تغيّر الإيراد: ${deltas.rev > 0 ? '+' : ''}${deltas.rev}%.`,
   ];
 }
 
 export function answerFromData(question, { health, tasks, appointments = [], services = [], waitlist = [], occupancy, intent } = {}) {
   const q = String(question || '').trim();
   if (!q && !intent) {
-    return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو الإيراد أو المواعيد المتاحة.', facts: [], missing: [] };
+    return { answer: 'اكتبي سؤالاً عن الحجوزات أو الحضور أو المواعيد المتاحة.', facts: [], missing: [] };
   }
   const curr = health?.curr || {};
   const prev = health?.prev || {};
@@ -441,10 +421,6 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
   const facts = factLine(health || {});
   const missing = [];
   if (!appointments.length) missing.push('لا توجد مواعيد مخزّنة بعد.');
-  const priced = appointments.filter((a) => Number(a.price || 0) > 0).length;
-  if (appointments.length && priced / appointments.length < 0.3) {
-    missing.push('معظم المواعيد بلا سعر — الإيراد ناقص.');
-  }
   const attendSample = (curr.attended || 0) + (curr.noshow || 0);
   if (attendSample < 5) missing.push('عيّنة الحضور هذا الشهر أقل من 5 مواعيد مكتملة — لا استنتاج عن سبب الغياب.');
 
@@ -469,8 +445,7 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
       ? 'لا نسبة حضور هذا الشهر لأن لا مواعيد بحالة حضر/لم يحضر.'
       : `نسبة الحضور (حضر ÷ حضر+غاب) هذا الشهر ${curr.attendRate}% مقابل ${prev.attendRate == null ? 'غير متاحة' : `${prev.attendRate}%`} في الفترة المقارنة.`;
   } else if (kind === 'rev') {
-    const change = deltas.rev == null ? 'لا نسبة مقارنة لأن إيراد الفترة السابقة صفر.' : `التغيّر ${deltas.rev > 0 ? '+' : ''}${deltas.rev}%.`;
-    answer = `إيراد ${fmtMoney(curr.revenue)} مقابل ${fmtMoney(prev.revenue)}. ${change}`;
+    answer = 'أسعار الجلسات لا تُحتسب إيراداً. المبلغ يظهر فقط على المنتجات وطلبات المتجر.';
   } else if (kind === 'crowd') {
     const pd = occupancy?.peakDay;
     const ph = occupancy?.peakHour;
@@ -485,7 +460,7 @@ export function answerFromData(question, { health, tasks, appointments = [], ser
   } else if (kind === 'book') {
     answer = `حجوزات الفترة الحالية ${curr.total || 0} (مؤكد ${curr.confirmed || 0}، معلّق ${curr.pending || 0}، ملغي ${curr.cancelled || 0}).`;
   } else {
-    answer = `حجوزات ${curr.total || 0} · إيراد ${fmtMoney(curr.revenue)} · حضور ${curr.attendRate == null ? '—' : `${curr.attendRate}%`}.`;
+    answer = `حجوزات ${curr.total || 0} · حضور ${curr.attendRate == null ? '—' : `${curr.attendRate}%`}.`;
   }
 
   return { answer, facts, missing, servicesCount: (services || []).length, intent: kind };
@@ -503,11 +478,11 @@ export function siteStatus({ clinicInfo, clinicId, services = [], blog = [] }) {
     { id: 'seoD', ok: !!info.seoDescription, label: 'وصف SEO' },
     { id: 'logo', ok: !!info.logoUrl, label: 'شعار' },
   ];
-  const thinServices = (services || []).filter((s) => !s.description || !s.price);
+  const thinServices = (services || []).filter((s) => !s.description);
   return {
     url,
     theme: info.storeTheme || 'غير محدد',
-    published: !!info.name,
+    published: info.websitePublished !== false && !!info.name,
     domainNote: 'الرابط الحالي مسار نورا `/book/{معرّف}` — لا دومين مخصص مخزّن بعد.',
     checks,
     ready: checks.filter((c) => c.ok).length,
@@ -515,13 +490,13 @@ export function siteStatus({ clinicInfo, clinicId, services = [], blog = [] }) {
     services: (services || []).map((s) => ({
       id: s.id,
       name: s.title || s.name,
-      price: s.price,
       hasDesc: !!s.description,
       duration: s.duration,
     })),
     thinServices,
     blogCount: (blog || []).length,
     showBlog: info.showBlog !== false,
+    showProducts: info.showProducts !== false,
     showServices: info.showServices !== false,
   };
 }

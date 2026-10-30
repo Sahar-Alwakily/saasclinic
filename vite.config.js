@@ -7,4 +7,12 @@ export default defineConfig({
     react(),
     tailwindcss(), // ضيف هاد السطر
   ],
+  server: {
+    port: 5173,
+    strictPort: true,
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.js'],
+  },
 })

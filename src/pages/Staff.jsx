@@ -15,7 +15,7 @@ const CATEGORIES = [
 ];
 
 const Staff = () => {
-  const { clinicPath, clinicId, clinicInfo, plan } = useClinic();
+  const { clinicPath, clinicId, clinicInfo, plan, planConfig, isSupport } = useClinic();
   const [staff, setStaff] = useState([]);
   const [userCount, setUserCount] = useState(0);
   const [branches, setBranches] = useState([]);
@@ -66,7 +66,7 @@ const Staff = () => {
       return toast.error('كلمة المرور يجب أن تكون 6 أحرف على الأقل');
     }
 
-    if (!withinUserLimit(clinicInfo, userCount)) {
+    if (!isSupport && !withinUserLimit(clinicInfo, userCount, planConfig)) {
       return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات`);
     }
 
@@ -119,99 +119,104 @@ const Staff = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div></div>;
+  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">إدارة الموظفين</h1>
-          <p className="text-gray-500 text-sm mt-1">أضف فريق عملك وحدد أقسامهم وفروعهم</p>
+          <h1 className="text-[22px] font-bold text-[#111827]">إدارة الموظفين</h1>
+          <p className="text-sm text-[#8a9199] mt-1">أضيفي فريق العمل وحددي أقسامهم وفروعهم.</p>
         </div>
         <button
+          type="button"
           onClick={() => {
-            if (!withinUserLimit(clinicInfo, userCount)) {
+            if (!isSupport && !withinUserLimit(clinicInfo, userCount, planConfig)) {
               return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات — من المدفوعات ترقّي الباقة`);
             }
             setShowModal(true);
           }}
-          className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium"
+          className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold"
         >
           <FaPlus /> موظفة جديدة
         </button>
       </div>
 
+      <div className="grid grid-cols-2 gap-3">
+        <div className="saas-card stat-card-mint p-4">
+          <p className="text-xs text-[#047857]">الموظفات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{staff.length}</p>
+        </div>
+        <div className="saas-card stat-card-sky p-4">
+          <p className="text-xs text-[#0369a1]">الفروع</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{branches.length}</p>
+        </div>
+      </div>
+
       {staff.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 text-center py-20">
-          <div className="text-5xl mb-4">👩‍⚕️</div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">لا يوجد موظفين بعد</h3>
-          <p className="text-gray-500 text-sm">أضف موظفاتك ليتمكنّ من إدارة الحجوزات.</p>
+        <div className="saas-card text-center py-16">
+          <h3 className="text-lg font-bold text-[#111827] mb-2">لا موظفات بعد</h3>
+          <p className="text-sm text-[#8a9199]">أضيفي موظفات ليتمكنّ من إدارة الحجوزات.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {staff.map((member) => {
-            const branchName = branches.find(b => b.id === member.branch)?.name || 'غير محدد';
+            const branchName = branches.find((b) => b.id === member.branch)?.name || 'غير محدد';
             return (
-              <div key={member.id} className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 relative group">
-                <button onClick={() => handleDelete(member.id)} className="absolute top-4 left-4 w-8 h-8 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-100">
-                  <FaTrash className="text-xs" />
-                </button>
-
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl">
-                    <FaUserTie />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">{member.name}</h3>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <span className="inline-block bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-gray-300 text-[10px] px-2 py-0.5 rounded-md">
-                        {CATEGORIES.find(c => c.id === member.category)?.name || 'غير محدد'}
-                      </span>
-                      <span className="inline-block bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 text-[10px] px-2 py-0.5 rounded-md">
-                        {branchName}
-                      </span>
+              <article key={member.id} className="saas-card p-5">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shrink-0">
+                      <FaUserTie />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-[#111827] truncate">{member.name}</h3>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        <span className="nura-chip nura-chip-sky">{CATEGORIES.find((c) => c.id === member.category)?.name || 'غير محدد'}</span>
+                        <span className="nura-chip nura-chip-mint">{branchName}</span>
+                      </div>
                     </div>
                   </div>
+                  <button type="button" onClick={() => handleDelete(member.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center shrink-0">
+                    <FaTrash className="text-xs" />
+                  </button>
                 </div>
-
-                <div className="pt-4 border-t border-gray-100 dark:border-slate-700 space-y-2">
-                  <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                    <FaEnvelope className="text-pink-400 text-xs" />
-                    <span dir="ltr">{member.email}</span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm text-[#8a9199]">
+                  <FaEnvelope className="text-emerald-500 text-xs" />
+                  <span dir="ltr">{member.email}</span>
                 </div>
-              </div>
+              </article>
             );
           })}
         </div>
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden" dir="rtl">
-            <div className="bg-pink-500 p-5 text-white flex justify-between items-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden" dir="rtl">
+            <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
               <h3 className="font-bold text-lg">إضافة موظفة جديدة</h3>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"><FaTimes /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><FaTimes /></button>
             </div>
 
             <form onSubmit={handleAddStaff} className="p-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم الموظفة</label>
-                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white" />
+                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني (للدخول)</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white" dir="ltr" />
+                <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">كلمة المرور المؤقتة</label>
-                <input type="text" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} required placeholder="6 أحرف على الأقل" className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white" dir="ltr" />
+                <input type="text" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} required placeholder="6 أحرف على الأقل" className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القسم المسؤول عنه</label>
-                <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white">
+                <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200">
                   {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
@@ -221,7 +226,7 @@ const Staff = () => {
                   value={form.branch} 
                   onChange={(e) => setForm({...form, branch: e.target.value})} 
                   required
-                  className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white"
+                  className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200"
                 >
                   <option value="" disabled>اختر الفرع...</option>
                   {branches.map(b => (
@@ -230,7 +235,7 @@ const Staff = () => {
                 </select>
               </div>
               
-              <button type="submit" disabled={submitting || branches.length === 0} className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold hover:bg-pink-600 transition mt-2 disabled:opacity-50">
+              <button type="submit" disabled={submitting || branches.length === 0} className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold mt-2 disabled:opacity-50">
                 {submitting ? 'جاري الإضافة...' : 'إضافة الموظفة'}
               </button>
               {branches.length === 0 && <p className="text-xs text-rose-500 text-center mt-2">الرجاء إضافة فرع أولاً من صفحة "الفروع"</p>}

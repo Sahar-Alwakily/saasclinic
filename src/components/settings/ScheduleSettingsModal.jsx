@@ -2,12 +2,45 @@ import React, { useState, useEffect } from 'react';
 import { ref, onValue, set } from 'firebase/database';
 import { database } from '../../APIFirebase/firebase';
 import { useClinic } from '../../context/ClinicContext';
-import { FaClock, FaSave, FaTimes, FaMapMarkerAlt, FaUserTie, FaCheck } from 'react-icons/fa';
+import { FaSave, FaMapMarkerAlt, FaUserTie, FaCheck } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
+import { parseHolidayDates, formatHourLabel } from '../../utils/scheduleSlots';
+import { Link } from 'react-router-dom';
 
 const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
-const ScheduleSettingsModal = ({ show, onClose }) => {
+function HolidayDatesEditor({ label, hint, dates, onChange }) {
+  const [draft, setDraft] = useState('');
+  const list = parseHolidayDates(dates);
+  const add = () => {
+    const ymd = String(draft || '').trim();
+    if (!ymd) return;
+    if (list.includes(ymd)) return setDraft('');
+    onChange([...list, ymd].sort().join(', '));
+    setDraft('');
+  };
+  const remove = (ymd) => onChange(list.filter((d) => d !== ymd).join(', '));
+  return (
+    <div className="space-y-2">
+      <p className="text-sm font-bold">{label}</p>
+      {hint && <p className="text-xs text-stone-500">{hint}</p>}
+      <div className="flex gap-2">
+        <input type="date" value={draft} onChange={(e) => setDraft(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-[#f8faf9] border border-[#e4eee8] text-sm" dir="ltr" />
+        <button type="button" onClick={add} className="px-4 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold">إضافة</button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {list.map((ymd) => (
+          <button key={ymd} type="button" onClick={() => remove(ymd)} className="nura-chip nura-chip-gold" dir="ltr">
+            {ymd} ×
+          </button>
+        ))}
+        {!list.length && <p className="text-xs text-[#8a9199]">لا تواريخ بعد</p>}
+      </div>
+    </div>
+  );
+}
+
+const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
   const { clinicPath } = useClinic();
   
   const [branches, setBranches] = useState([]);
@@ -16,9 +49,10 @@ const ScheduleSettingsModal = ({ show, onClose }) => {
   const [staffList, setStaffList] = useState([]);
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [schedule, setSchedule] = useState({});
-  
+  const [clinicHolidays, setClinicHolidays] = useState('');
   const [loading, setLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [savingClinic, setSavingClinic] = useState(false);
 
   // 1. جلب الفروع
   useEffect(() => {
@@ -33,6 +67,13 @@ const ScheduleSettingsModal = ({ show, onClose }) => {
       }
     });
     return () => unsub();
+  }, [clinicPath, show]);
+
+  useEffect(() => {
+    if (!clinicPath || !show) return undefined;
+    return onValue(ref(database, clinicPath('scheduleSettings/_clinicHolidays')), (snap) => {
+      setClinicHolidays(snap.val()?.holidays || '');
+    });
   }, [clinicPath, show]);
 
   // 2. جلب الموظفين حسب الفرع
@@ -91,8 +132,11 @@ const ScheduleSettingsModal = ({ show, onClose }) => {
     setIsSaving(true);
     try {
       const scheduleKey = `${selectedBranch}_${selectedStaffId}`;
-      await set(ref(database, clinicPath(`scheduleSettings/${scheduleKey}`)), schedule);
-      toast.success('تم حفظ جدول الموظفة بنجاح!');
+      await set(ref(database, clinicPath(`scheduleSettings/${scheduleKey}`)), {
+        ...schedule,
+        holidays: parseHolidayDates(schedule.holidays).join(', '),
+      });
+      toast.success('تم حفظ جدول وعطل الموظفة');
     } catch (error) {
       toast.error('حدث خطأ أثناء الحفظ');
     } finally {
@@ -100,122 +144,204 @@ const ScheduleSettingsModal = ({ show, onClose }) => {
     }
   };
 
-  if (!show) return null;
+  const saveClinicHolidays = async () => {
+    if (!clinicPath) return;
+    setSavingClinic(true);
+    try {
+      await set(ref(database, clinicPath('scheduleSettings/_clinicHolidays')), {
+        holidays: parseHolidayDates(clinicHolidays).join(', '),
+        updatedAt: Date.now(),
+      });
+      toast.success('حُفظت عطلة العيادة لكل الموظفات');
+    } catch {
+      toast.error('تعذّر حفظ عطلة العيادة');
+    } finally {
+      setSavingClinic(false);
+    }
+  };
+
+  if (!embedded && !show) return null;
+
+  const selectedStaff = staffList.find((s) => s.id === selectedStaffId);
+  const activeDays = DAYS.filter((_, idx) => schedule[`day_${idx}`]?.active).length;
+  const staffHolidays = parseHolidayDates(schedule.holidays).length;
+  const clinicHolidayCount = parseHolidayDates(clinicHolidays).length;
+  const hourOptions = () => Array.from({ length: 24 }, (_, h) => (
+    <option key={h} value={h}>{formatHourLabel(h)}</option>
+  ));
+
+  const body = (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="saas-card stat-card-mint p-4">
+          <p className="text-[12px] text-[#047857]">موظفات الفرع</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{staffList.length}</p>
+        </div>
+        <div className="saas-card stat-card-sky p-4">
+          <p className="text-[12px] text-[#0369a1]">أيام دوامها</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{activeDays}</p>
+        </div>
+        <div className="saas-card stat-card-gold p-4">
+          <p className="text-[12px] text-[#b45309]">عطل الموظفة</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{staffHolidays}</p>
+        </div>
+        <div className="saas-card stat-card-rose p-4">
+          <p className="text-[12px] text-[#be123c]">عطلة العيادة</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{clinicHolidayCount}</p>
+        </div>
+      </div>
+
+      <section className="saas-card p-4 sm:p-5 space-y-4">
+        <div>
+          <p className="text-xs font-bold text-[#8a9199] mb-2 flex items-center gap-1"><FaMapMarkerAlt /> الفرع</p>
+          {branches.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {branches.map((branch) => (
+                <button
+                  key={branch.id}
+                  type="button"
+                  onClick={() => setSelectedBranch(branch.id)}
+                  className={`px-3 py-2 rounded-2xl text-sm font-bold ${
+                    selectedBranch === branch.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
+                  }`}
+                >
+                  {selectedBranch === branch.id ? <FaCheck className="inline ml-1 text-xs" /> : null}
+                  {branch.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <p className="text-sm text-rose-600 font-bold">أضيفي فرعاً أولاً من الفريق والفروع.</p>
+          )}
+        </div>
+        <div>
+          <p className="text-xs font-bold text-[#8a9199] mb-2 flex items-center gap-1"><FaUserTie /> الموظفة</p>
+          {staffList.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {staffList.map((staff) => (
+                <button
+                  key={staff.id}
+                  type="button"
+                  onClick={() => setSelectedStaffId(staff.id)}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-bold ${
+                    selectedStaffId === staff.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
+                  }`}
+                >
+                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs ${
+                    selectedStaffId === staff.id ? 'bg-white/20' : 'bg-white text-emerald-700'
+                  }`}>
+                    {(staff.name || 'م').trim().charAt(0)}
+                  </span>
+                  {staff.name}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 text-sm text-amber-800">
+              لا موظفات في هذا الفرع. <Link to="/staff" className="font-bold underline">أضيفيهن من الموظفات</Link>.
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="saas-card p-4 sm:p-5 space-y-3">
+        <HolidayDatesEditor
+          label="عطلة شاملة للعيادة"
+          hint="تاريخ واحد يُغلق الحجز لكل الموظفات دفعة واحدة."
+          dates={clinicHolidays}
+          onChange={setClinicHolidays}
+        />
+        <button type="button" onClick={saveClinicHolidays} disabled={savingClinic} className="px-4 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold disabled:opacity-50">
+          {savingClinic ? 'جاري الحفظ...' : 'حفظ عطلة العيادة'}
+        </button>
+      </section>
+
+      {staffList.length > 0 && (
+        <section className="saas-card p-4 sm:p-5 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="font-bold text-[#111827]">أسبوع {selectedStaff?.name || 'الموظفة'}</h2>
+              <p className="text-xs text-[#8a9199] mt-0.5">فعّلي اليوم ثم حددي من أي ساعة إلى أي ساعة.</p>
+            </div>
+            <button type="button" onClick={handleSave} disabled={isSaving} className="px-4 py-2.5 rounded-xl bg-[#10b981] text-white text-sm font-bold flex items-center gap-2 disabled:opacity-50">
+              <FaSave /> {isSaving ? 'جاري الحفظ...' : 'حفظ الجدول'}
+            </button>
+          </div>
+          <HolidayDatesEditor
+            label="عطل هذه الموظفة"
+            hint="إجازة لهذه الموظفة فقط — الحجز يُغلق لها في هذه الأيام."
+            dates={schedule.holidays}
+            onChange={(holidays) => setSchedule((prev) => ({ ...prev, holidays }))}
+          />
+          {loading ? (
+            <p className="text-center py-8 text-[#8a9199]">جاري تحميل الجدول...</p>
+          ) : (
+            <div className="space-y-2">
+              {DAYS.map((day, idx) => {
+                const dayData = schedule[`day_${idx}`] || { active: false, start: 9, end: 17 };
+                return (
+                  <div
+                    key={idx}
+                    className={`rounded-2xl border p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
+                      dayData.active ? 'bg-emerald-50/70 border-emerald-100' : 'bg-[#f8faf9] border-[#e4eee8]'
+                    }`}
+                  >
+                    <label className="flex items-center gap-3 cursor-pointer min-w-[9rem]">
+                      <input type="checkbox" checked={!!dayData.active} onChange={() => handleToggleDay(idx)} className="sr-only" />
+                      <span className={`w-11 h-6 rounded-full relative shrink-0 ${dayData.active ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
+                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${dayData.active ? 'left-0.5' : 'right-0.5'}`} />
+                      </span>
+                      <span className={`font-bold ${dayData.active ? 'text-emerald-800' : 'text-[#8a9199]'}`}>{day}</span>
+                    </label>
+                    {dayData.active ? (
+                      <div className="flex-1 flex gap-2 items-center">
+                        <select value={dayData.start} onChange={(e) => handleTimeChange(idx, 'start', e.target.value)} className="flex-1 p-2.5 rounded-xl bg-white border border-emerald-100 text-sm font-bold">
+                          {hourOptions()}
+                        </select>
+                        <span className="text-[#8a9199] text-sm font-bold">إلى</span>
+                        <select value={dayData.end} onChange={(e) => handleTimeChange(idx, 'end', e.target.value)} className="flex-1 p-2.5 rounded-xl bg-white border border-emerald-100 text-sm font-bold">
+                          {hourOptions()}
+                        </select>
+                      </div>
+                    ) : (
+                      <p className="flex-1 text-sm text-[#8a9199]">إجازة</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+      )}
+
+      {!embedded && onClose && (
+        <div className="flex justify-end">
+          <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-bold">إغلاق</button>
+        </div>
+      )}
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className="space-y-5" dir="rtl">
+        <ToastContainer position="top-left" rtl />
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-[22px] font-bold text-[#111827]">دوام الموظفين</h1>
+            <p className="text-sm text-[#8a9199] mt-1">أيام وساعات كل موظفة، عطلها، وعطلة العيادة للكل.</p>
+          </div>
+          <Link to="/staff" className="nura-chip nura-chip-mint">الموظفات</Link>
+        </div>
+        {body}
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" dir="rtl">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
-        
-        <div className="bg-gradient-to-l from-blue-600 to-indigo-600 p-5 text-white flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-              <FaClock className="text-xl" />
-            </div>
-            <div>
-              <h3 className="font-bold text-lg">إعدادات دوام الموظفين</h3>
-              <p className="text-xs text-blue-100">حدد الفرع والموظفة لضبط الجدول</p>
-            </div>
-          </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition"><FaTimes /></button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6 bg-gray-50 border-b space-y-4">
-            
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><FaMapMarkerAlt /> اختر الفرع</label>
-              {branches.length > 0 ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {branches.map(branch => (
-                    <button
-                      key={branch.id}
-                      onClick={() => setSelectedBranch(branch.id)}
-                      className={`p-3 rounded-xl border-2 font-bold transition-all flex items-center justify-center gap-2 ${
-                        selectedBranch === branch.id 
-                          ? 'border-blue-500 bg-blue-50 text-blue-700 shadow-sm' 
-                          : 'border-gray-200 bg-white text-gray-500 hover:border-blue-200'
-                      }`}
-                    >
-                      {selectedBranch === branch.id && <FaCheck className="text-blue-500" />}
-                      {branch.name}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-rose-500 text-sm font-bold">الرجاء إضافة فروع أولاً.</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2 flex items-center gap-1"><FaUserTie /> اختر الموظفة</label>
-              {staffList.length > 0 ? (
-                <select 
-                  value={selectedStaffId} 
-                  onChange={(e) => setSelectedStaffId(e.target.value)}
-                  className="w-full p-3.5 border-2 border-blue-100 rounded-xl focus:border-blue-400 outline-none font-bold text-gray-800 bg-white shadow-sm"
-                >
-                  {staffList.map(staff => (
-                    <option key={staff.id} value={staff.id}>{staff.name} (قسم: {staff.category})</option>
-                  ))}
-                </select>
-              ) : (
-                <div className="p-4 bg-amber-50 text-amber-700 rounded-xl text-sm font-bold border border-amber-200">
-                  ⚠️ لا يوجد موظفات مسجلات في هذا الفرع. أضفهن من صفحة "الموظفين" أولاً.
-                </div>
-              )}
-            </div>
-          </div>
-
-          {staffList.length > 0 && (
-            <div className="p-6 space-y-4">
-              {loading ? (
-                <div className="text-center py-10 text-gray-500">جاري تحميل الجدول...</div>
-              ) : (
-                DAYS.map((day, idx) => {
-                  const dayData = schedule[`day_${idx}`] || { active: false, start: 9, end: 17 };
-                  return (
-                    <div key={idx} className={`border-2 rounded-2xl p-4 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${dayData.active ? 'border-blue-200 bg-blue-50/30' : 'border-gray-100 bg-white'}`}>
-                      
-                      <label className="flex items-center gap-3 cursor-pointer min-w-[120px]">
-                        <div className="relative">
-                          <input type="checkbox" checked={dayData.active} onChange={() => handleToggleDay(idx)} className="sr-only" />
-                          <div className={`w-11 h-6 rounded-full transition-colors ${dayData.active ? 'bg-blue-500' : 'bg-gray-300'}`}></div>
-                          <div className={`absolute top-0.5 right-0.5 w-5 h-5 bg-white rounded-full transition-transform shadow ${dayData.active ? '-translate-x-5' : 'translate-x-0'}`}></div>
-                        </div>
-                        <span className={`font-bold ${dayData.active ? 'text-blue-800' : 'text-gray-500'}`}>{day}</span>
-                      </label>
-
-                      {dayData.active ? (
-                        <div className="flex-1 flex gap-3 items-center">
-                          <div className="flex-1">
-                            <select value={dayData.start} onChange={(e) => handleTimeChange(idx, 'start', e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:border-blue-400 outline-none">
-                              {Array.from({length: 24}).map((_, h) => <option key={h} value={h}>{h}:00</option>)}
-                            </select>
-                          </div>
-                          <span className="text-gray-400 font-bold">إلى</span>
-                          <div className="flex-1">
-                            <select value={dayData.end} onChange={(e) => handleTimeChange(idx, 'end', e.target.value)} className="w-full p-2.5 border border-gray-200 rounded-xl text-sm focus:border-blue-400 outline-none">
-                              {Array.from({length: 24}).map((_, h) => <option key={h} value={h}>{h}:00</option>)}
-                            </select>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="flex-1 text-sm text-gray-400 md:text-left text-center">يوم إجازة (غير مفعل)</div>
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t bg-gray-50 flex justify-end gap-2">
-          <button onClick={onClose} className="px-6 py-2.5 rounded-xl bg-gray-200 text-gray-700 font-bold hover:bg-gray-300 transition">إغلاق</button>
-          <button onClick={handleSave} disabled={isSaving || staffList.length === 0} className="px-6 py-2.5 rounded-xl bg-blue-600 text-white font-bold flex items-center gap-2 hover:bg-blue-700 transition disabled:opacity-50">
-            <FaSave /> {isSaving ? 'جاري الحفظ...' : 'حفظ الجدول'}
-          </button>
-        </div>
+        {body}
       </div>
     </div>
   );

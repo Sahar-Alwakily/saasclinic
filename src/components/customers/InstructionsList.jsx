@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ref, onValue, set, remove } from 'firebase/database';
+import { ref, onValue, set } from 'firebase/database';
 import { FaTimes, FaPen, FaTrash, FaChevronDown } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import { database } from '../../APIFirebase/firebase';
@@ -21,12 +21,12 @@ const EditInstructionsModal = ({ show, onClose, serviceName, phase, initial, onS
             <button type="button" onClick={() => setRows(rows.filter((_, j) => j !== i))} className="text-rose-500"><FaTrash /></button>
           </div>
         ))}
-        <button type="button" className="text-xs font-bold text-violet-600" onClick={() => setRows([...rows, ''])}>+ سطر</button>
+        <button type="button" className="text-xs font-bold text-emerald-700" onClick={() => setRows([...rows, ''])}>+ سطر</button>
         <div className="flex gap-2">
-          <button type="button" onClick={onClose} className="flex-1 py-2 bg-gray-100 rounded-xl">إلغاء</button>
+          <button type="button" onClick={onClose} className="flex-1 py-2 bg-emerald-50 text-emerald-800 rounded-xl font-bold">إلغاء</button>
           <button
             type="button"
-            className="flex-1 py-2 bg-violet-600 text-white rounded-xl font-bold"
+            className="flex-1 py-2 bg-[#10b981] text-white rounded-xl font-bold"
             onClick={async () => {
               const arr = rows.map((x) => x.trim()).filter(Boolean);
               await set(ref(database, clinicPath(`treatments/customInstructions/${serviceName}/${phase}`)), arr);
@@ -41,7 +41,7 @@ const EditInstructionsModal = ({ show, onClose, serviceName, phase, initial, onS
   );
 };
 
-const InstructionsList = ({ show, onClose }) => {
+const InstructionsList = ({ show = true, onClose, embedded = false }) => {
   const { clinicPath } = useClinic();
   const [services, setServices] = useState([]);
   const [instructions, setInstructions] = useState({});
@@ -51,13 +51,13 @@ const InstructionsList = ({ show, onClose }) => {
   const [edit, setEdit] = useState(null);
 
   useEffect(() => {
-    if (!show || !clinicPath) return undefined;
+    if ((!embedded && !show) || !clinicPath) return undefined;
     const u1 = onValue(ref(database, clinicPath('services')), (s) => {
       setServices(s.val() ? Object.entries(s.val()).map(([id, v]) => ({ id, ...v })) : []);
     });
     const u2 = onValue(ref(database, clinicPath('treatments/customInstructions')), (s) => setInstructions(s.val() || {}));
     return () => { u1(); u2(); };
-  }, [show, clinicPath]);
+  }, [show, embedded, clinicPath]);
 
   const list = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -68,60 +68,43 @@ const InstructionsList = ({ show, onClose }) => {
     });
   }, [services, cat, q]);
 
-  if (!show) return null;
+  if (!embedded && !show) return null;
 
-  const del = async (s) => {
-    if (!window.confirm(`حذف الخدمة «${s.title}» وتعليماتها؟`)) return;
-    try {
-      await remove(ref(database, clinicPath(`services/${s.id}`)));
-      if (s.title) await remove(ref(database, clinicPath(`treatments/customInstructions/${s.title}`)));
-      toast.success('حُذفت الخدمة');
-    } catch {
-      toast.error('تعذّر الحذف');
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[70] bg-[#f3efe6] dark:bg-slate-900 overflow-y-auto" dir="rtl">
-      <div className="sticky top-0 bg-white dark:bg-slate-800 border-b p-4 flex justify-between items-center">
-        <h2 className="font-bold text-lg">تعليمات الخدمات</h2>
-        <button type="button" onClick={onClose} className="w-10 h-10 rounded-full bg-stone-100 flex items-center justify-center"><FaTimes /></button>
+  const inner = (
+    <div className="space-y-3" dir="rtl">
+      <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث في الخدمات..." className="w-full p-3 rounded-xl bg-[#f8faf9] border border-[#e4eee8] outline-none text-sm" />
+      <div className="flex gap-2 overflow-x-auto no-scrollbar">
+        <button type="button" onClick={() => setCat('all')} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === 'all' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>الكل</button>
+        {SERVICE_CATEGORIES.map((c) => (
+          <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === c.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>{c.name}</button>
+        ))}
       </div>
-      <div className="p-4 max-w-3xl mx-auto space-y-3">
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="بحث..." className="w-full p-3 rounded-xl border dark:bg-slate-800" />
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          <button type="button" onClick={() => setCat('all')} className={`shrink-0 px-3 py-1.5 rounded-full text-sm ${cat === 'all' ? 'bg-violet-600 text-white' : 'bg-white'}`}>الكل</button>
-          {SERVICE_CATEGORIES.map((c) => (
-            <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-sm ${cat === c.id ? 'bg-violet-600 text-white' : 'bg-white'}`}>{c.name}</button>
-          ))}
-        </div>
-        {list.map((s) => {
-          const ins = instructions[s.title] || {};
-          const open = openId === s.id;
-          return (
-            <div key={s.id} className="bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 overflow-hidden">
-              <button type="button" onClick={() => setOpenId(open ? null : s.id)} className="w-full text-right p-4 flex justify-between items-center">
-                <span className="font-bold dark:text-white">{s.title}</span>
-                <FaChevronDown className={`text-stone-400 transition ${open ? 'rotate-180' : ''}`} />
-              </button>
-              {open && (
-                <div className="px-4 pb-4 space-y-3 text-sm">
-                  {['during', 'after'].map((ph) => (
-                    <div key={ph} className="rounded-xl bg-stone-50 dark:bg-slate-700/50 p-3">
-                      <div className="flex justify-between mb-2">
-                        <span className="font-bold">{ph === 'during' ? 'أثناء العلاج' : 'بعد العلاج'}</span>
-                        <button type="button" className="text-violet-600" onClick={() => setEdit({ serviceName: s.title, phase: ph, initial: ins[ph] || [] })}><FaPen /></button>
-                      </div>
-                      {(ins[ph] || []).length ? (ins[ph] || []).map((line, i) => <p key={i}>• {line}</p>) : <p className="text-stone-400">لا تعليمات</p>}
+      {!list.length && <p className="text-sm text-[#8a9199] py-8 text-center">لا خدمات بعد — أضيفي الخدمة من قسم الخدمات.</p>}
+      {list.map((s) => {
+        const ins = instructions[s.title] || {};
+        const open = openId === s.id;
+        return (
+          <div key={s.id} className="saas-card overflow-hidden">
+            <button type="button" onClick={() => setOpenId(open ? null : s.id)} className="w-full text-right p-4 flex justify-between items-center">
+              <span className="font-bold text-[#111827]">{s.title}</span>
+              <FaChevronDown className={`text-[#8a9199] transition ${open ? 'rotate-180' : ''}`} />
+            </button>
+            {open && (
+              <div className="px-4 pb-4 space-y-3 text-sm">
+                {['during', 'after'].map((ph) => (
+                  <div key={ph} className={`rounded-xl p-3 ${ph === 'during' ? 'bg-sky-50' : 'bg-emerald-50'}`}>
+                    <div className="flex justify-between mb-2">
+                      <span className="font-bold">{ph === 'during' ? 'أثناء العلاج' : 'بعد العلاج'}</span>
+                      <button type="button" className="text-emerald-700" onClick={() => setEdit({ serviceName: s.title, phase: ph, initial: ins[ph] || [] })}><FaPen /></button>
                     </div>
-                  ))}
-                  <button type="button" onClick={() => del(s)} className="text-rose-500 text-xs font-bold">حذف الخدمة</button>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                    {(ins[ph] || []).length ? (ins[ph] || []).map((line, i) => <p key={i}>• {line}</p>) : <p className="text-[#8a9199]">لا تعليمات</p>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       <EditInstructionsModal
         show={!!edit}
         onClose={() => setEdit(null)}
@@ -129,6 +112,18 @@ const InstructionsList = ({ show, onClose }) => {
         phase={edit?.phase}
         initial={edit?.initial}
       />
+    </div>
+  );
+
+  if (embedded) return inner;
+
+  return (
+    <div className="fixed inset-0 z-[70] bg-white overflow-y-auto" dir="rtl">
+      <div className="sticky top-0 bg-white border-b border-[#e4eee8] p-4 flex justify-between items-center">
+        <h2 className="font-bold text-lg">تعليمات الخدمات</h2>
+        <button type="button" onClick={onClose} className="w-10 h-10 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center"><FaTimes /></button>
+      </div>
+      <div className="p-4 max-w-3xl mx-auto">{inner}</div>
     </div>
   );
 };

@@ -104,11 +104,6 @@ const ServiceDetails = () => {
           <div className="p-6 md:p-10">
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
               <h1 className="text-3xl font-extrabold text-gray-800">{service.title}</h1>
-              {service.price !== undefined && service.price !== '' && (
-                <span className="text-2xl font-bold px-4 py-2 rounded-xl" style={{ backgroundColor: bgColor, color: primaryColor }}>
-                  {service.price} ₪
-                </span>
-              )}
             </div>
 
             <div className="flex flex-wrap gap-3 mb-8">

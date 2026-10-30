@@ -58,7 +58,7 @@ const WeeklyAppointments = ({ appointments = [], services = [] }) => {
     <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white flex items-center justify-center shadow-sm">
+          <div className="w-8 h-8 rounded-md bg-[#eef2f1] text-[#172B3A] flex items-center justify-center">
             <FaCalendarAlt />
           </div>
           <div>
@@ -66,7 +66,7 @@ const WeeklyAppointments = ({ appointments = [], services = [] }) => {
             <p className="text-xs text-gray-400">نظرة على الأسبوع القادم</p>
           </div>
         </div>
-        <button onClick={() => navigate('/appointments')} className="flex items-center gap-1 text-xs text-violet-500 hover:text-violet-700 transition-colors">
+        <button onClick={() => navigate('/appointments')} className="flex items-center gap-1 text-xs text-[#172B3A] hover:text-[#122330] transition-colors">
           عرض الكل <FaChevronLeft className="text-[10px]" />
         </button>
       </div>
@@ -75,11 +75,11 @@ const WeeklyAppointments = ({ appointments = [], services = [] }) => {
         {weeklyData.map((day, idx) => (
           <div key={idx} className={`flex items-center gap-3 p-3 rounded-2xl transition-all ${day.isWeekend ? 'bg-gray-50/50 opacity-60' : 'hover:bg-gray-50'}`}>
             <div className="w-16 flex-shrink-0">
-              <p className={`text-sm font-bold ${idx === 0 ? 'text-violet-600' : 'text-gray-700'}`}>{day.label}</p>
+              <p className={`text-sm font-medium ${idx === 0 ? 'text-[#172B3A]' : 'text-gray-700'}`}>{day.label}</p>
               <p className="text-[10px] text-gray-400">{day.shortDate}</p>
             </div>
             <div className="flex-1 relative h-8 bg-gray-100 rounded-lg overflow-hidden">
-              <div className="absolute inset-y-0 right-0 bg-gradient-to-l from-violet-500 to-fuchsia-500 rounded-lg transition-all" style={{ width: `${(day.total / maxCount) * 100}%`, minWidth: day.total > 0 ? '2rem' : '0' }} />
+              <div className="absolute inset-y-0 right-0 bg-[#172B3A] rounded-md transition-all" style={{ width: `${(day.total / maxCount) * 100}%`, minWidth: day.total > 0 ? '2rem' : '0' }} />
               {day.total > 0 && (
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-xs font-bold text-white drop-shadow">{day.total} حجز</span>

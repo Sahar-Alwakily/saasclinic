@@ -2,7 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useAuth } from './AuthContext';
-import { clinicPlan, hasCap as planHasCap, isTrialExpired } from '../config/plans';
+import { mergePlan, hasCap as planHasCap, isTrialExpired } from '../config/plans';
 
 const ClinicContext = createContext(null);
 
@@ -10,6 +10,8 @@ export const ClinicProvider = ({ children }) => {
   const { userMeta, loading: authLoading } = useAuth();
   const [clinicInfo, setClinicInfo] = useState(null);
   const [loadingClinic, setLoadingClinic] = useState(true);
+  const [planConfig, setPlanConfig] = useState(null);
+  const [templates, setTemplates] = useState(null);
 
   const clinicId = userMeta?.clinicId || null;
   const userRole = userMeta?.role || null;
@@ -40,6 +42,12 @@ export const ClinicProvider = ({ children }) => {
     return () => unsub();
   }, [clinicId, authLoading]);
 
+  useEffect(() => {
+    const u1 = onValue(ref(database, 'platform/planConfig'), (snap) => setPlanConfig(snap.val()));
+    const u2 = onValue(ref(database, 'platform/templates'), (snap) => setTemplates(snap.val()));
+    return () => { u1(); u2(); };
+  }, []);
+
   const buildClinicPath = useCallback((subPath = '') => {
     if (!clinicId) return null;
     const clean = String(subPath || '').replace(/^\/|\/$/g, '');
@@ -48,8 +56,12 @@ export const ClinicProvider = ({ children }) => {
 
   // null حتى تُحمَّل العيادة — حتى لا يُستدعى Firebase بمسار "null"
   const clinicPath = clinicId ? buildClinicPath : null;
-  const plan = useMemo(() => clinicPlan(clinicInfo), [clinicInfo]);
-  const hasCap = useCallback((cap) => planHasCap(clinicInfo, cap), [clinicInfo]);
+  const plan = useMemo(() => mergePlan(clinicInfo, planConfig), [clinicInfo, planConfig]);
+  const isSupport = userRole === 'support';
+  const hasCap = useCallback((cap) => {
+    if (userRole === 'support') return true;
+    return planHasCap(clinicInfo, cap, planConfig);
+  }, [clinicInfo, planConfig, userRole]);
   const trialExpired = isTrialExpired(clinicInfo);
 
   return (
@@ -61,10 +73,13 @@ export const ClinicProvider = ({ children }) => {
         clinicPath,
         userCategory,
         loadingClinic,
-        isAdmin: userRole === 'admin',
+        isAdmin: userRole === 'admin' || userRole === 'support',
+        isSupport,
         plan,
         hasCap,
         trialExpired,
+        planConfig,
+        templates,
       }}
     >
       {children}

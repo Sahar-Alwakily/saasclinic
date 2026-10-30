@@ -4,22 +4,30 @@ import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import {
-  clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus, occupancyInsights,
+  clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus, occupancyInsights, toYmd,
 } from '../utils/clinicInsights';
+import { FaUsers, FaCalendarDay, FaChartLine, FaClipboardList } from 'react-icons/fa';
 
 const TONES = {
-  azure: '#4d7cff',
-  coral: '#ff6b4a',
-  mint: '#22c9a0',
-  gold: '#f0b429',
-  lilac: '#a78bfa',
+  azure: '#0ea5e9',
+  coral: '#f43f5e',
+  mint: '#10b981',
+  gold: '#f59e0b',
+  lilac: '#8b5cf6',
+};
+
+const APT_STATUS = {
+  pending: { label: 'معلّق', cls: 'bg-orange-50 text-orange-600' },
+  confirmed: { label: 'مؤكد', cls: 'bg-emerald-50 text-emerald-600' },
+  cancelled: { label: 'ملغى', cls: 'bg-rose-50 text-rose-500' },
+  attended: { label: 'حضرت', cls: 'bg-emerald-50 text-emerald-600' },
+  noshow: { label: 'غياب', cls: 'bg-rose-50 text-rose-500' },
 };
 
 const PROMPTS = [
   { id: 'drop', text: 'ليش انخفضت الحجوزات هذا الشهر؟' },
   { id: 'crowd', text: 'أي ساعات وأيام فيها ازدحام؟' },
   { id: 'today', text: 'شو يحتاج تدخل اليوم؟' },
-  { id: 'rev', text: 'وين الإيراد مقارنة بالشهر الماضي؟' },
 ];
 
 const Dashboard = () => {
@@ -39,6 +47,7 @@ const Dashboard = () => {
   const [ask, setAsk] = useState(PROMPTS[0].text);
   const [reply, setReply] = useState(null);
   const replyRef = useRef(null);
+  const [calDay, setCalDay] = useState(() => toYmd(new Date()));
 
   useEffect(() => {
     if (loadingClinic || !clinicId || !clinicPath) return undefined;
@@ -106,7 +115,7 @@ const Dashboard = () => {
   if (loadingClinic || loadingData) {
     return (
       <div className="flex justify-center items-center h-64" role="status" aria-label="جاري التحميل">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4d7cff]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#111827]" />
       </div>
     );
   }
@@ -114,25 +123,146 @@ const Dashboard = () => {
   const score = health.score;
   const ring = score == null ? 0 : score;
   const circ = 2 * Math.PI * 36;
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'صباح الخير' : 'مساء الخير';
+  const who = clinicInfo?.ownerName || clinicInfo?.name || 'نورا';
+  const todayYmd = toYmd(new Date());
+  const todayApts = appointments.filter((a) => a.date === todayYmd);
+  const pendingToday = todayApts.filter((a) => a.status === 'pending').length;
+  const cancelledToday = todayApts.filter((a) => a.status === 'cancelled').length;
+  const bookDelta = health.deltas?.book;
+  const calList = appointments
+    .filter((a) => a.date === calDay)
+    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
+  const visibleAlerts = alerts.filter((a) => {
+    if (a.to === '/ops' && !hasCap('ops')) return false;
+    if (a.to === '/winback' && !hasCap('winback')) return false;
+    return true;
+  });
 
   return (
     <div className="space-y-6">
-      <div className="saas-card p-6 md:p-8 overflow-hidden relative">
-        <div className="absolute -left-10 -top-10 w-40 h-40 rounded-full bg-[#4d7cff]/20 blur-2xl" />
-        <p className="text-[11px] tracking-[0.25em] uppercase text-[#4d7cff] font-semibold relative">command center</p>
-        <h1 className="font-product text-3xl md:text-4xl mt-1 relative">
-          أهلاً، {clinicInfo?.ownerName || 'فريق العيادة'}
-        </h1>
-        <p className="text-stone-500 dark:text-stone-400 text-sm mt-2 relative max-w-xl">
-          ما يحتاج تفتيش كل قسم: التنبيهات والمهام وصحة العيادة من أرقامكِ فقط.
-        </p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-[26px] font-bold text-[#111827] tracking-tight">
+            {greet}، {who}
+          </h1>
+        </div>
+        {userRole !== 'worker' && (
+          <Link to="/customers" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#111827] text-white text-sm font-bold">
+            + عميلة جديدة
+          </Link>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <div className="saas-card stat-card-mint p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] text-[#047857]">العميلات</p>
+            <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><FaUsers /></span>
+          </div>
+          <p className="stat-num text-[34px] leading-none mt-3">{customers.length}</p>
+          <p className="text-[12px] text-[#6b7280] mt-3">مسجّلات في العيادة</p>
+        </div>
+        <div className="saas-card stat-card-sky p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] text-[#0369a1]">مواعيد اليوم</p>
+            <span className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center"><FaCalendarDay /></span>
+          </div>
+          <p className="stat-num text-[34px] leading-none mt-3">{todayApts.length}</p>
+          <p className="text-[12px] mt-3">
+            <span className="text-orange-500">{pendingToday} معلّق</span>
+            <span className="text-rose-500 mr-2">{cancelledToday} ملغى</span>
+          </p>
+        </div>
+        <div className="saas-card stat-card-lilac p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] text-[#6d28d9]">حجوزات هذا الشهر</p>
+            <span className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center"><FaChartLine /></span>
+          </div>
+          <p className="stat-num text-[34px] leading-none mt-3">{health.curr?.total ?? 0}</p>
+          <p className="text-[12px] mt-3">
+            {bookDelta == null ? 'مقارنة الشهر السابق غير متاحة' : (
+              <span className={bookDelta >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
+                {bookDelta >= 0 ? '+' : ''}{bookDelta}% عن الفترة المقابلة
+              </span>
+            )}
+          </p>
+        </div>
+        <div className="saas-card stat-card-gold p-5">
+          <div className="flex items-center justify-between">
+            <p className="text-[12px] text-[#b45309]">مهام معلّقة</p>
+            <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><FaClipboardList /></span>
+          </div>
+          <p className="stat-num text-[34px] leading-none mt-3">{tasks.pending.length}</p>
+          <p className="text-[12px] text-[#6b7280] mt-3">تأكيد حجوزات من السجل</p>
+        </div>
+      </div>
+
+      <div className="grid xl:grid-cols-[1.4fr_0.9fr] gap-4">
+        <section className="saas-card p-5">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <h2 className="font-bold text-[#111827]">مواعيد التقويم</h2>
+            <Link to="/appointments" className="text-xs font-bold text-[#6b7280]">الكل</Link>
+          </div>
+          <div className="flex gap-1 overflow-x-auto no-scrollbar pb-3">
+            {(occupancy.lookahead || []).map((d) => (
+              <button
+                key={d.date}
+                type="button"
+                onClick={() => setCalDay(d.date)}
+                className={`shrink-0 min-w-11 h-11 rounded-2xl text-sm font-bold ${
+                  calDay === d.date ? 'bg-[#111827] text-white' : 'text-[#6b7280] hover:bg-[#f3f5f7]'
+                }`}
+              >
+                {d.date.slice(-2)}
+              </button>
+            ))}
+          </div>
+          <div className="space-y-2">
+            {calList.length === 0 && <p className="text-sm text-[#8a9199] py-6 text-center">لا مواعيد في هذا اليوم.</p>}
+            {calList.slice(0, 6).map((a) => {
+              const st = APT_STATUS[a.status] || { label: a.status || '—', cls: 'bg-slate-50 text-slate-500' };
+              return (
+                <Link key={a.id} to="/appointments" className="flex items-center gap-3 rounded-2xl border border-[#ebeef2] px-3 py-3">
+                  <div className="w-9 h-9 rounded-full bg-[#ecfdf3] text-[#15803d] font-bold flex items-center justify-center text-sm shrink-0">
+                    {(a.customerName || 'ع').trim().charAt(0)}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-sm truncate">{a.customerName || 'عميلة'}</p>
+                    <p className="text-[11px] text-[#8a9199] truncate">{a.service || a.serviceName || '—'} · {a.time || '—'}</p>
+                  </div>
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
+        <section className="saas-card p-5">
+          <h2 className="font-bold text-[#111827] mb-4">صندوق المتابعة</h2>
+          {visibleAlerts.length === 0 && <p className="text-sm text-emerald-700">لا بند يحتاج تدخلاً من القواعد الحالية.</p>}
+          <div className="space-y-2">
+            {visibleAlerts.slice(0, 5).map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                onClick={() => a.to && navigate(a.to)}
+                className="w-full text-right rounded-2xl p-3 bg-rose-50/80 border border-rose-100"
+              >
+                <span className="block font-bold text-sm">{a.title}</span>
+                <span className="block text-xs text-[#8a9199] mt-0.5">{a.detail}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       </div>
 
       <section className="saas-card p-5 md:p-6">
         <div className="flex flex-col md:flex-row gap-6 items-start">
           <div className="relative w-[104px] h-[104px] shrink-0">
             <svg viewBox="0 0 88 88" className="w-full h-full -rotate-90">
-              <circle cx="44" cy="44" r="36" fill="none" stroke="#e4ddd0" strokeWidth="8" />
+              <circle cx="44" cy="44" r="36" fill="none" stroke="#E5E9EC" strokeWidth="8" />
               <circle
                 cx="44"
                 cy="44"
@@ -156,13 +286,13 @@ const Dashboard = () => {
             </p>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
               {health.pillars.map((p) => (
-                <div key={p.id} className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">
+                <div key={p.id} className="rounded-xl bg-emerald-50/70 dark:bg-[#1A2C38] p-3">
                   <p className="text-[11px] text-stone-400">{p.label}</p>
                   <p className="font-product text-2xl">
-                    {p.value == null ? '—' : p.id === 'rev' ? Number(p.value).toLocaleString('ar') : `${p.value}${p.unit}`}
+                    {p.value == null ? '—' : `${p.value}${p.unit}`}
                   </p>
                   {p.prev != null && (
-                    <p className="text-[11px] text-stone-500">السابق {p.id === 'rev' ? Number(p.prev).toLocaleString('ar') : `${p.prev}${p.unit}`}</p>
+                    <p className="text-[11px] text-stone-500">السابق {p.prev}{p.unit}</p>
                   )}
                   {p.note && <p className="text-[10px] text-stone-400 mt-1">{p.note}</p>}
                 </div>
@@ -189,7 +319,7 @@ const Dashboard = () => {
               {occupancy.byDay.map((d) => (
                 <div key={d.i} className="flex items-center gap-2 text-sm">
                   <span className="w-16 text-xs shrink-0">{d.name}</span>
-                  <div className="flex-1 h-2 rounded-full bg-[#e4ddd0] dark:bg-white/10 overflow-hidden">
+                  <div className="flex-1 h-2 rounded-full bg-[#E5E9EC] dark:bg-white/10 overflow-hidden">
                     <div
                       className="h-full rounded-full"
                       style={{
@@ -226,7 +356,7 @@ const Dashboard = () => {
         <div className="mt-4 overflow-x-auto no-scrollbar">
           <div className="flex gap-2 min-w-max">
             {occupancy.lookahead.map((d) => (
-              <div key={d.date} className="w-[4.6rem] rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-2 text-center">
+              <div key={d.date} className="w-[4.6rem] rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-2 text-center">
                 <p className="text-[10px] text-stone-400">{d.name}</p>
                 <p className="font-product text-lg leading-none mt-1">{d.fill == null ? '—' : `${d.fill}%`}</p>
                 <p className="text-[10px] text-stone-500 mt-1">{d.booked}/{d.cap || '—'}</p>
@@ -249,7 +379,7 @@ const Dashboard = () => {
           {occupancy.agenda.length === 0 && <p className="text-sm text-stone-500">لا مواعيد مؤكدة أو معلّقة اليوم.</p>}
           <div className="space-y-2">
             {occupancy.agenda.slice(0, 6).map((a) => (
-              <Link key={a.id} to="/appointments" className="flex justify-between gap-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3 text-sm">
+              <Link key={a.id} to="/appointments" className="flex justify-between gap-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3 text-sm">
                 <span>
                   <span className="font-bold block">{a.customerName}</span>
                   <span className="text-xs text-stone-500">{a.service}{a.branchName ? ` · ${a.branchName}` : ''}</span>
@@ -264,7 +394,7 @@ const Dashboard = () => {
           {occupancy.services.length === 0 && <p className="text-sm text-stone-500">لا توزيع خدمات بعد.</p>}
           <div className="space-y-2">
             {occupancy.services.map((s) => (
-              <div key={s.name} className="flex justify-between text-sm rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] px-3 py-2">
+              <div key={s.name} className="flex justify-between text-sm rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] px-3 py-2">
                 <span>{s.name}</span>
                 <span className="font-product">{s.count}</span>
               </div>
@@ -277,7 +407,7 @@ const Dashboard = () => {
         <section className="saas-card p-5">
           <h2 className="font-product text-xl mb-3">مركز التنبيهات</h2>
           {alerts.length === 0 && (
-            <p className="text-sm text-[#0f766e]">لا بند يحتاج تدخلاً من القواعد الحالية.</p>
+            <p className="text-sm text-[#3F5E57]">لا بند يحتاج تدخلاً من القواعد الحالية.</p>
           )}
           <div className="space-y-2">
             {alerts.filter((a) => {
@@ -289,7 +419,7 @@ const Dashboard = () => {
                 key={a.id}
                 type="button"
                 onClick={() => a.to && navigate(a.to)}
-                className="w-full text-right rounded-xl p-3 flex gap-3 items-start bg-[#f3efe6] dark:bg-[#1e1b28]"
+                className="w-full text-right rounded-xl p-3 flex gap-3 items-start bg-[#F7F8F6] dark:bg-[#1A2C38]"
               >
                 <span className="w-1.5 self-stretch rounded-full shrink-0" style={{ background: TONES[a.tone] || TONES.azure }} />
                 <span>
@@ -305,11 +435,11 @@ const Dashboard = () => {
           <h2 className="font-product text-xl mb-3">مركز المهام اليومية</h2>
           <ul className="space-y-2 text-sm">
             <TaskRow to="/appointments" label="حجوزات تحتاج تأكيد العميلة" count={tasks.pending.length} tone={tasks.pending.length ? TONES.gold : TONES.mint} />
+            <TaskRow to="/appointments/attendance" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
             {hasCap('ops') && (
               <>
-                <TaskRow to="/ops" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
-                <TaskRow to="/ops" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
-                <TaskRow to="/ops" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
+                <TaskRow to="/appointments/gaps" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
+                <TaskRow to="/appointments/reminders" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
               </>
             )}
             {hasCap('winback') && (
@@ -321,14 +451,14 @@ const Dashboard = () => {
 
       <section className="saas-card p-5">
         <h2 className="font-product text-xl">مساعد الأرقام</h2>
-        <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والإيراد والمواعيد المتاحة المخزّنة. لا يخترع سبباً خارج السجل.</p>
+        <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والمواعيد المتاحة المخزّنة. لا يخترع سبباً خارج السجل.</p>
         <div className="flex flex-wrap gap-2 mt-3">
           {PROMPTS.map((p) => (
             <button
               key={p.id}
               type="button"
               onClick={() => runAsk(p)}
-              className={`text-xs px-3 py-1.5 rounded-full ${ask === p.text ? 'bg-[#4d7cff] text-white' : 'bg-[#f3efe6] dark:bg-[#1e1b28]'}`}
+              className={`text-xs px-3 py-1.5 rounded-full ${ask === p.text ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}
             >
               {p.text}
             </button>
@@ -339,20 +469,20 @@ const Dashboard = () => {
             value={ask}
             onChange={(e) => setAsk(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runAsk(ask); } }}
-            className="flex-1 min-w-0 p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none"
+            className="flex-1 min-w-0 p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none"
             placeholder="اسألي عن الحجوزات أو الحضور..."
           />
-          <button type="button" onClick={() => runAsk(ask)} className="px-4 py-3 rounded-xl bg-[#14121c] text-white text-sm shrink-0">اسألي</button>
+          <button type="button" onClick={() => runAsk(ask)} className="px-4 py-3 rounded-xl bg-[#10b981] text-white text-sm font-bold shrink-0">اسألي</button>
         </div>
-        <div ref={replyRef} className="mt-4 rounded-2xl bg-[#f3efe6] dark:bg-[#1e1b28] p-4 space-y-2 min-h-[5.5rem]">
+        <div ref={replyRef} className="mt-4 rounded-2xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-4 space-y-2 min-h-[5.5rem]">
           {reply ? (
             <>
-              <p className="text-sm leading-relaxed text-[#14121c] dark:text-white">{reply.answer}</p>
+              <p className="text-sm leading-relaxed text-[#172B3A] dark:text-white">{reply.answer}</p>
               {reply.facts?.map((f) => (
                 <p key={f} className="text-[11px] text-stone-500">{f}</p>
               ))}
               {reply.missing?.length > 0 && (
-                <p className="text-[11px] text-[#c2410c]">{reply.missing.join(' ')}</p>
+                <p className="text-[11px] text-[#9A3F32]">{reply.missing.join(' ')}</p>
               )}
             </>
           ) : (
@@ -368,15 +498,19 @@ const Dashboard = () => {
               <h2 className="font-product text-xl">مركز إدارة الموقع</h2>
               <p className="text-xs text-stone-500 mt-1">ثيم {site.theme} · جاهزية {site.ready}/{site.total} · خدمات ناقصة {site.thinServices.length}</p>
             </div>
-            <Link to="/website" className="text-xs font-bold text-[#4d7cff]">فتح المركز</Link>
+            <div className="flex gap-3 shrink-0">
+              <Link to="/products" className="text-xs font-bold text-emerald-700">المنتجات</Link>
+              <Link to="/website" className="text-xs font-bold text-emerald-700">الموقع والمدونة</Link>
+              <a href={site.url || `/book/${clinicId}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-700">فتح الموقع العام</a>
+            </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4 text-xs">
-            <Link to="/settings?tab=store" className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">التصميم</Link>
-            <div className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">النشر: {site.published ? 'اسم العيادة موجود' : 'ناقص الاسم'}</div>
-            <div className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3 break-all" dir="ltr">{site.url || '—'}</div>
-            <Link to="/settings?tab=store" className="rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] p-3">
+            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">المنتجات من قسم المنتجات · المدونة من موقع العيادة</div>
+            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">النشر: {site.published ? 'اسم العيادة موجود' : 'ناقص الاسم'}</div>
+            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3 break-all" dir="ltr">{site.url || '—'}</div>
+            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">
               SEO: {clinicInfo?.seoTitle ? 'عنوان موجود' : 'بدون عنوان'}
-            </Link>
+            </div>
           </div>
         </section>
       )}
@@ -387,7 +521,7 @@ const Dashboard = () => {
 function TaskRow({ to, label, count, tone }) {
   return (
     <li>
-      <Link to={to} className="flex justify-between items-center rounded-xl px-3 py-2 bg-[#f3efe6] dark:bg-[#1e1b28]">
+      <Link to={to} className="flex justify-between items-center rounded-xl px-3 py-2 bg-[#F7F8F6] dark:bg-[#1A2C38]">
         <span>{label}</span>
         <span className="font-product text-lg" style={{ color: tone || TONES.azure }}>{count}</span>
       </Link>

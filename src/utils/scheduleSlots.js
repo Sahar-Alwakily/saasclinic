@@ -8,14 +8,45 @@ export function formatHourLabel(hour) {
 }
 
 export function parseHourFromLabel(time) {
+  const offset = parseTimeOffset(time);
+  return offset == null ? null : Math.floor(offset);
+}
+
+export function parseTimeOffset(time) {
   const s = String(time || '').trim();
-  const m = s.match(/(\d{1,2})/);
+  const m = s.match(/(\d{1,2})(?::(\d{2}))?/);
   if (!m) return null;
   let h = Number(m[1]);
-  if (/م/.test(s) && h < 12) h += 12;
-  if (/ص/.test(s) && h === 12) h = 0;
+  const min = Number(m[2] || 0);
+  if ((/م/.test(s) || /pm/i.test(s)) && h < 12) h += 12;
+  if ((/ص/.test(s) || /am/i.test(s)) && h === 12) h = 0;
   if (h > 23) h = 23;
-  return h;
+  return h + (Number.isFinite(min) ? min / 60 : 0);
+}
+
+export function formatClock(date = new Date()) {
+  const h = date.getHours();
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const period = h < 12 ? 'ص' : 'م';
+  const display = h % 12 === 0 ? 12 : h % 12;
+  return `${display}:${m} ${period}`;
+}
+
+export function scheduleForStaff(schedules, staffId, branchId) {
+  const map = schedules || {};
+  if (branchId && staffId && map[`${branchId}_${staffId}`]) return map[`${branchId}_${staffId}`];
+  const hit = Object.entries(map).find(([k]) => staffId && k.endsWith(`_${staffId}`) && !k.startsWith('_'));
+  return hit ? hit[1] : null;
+}
+
+export function staffHoursOnDate(schedules, staffId, dateStr, branchId) {
+  const sch = scheduleForStaff(schedules, staffId, branchId);
+  if (!sch || !dateStr) return null;
+  if (isStaffHoliday(dateStr, sch) || isClinicHoliday(dateStr, schedules)) return { closed: true };
+  const dayIdx = new Date(`${dateStr}T12:00:00`).getDay();
+  const day = sch[`day_${dayIdx}`];
+  if (!day?.active) return { closed: true };
+  return { closed: false, start: Number(day.start ?? 9), end: Number(day.end ?? 17) };
 }
 
 export function hoursRangeFromSchedules(schedules, fallback = { start: 8, end: 20 }) {
@@ -52,12 +83,43 @@ export function toYmd(date) {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 }
 
-export function slotsForBooking(schedules, branchId, specialistId, dateStr) {
+export function isFutureSlot(dateStr, time, now = new Date()) {
+  if (!dateStr) return false;
+  const today = toYmd(now);
+  if (dateStr > today) return true;
+  if (dateStr < today) return false;
+  const offset = parseTimeOffset(time);
+  if (offset == null) return false;
+  return offset > now.getHours() + now.getMinutes() / 60;
+}
+
+export function parseHolidayDates(value) {
+  if (Array.isArray(value)) return value.map((s) => String(s).trim()).filter(Boolean);
+  return String(value || '').split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+}
+
+export function isClinicHoliday(dateStr, schedules, aptSettings) {
+  const clinic = parseHolidayDates(schedules?._clinicHolidays?.holidays);
+  const legacy = parseHolidayDates(aptSettings?.holidays);
+  return clinic.includes(dateStr) || legacy.includes(dateStr);
+}
+
+export function isStaffHoliday(dateStr, schedule) {
+  return parseHolidayDates(schedule?.holidays).includes(dateStr);
+}
+
+export function slotsForBooking(schedules, branchId, specialistId, dateStr, aptSettings) {
   if (!dateStr || !branchId) return { slots: [], closed: false, missing: true };
+  if (isClinicHoliday(dateStr, schedules, aptSettings)) {
+    return { slots: [], closed: true, missing: false, holiday: 'clinic', dayName: 'عطلة العيادة' };
+  }
   const map = schedules || {};
   const key = specialistId ? `${branchId}_${specialistId}` : null;
   const schedule = (key && map[key]) || null;
   if (!schedule) return { slots: [], closed: false, missing: true };
+  if (isStaffHoliday(dateStr, schedule)) {
+    return { slots: [], closed: true, missing: false, holiday: 'staff', dayName: 'عطلة الموظفة' };
+  }
 
   const dayIdx = new Date(`${dateStr}T12:00:00`).getDay();
   const day = schedule[`day_${dayIdx}`];

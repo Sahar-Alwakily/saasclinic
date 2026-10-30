@@ -34,6 +34,8 @@ export function emptyStore() {
     showBlog: true,
     seoTitle: '',
     seoDescription: '',
+    websitePublished: true,
+    heroImage: '',
   };
 }
 
@@ -56,6 +58,8 @@ export function storeFromClinic(info) {
     showBlog: info.showBlog !== false,
     seoTitle: info.seoTitle || '',
     seoDescription: info.seoDescription || '',
+    websitePublished: info.websitePublished !== false,
+    heroImage: info.heroImage || '',
   };
 }
 

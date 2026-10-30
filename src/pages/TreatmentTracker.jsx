@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ref, onValue, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
@@ -7,6 +7,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import moment from 'moment';
 import WhatsAppInstructionsModal, { WHATSAPP_TEMPLATE_ID } from '../components/customers/WhatsAppInstructionsModal';
+import InstructionsList from '../components/customers/InstructionsList';
 import { SERVICE_CATEGORIES } from '../constants/clinicCare';
 
 const PHASES = [
@@ -22,9 +23,11 @@ const TreatmentTracker = () => {
   const [templates, setTemplates] = useState({});
   const [loading, setLoading] = useState(true);
   const [activePhase, setActivePhase] = useState('during');
+  const [panel, setPanel] = useState('track');
   const [searchTerm, setSearchTerm] = useState('');
   const [cat, setCat] = useState('all');
   const [waModal, setWaModal] = useState({ show: false, client: null, treatment: null });
+  const phaseInitRef = useRef(false);
 
   useEffect(() => {
     if (!clinicPath?.('customers')) {
@@ -72,6 +75,12 @@ const TreatmentTracker = () => {
     return { during, after };
   }, [clientsWithTreatments]);
 
+  useEffect(() => {
+    if (phaseInitRef.current || loading) return;
+    if (phaseCounts.during === 0 && phaseCounts.after > 0) setActivePhase('after');
+    phaseInitRef.current = true;
+  }, [loading, phaseCounts.during, phaseCounts.after]);
+
   const handleChangePhase = async (customerId, treatmentId, newPhase, treatment) => {
     try {
       const patch = {
@@ -90,18 +99,34 @@ const TreatmentTracker = () => {
   };
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500" /></div>;
+    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
   }
 
   return (
-    <div className="space-y-6" dir="rtl">
+    <div className="space-y-5" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">متابعة العلاجات</h1>
-        <p className="text-gray-500 text-sm mt-1">تتبع رحلة كل عميلة عبر مراحل العلاج</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-[22px] font-bold text-[#111827]">متابعة العلاجات</h1>
+          <p className="text-sm text-[#8a9199] mt-1">مراحل كل عميلة، وتعليمات الخدمات التي تُرسل على واتساب.</p>
+        </div>
+        <div className="flex gap-1.5">
+          <button type="button" onClick={() => setPanel('track')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${panel === 'track' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>المتابعة</button>
+          <button type="button" onClick={() => setPanel('instructions')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${panel === 'instructions' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>تعليمات الخدمات</button>
+        </div>
       </div>
 
+      {panel === 'instructions' && (
+        <section className="saas-card p-4 sm:p-5">
+          <h2 className="font-bold text-[#111827] mb-1">تعليمات الخدمات</h2>
+          <p className="text-xs text-[#8a9199] mb-4">نصوص أثناء/بعد العلاج لكل خدمة — تُرسل للعميلة من بطاقة المتابعة، وليست من ملفها.</p>
+          <InstructionsList embedded />
+        </section>
+      )}
+
+      {panel === 'track' && (
+      <>
       <div className="grid grid-cols-2 gap-3">
         {PHASES.map((phase) => {
           const Icon = phase.icon;
@@ -111,81 +136,73 @@ const TreatmentTracker = () => {
               key={phase.id}
               type="button"
               onClick={() => setActivePhase(phase.id)}
-              className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all ${
-                isActive
-                  ? 'bg-gradient-to-br from-pink-500 to-rose-400 text-white border-transparent shadow-md'
-                  : `${phase.bg} dark:bg-slate-800 ${phase.border} dark:border-slate-700 ${phase.color} dark:text-white hover:shadow-sm`
+              className={`saas-card flex items-center gap-3 p-4 ${
+                isActive ? (phase.id === 'after' ? 'stat-card-mint' : 'stat-card-sky') : ''
               }`}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${isActive ? 'bg-white/20' : 'bg-white dark:bg-slate-700'}`}>
-                <Icon className={isActive ? 'text-white' : phase.color} />
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${phase.id === 'after' ? 'bg-emerald-100 text-emerald-700' : 'bg-sky-100 text-sky-700'}`}>
+                <Icon />
               </div>
               <div className="text-right flex-1">
-                <p className={`text-xs ${isActive ? 'text-white/80' : 'text-gray-500'}`}>العدد</p>
-                <p className="font-bold text-sm">{phase.name}</p>
+                <p className="text-xs text-[#8a9199]">{phase.name}</p>
+                <p className="stat-num text-[28px] leading-none mt-1">{phaseCounts[phase.id]}</p>
               </div>
-              <span className={`text-2xl font-bold ${isActive ? 'text-white' : phase.color}`}>
-                {phaseCounts[phase.id]}
-              </span>
             </button>
           );
         })}
       </div>
 
       <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        <button type="button" onClick={() => setCat('all')} className={`shrink-0 px-3 py-1.5 rounded-full text-sm ${cat === 'all' ? 'bg-violet-600 text-white' : 'bg-white dark:bg-slate-800'}`}>الكل</button>
+        <button type="button" onClick={() => setCat('all')} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === 'all' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>الكل</button>
         {SERVICE_CATEGORIES.map((c) => (
-          <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-sm ${cat === c.id ? 'bg-violet-600 text-white' : 'bg-white dark:bg-slate-800'}`}>{c.name}</button>
+          <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === c.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>{c.name}</button>
         ))}
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+      <div className="saas-card p-2">
         <input
           type="text"
           placeholder="ابحث بالاسم أو اسم العلاج..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-3 bg-transparent outline-none text-sm dark:text-white"
+          className="w-full p-3 bg-transparent outline-none text-sm"
         />
       </div>
 
       {filteredClients.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 text-center py-20">
-          <div className="text-5xl mb-4">💊</div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">لا توجد علاجات في هذه المرحلة</h3>
-          <p className="text-gray-500 text-sm">سجّلي جلسة جديدة من الملف الطبي للعميلة ليظهر العلاج هنا.</p>
+        <div className="saas-card text-center py-16">
+          <h3 className="text-lg font-bold text-[#111827] mb-2">لا علاجات في هذه المرحلة</h3>
+          <p className="text-[#8a9199] text-sm">سجّلي جلسة من ملف العميلة لتظهر هنا.</p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredClients.map((client) => (
-            <div key={client.id} className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 p-5">
-              <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-100 dark:border-slate-700">
+            <article key={client.id} className="saas-card p-5">
+              <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#e4eee8]">
                 <button type="button" className="flex items-center gap-3" onClick={() => navigate(`/customers/${client.id}`)}>
-                  <div className="w-12 h-12 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center font-bold text-lg">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-lg">
                     {client.firstName?.charAt(0) || '?'}
                   </div>
                   <div>
-                    <p className="font-bold text-gray-800 dark:text-white">{client.firstName} {client.lastName}</p>
-                    <p className="text-xs text-gray-500" dir="ltr"><FaPhone className="inline mr-1" />{client.phone}</p>
+                    <p className="font-bold text-[#111827]">{client.firstName} {client.lastName}</p>
+                    <p className="text-xs text-[#8a9199]" dir="ltr"><FaPhone className="inline mr-1" />{client.phone}</p>
                   </div>
                 </button>
-                <span className="text-xs bg-pink-50 dark:bg-pink-900/20 text-pink-600 dark:text-pink-400 px-3 py-1 rounded-full font-bold">
+                <span className={`nura-chip ${activePhase === 'after' ? 'nura-chip-mint' : 'nura-chip-sky'}`}>
                   {client.matchingTreatments.length} علاج
                 </span>
               </div>
 
               <div className="space-y-3">
                 {client.matchingTreatments.map((treatment) => (
-                  <div key={treatment.id} className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-xl bg-gray-50 dark:bg-slate-700/50 border border-gray-100 dark:border-slate-700">
+                  <div key={treatment.id} className={`flex flex-col md:flex-row md:items-center justify-between gap-3 p-4 rounded-2xl ${activePhase === 'after' ? 'bg-emerald-50/70' : 'bg-sky-50/70'}`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-pink-500 text-white flex items-center justify-center">
+                      <div className={`w-10 h-10 rounded-xl text-white flex items-center justify-center ${activePhase === 'after' ? 'bg-[#10b981]' : 'bg-sky-500'}`}>
                         <FaSyringe />
                       </div>
                       <div>
-                        <p className="font-bold text-gray-800 dark:text-white">{treatment.serviceName}</p>
-                        <p className="text-xs text-gray-500">
-                          {treatment.sessions?.length || 0} جلسة مسجلة
-                        </p>
+                        <p className="font-bold text-[#111827]">{treatment.serviceName}</p>
+                        <p className="text-xs text-[#8a9199]">{treatment.sessions?.length || 0} جلسة مسجّلة</p>
                       </div>
                     </div>
 
@@ -194,17 +211,17 @@ const TreatmentTracker = () => {
                         <button
                           type="button"
                           onClick={() => handleChangePhase(client.id, treatment.id, 'after', treatment)}
-                          className="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-lg text-sm font-bold hover:bg-emerald-200 transition"
+                          className="px-4 py-2 bg-emerald-100 text-emerald-800 rounded-xl text-sm font-bold"
                         >
-                          نقل إلى "بعد العلاج"
+                          نقل إلى بعد العلاج
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => handleChangePhase(client.id, treatment.id, 'during', treatment)}
-                          className="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-sm font-bold hover:bg-blue-200 transition"
+                          className="px-4 py-2 bg-sky-100 text-sky-800 rounded-xl text-sm font-bold"
                         >
-                          إرجاع إلى "أثناء العلاج"
+                          إرجاع أثناء العلاج
                         </button>
                       )}
                       <button
@@ -218,7 +235,7 @@ const TreatmentTracker = () => {
                           },
                           treatment: { ...treatment, templateId: WHATSAPP_TEMPLATE_ID },
                         })}
-                        className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold flex items-center gap-1"
+                        className="px-4 py-2 bg-[#10b981] text-white rounded-xl text-sm font-bold flex items-center gap-1"
                       >
                         <FaWhatsapp /> إرسال تعليمات المرحلة
                       </button>
@@ -226,9 +243,11 @@ const TreatmentTracker = () => {
                   </div>
                 ))}
               </div>
-            </div>
+            </article>
           ))}
         </div>
+      )}
+      </>
       )}
 
       <WhatsAppInstructionsModal

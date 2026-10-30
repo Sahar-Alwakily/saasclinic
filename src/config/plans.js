@@ -11,6 +11,7 @@ const STARTER_CAPS = {
   marketing: false,
   websitePro: false,
   assistant: false,
+  whatsapp: false,
   branchCompare: false,
 };
 
@@ -22,6 +23,7 @@ const PRO_CAPS = {
   marketing: true,
   websitePro: true,
   assistant: true,
+  whatsapp: true,
 };
 
 const BUSINESS_CAPS = {
@@ -43,7 +45,8 @@ export const CAP_LABELS = {
   treatments: 'الجلسات بتوقيع ومتابعة العلاج',
   marketing: 'المدونة والطلبات والكوبونات',
   websitePro: 'ثيمات الموقع وSEO',
-  assistant: 'مساعد واتساب والوارد',
+  assistant: 'المساعد الذكي والوارد',
+  whatsapp: 'واتساب',
   branchCompare: 'مقارنة الفروع',
 };
 
@@ -60,6 +63,7 @@ export const CAP_MIN_PLAN = {
   marketing: 'pro',
   websitePro: 'pro',
   assistant: 'pro',
+  whatsapp: 'pro',
   branchCompare: 'business',
 };
 
@@ -158,11 +162,30 @@ export const ADDONS = [
 
 export const getPlan = (id) => PLANS[id] || PLANS.trial;
 
-export const clinicPlan = (clinicInfo) => getPlan(clinicInfo?.plan);
+export function mergePlan(clinicInfo, planConfig) {
+  const id = clinicInfo?.plan || 'trial';
+  const base = getPlan(id);
+  const extra = planConfig?.[id] || {};
+  const maxUsers = extra.maxUsers === -1 ? Infinity : (extra.maxUsers ?? base.maxUsers);
+  const maxBranches = extra.maxBranches === -1 ? Infinity : (extra.maxBranches ?? base.maxBranches);
+  return {
+    ...base,
+    ...extra,
+    id,
+    name: base.name,
+    caps: { ...base.caps, ...(extra.caps || {}) },
+    maxUsers,
+    maxBranches,
+    price: extra.price ?? base.price,
+    yearlyPrice: extra.yearlyPrice ?? base.yearlyPrice,
+  };
+}
 
-export const planCaps = (clinicInfo) => clinicPlan(clinicInfo).caps || ALL_CAPS;
+export const clinicPlan = (clinicInfo, planConfig) => mergePlan(clinicInfo, planConfig);
 
-export const hasCap = (clinicInfo, cap) => !!planCaps(clinicInfo)[cap];
+export const planCaps = (clinicInfo, planConfig) => mergePlan(clinicInfo, planConfig).caps || ALL_CAPS;
+
+export const hasCap = (clinicInfo, cap, planConfig) => !!planCaps(clinicInfo, planConfig)[cap];
 
 export const minPlanForCap = (cap) => getPlan(CAP_MIN_PLAN[cap] || 'starter');
 
@@ -173,14 +196,14 @@ export const isTrialExpired = (clinicInfo) => {
   return Date.now() > clinicInfo.trialEndsAt;
 };
 
-export const withinUserLimit = (clinicInfo, userCount) => {
-  const max = clinicPlan(clinicInfo).maxUsers;
+export const withinUserLimit = (clinicInfo, userCount, planConfig) => {
+  const max = mergePlan(clinicInfo, planConfig).maxUsers;
   if (!Number.isFinite(max)) return true;
   return userCount < max;
 };
 
-export const withinBranchLimit = (clinicInfo, branchCount) => {
-  const max = clinicPlan(clinicInfo).maxBranches;
+export const withinBranchLimit = (clinicInfo, branchCount, planConfig) => {
+  const max = mergePlan(clinicInfo, planConfig).maxBranches;
   if (!Number.isFinite(max)) return true;
   return branchCount < max;
 };

@@ -135,7 +135,7 @@ const SmartAlerts = ({ appointments = [], customers = [] }) => {
   return (
     <div>
       <h3 className="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
-        <span className="w-1 h-4 bg-gradient-to-b from-amber-400 to-rose-500 rounded-full"></span> التنبيهات الذكية
+        <span className="w-1 h-4 bg-[#A67C2D] rounded-full"></span> التنبيهات الذكية
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         {alerts.map((alert) => {

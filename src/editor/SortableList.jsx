@@ -30,7 +30,7 @@ function SortableRow({ item, selected, onSelect, onToggle, onRemove }) {
       ref={setNodeRef}
       style={style}
       className={`flex items-center gap-2 rounded-xl border px-2 py-2 ${
-        selected ? 'border-[#4d7cff] bg-[#4d7cff]/10' : 'border-[#e4ddd0] bg-white'
+        selected ? 'border-[#172B3A] bg-[#172B3A]/10' : 'border-[#E5E9EC] bg-white'
       } ${isDragging ? 'opacity-70 shadow-lg' : ''} ${item.visible === false ? 'opacity-50' : ''}`}
     >
       <button
@@ -48,7 +48,7 @@ function SortableRow({ item, selected, onSelect, onToggle, onRemove }) {
       <button type="button" onClick={() => onToggle(item.id)} className="p-2 text-stone-500" aria-label={item.visible === false ? 'إظهار' : 'إخفاء'}>
         {item.visible === false ? <FaEyeSlash /> : <FaEye />}
       </button>
-      <button type="button" onClick={() => onRemove(item.id)} className="p-2 text-[#c2410c]" aria-label="حذف">
+      <button type="button" onClick={() => onRemove(item.id)} className="p-2 text-[#9A3F32]" aria-label="حذف">
         <FaTrash />
       </button>
     </div>

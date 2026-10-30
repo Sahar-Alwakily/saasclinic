@@ -7,7 +7,7 @@ import { FaPlus, FaMapMarkerAlt, FaPhone, FaTrash, FaTimes, FaStore } from 'reac
 import { toast, ToastContainer } from 'react-toastify';
 
 const Branches = () => {
-  const { clinicPath, clinicInfo, plan } = useClinic();
+  const { clinicPath, clinicInfo, plan, planConfig, isSupport } = useClinic();
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -29,7 +29,7 @@ const Branches = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!form.name || !form.phone) return toast.error('الرجاء إدخال اسم الفرع ورقم الهاتف');
-    if (!withinBranchLimit(clinicInfo, branches.length)) {
+    if (!isSupport && !withinBranchLimit(clinicInfo, branches.length, planConfig)) {
       return toast.error(`باقة ${plan?.name} تسمح حتى ${Number.isFinite(plan?.maxBranches) ? plan.maxBranches : '—'} فروع`);
     }
 
@@ -64,100 +64,101 @@ const Branches = () => {
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500"></div></div>;
+  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
+    <div className="space-y-5" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">إدارة الفروع</h1>
-          <p className="text-gray-500 text-sm mt-1">أضف فروع عيادتك لتربط بها الموظفين والمواعيد</p>
+          <h1 className="text-[22px] font-bold text-[#111827]">إدارة الفروع</h1>
+          <p className="text-sm text-[#8a9199] mt-1">أضيفي فروع العيادة لتربطي بها الموظفات والمواعيد.</p>
         </div>
         <button
+          type="button"
           onClick={() => {
-            if (!withinBranchLimit(clinicInfo, branches.length)) {
+            if (!isSupport && !withinBranchLimit(clinicInfo, branches.length, planConfig)) {
               return toast.error(`باقة ${plan?.name} وصلت حد الفروع — رقّي من المدفوعات`);
             }
             setShowModal(true);
           }}
-          className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium"
+          className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold"
         >
           <FaPlus /> فرع جديد
         </button>
       </div>
 
       {branches.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 text-center py-20">
-          <div className="text-5xl mb-4">🏢</div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">لا توجد فروع بعد</h3>
-          <p className="text-gray-500 text-sm">أضف فرعك الأول لتبدأ بتوزيع الموظفين عليه.</p>
+        <div className="saas-card text-center py-16">
+          <h3 className="text-lg font-bold text-[#111827] mb-2">لا فروع بعد</h3>
+          <p className="text-sm text-[#8a9199]">أضيفي فرعك الأول لتبدئي بتوزيع الموظفات عليه.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {branches.map(branch => (
-            <div key={branch.id} className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 relative group">
-              <button onClick={(e) => handleDelete(branch.id, e)} className="absolute top-4 left-4 w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-rose-100">
-                <FaTrash className="text-xs" />
-              </button>
-
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl">
-                  <FaStore />
+          {branches.map((branch) => (
+            <article key={branch.id} className="saas-card p-5">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl">
+                    <FaStore />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#111827]">{branch.name}</h3>
+                    <p className="text-sm text-[#8a9199] flex items-center gap-1 mt-0.5" dir="ltr">
+                      <FaPhone className="text-[10px]" /> {branch.phone}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">{branch.name}</h3>
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-0.5" dir="ltr">
-                    <FaPhone className="text-[10px]" /> {branch.phone}
-                  </p>
-                </div>
+                <button type="button" onClick={(e) => handleDelete(branch.id, e)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
+                  <FaTrash className="text-xs" />
+                </button>
               </div>
 
               {branch.address && (
-                <div className="flex items-start gap-2 text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-slate-700/50 p-3 rounded-xl">
-                  <FaMapMarkerAlt className="text-pink-400 mt-1 flex-shrink-0" />
+                <div className="flex items-start gap-2 text-sm text-[#6b7280] bg-[#f8faf9] border border-[#e4eee8] p-3 rounded-xl">
+                  <FaMapMarkerAlt className="text-emerald-500 mt-1 flex-shrink-0" />
                   <p>{branch.address}</p>
                 </div>
               )}
-              {branch.hours && <p className="text-xs text-gray-500 mt-2">ساعات العمل: {branch.hours}</p>}
-              {branch.whatsapp && <p className="text-xs text-gray-500 mt-1" dir="ltr">واتساب: {branch.whatsapp}</p>}
-            </div>
+              {branch.hours && <p className="text-xs text-[#8a9199] mt-2">ساعات العمل: {branch.hours}</p>}
+              {branch.whatsapp && <p className="text-xs text-[#8a9199] mt-1" dir="ltr">واتساب: {branch.whatsapp}</p>}
+            </article>
           ))}
         </div>
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-xl w-full max-w-md overflow-hidden" dir="rtl">
-            <div className="bg-pink-500 p-5 text-white flex justify-between items-center">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden" dir="rtl">
+            <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
               <h3 className="font-bold text-lg">إضافة فرع جديد</h3>
-              <button onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center"><FaTimes /></button>
+              <button type="button" onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><FaTimes /></button>
             </div>
 
             <form onSubmit={handleSave} className="p-5 space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم الفرع / المدينة</label>
-                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white" placeholder="مثال: فرع رهط" />
+                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" placeholder="مثال: فرع رهط" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">رقم الهاتف</label>
-                <input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} required className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none dark:text-white" dir="ltr" placeholder="05..." />
+                <input type="tel" value={form.phone} onChange={(e) => setForm({...form, phone: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" placeholder="05..." />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">العنوان (اختياري)</label>
-                <textarea value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} rows={2} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl focus:border-pink-400 outline-none resize-none dark:text-white" placeholder="الشارع، الحي..." />
+                <textarea value={form.address} onChange={(e) => setForm({...form, address: e.target.value})} rows={2} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none resize-none focus:ring-2 focus:ring-emerald-200" placeholder="الشارع، الحي..." />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">واتساب (اختياري)</label>
-                <input type="tel" value={form.whatsapp} onChange={(e) => setForm({...form, whatsapp: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none dark:text-white" dir="ltr" placeholder="05..." />
+                <input type="tel" value={form.whatsapp} onChange={(e) => setForm({...form, whatsapp: e.target.value})} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" placeholder="05..." />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ساعات العمل للعرض (اختياري)</label>
-                <input type="text" value={form.hours} onChange={(e) => setForm({...form, hours: e.target.value})} className="w-full p-2.5 border border-gray-200 dark:border-slate-600 dark:bg-slate-700 rounded-xl outline-none dark:text-white" placeholder="مثال: الأحد–الخميس 9:00–17:00" />
+                <input type="text" value={form.hours} onChange={(e) => setForm({...form, hours: e.target.value})} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" placeholder="مثال: الأحد–الخميس 9:00–17:00" />
               </div>
               
-              <button type="submit" className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold hover:bg-pink-600 transition mt-2">
+              <button type="submit" className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold mt-2">
                 حفظ الفرع
               </button>
             </form>

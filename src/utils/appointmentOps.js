@@ -1,6 +1,6 @@
 import { ref, runTransaction } from 'firebase/database';
 import { normalizePhone, waDigits } from './winback';
-import { slotsForBooking } from './scheduleSlots';
+import { slotsForBooking, isFutureSlot, toYmd } from './scheduleSlots';
 
 export const APT_STATUSES = [
   { id: 'pending', label: 'تحتاج تأكيد العميلة' },
@@ -49,9 +49,10 @@ export function appendHistory(apt, entry) {
   return [...history, { at: Date.now(), ...entry }].slice(-40);
 }
 
-export function isHoliday(dateStr, settings) {
-  const list = String(settings.holidays || '').split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
-  return list.includes(dateStr);
+export function isHoliday(dateStr, settings, schedules) {
+  const list = String(settings?.holidays || '').split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+  const clinic = String(schedules?._clinicHolidays?.holidays || '').split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
+  return list.includes(dateStr) || clinic.includes(dateStr);
 }
 
 export function occupiedKeys(appointments) {
@@ -134,19 +135,20 @@ export function rankWaitlist(entries, slot) {
     .sort((a, b) => b.fit - a.fit || (a.createdAt || 0) - (b.createdAt || 0));
 }
 
-export function upcomingGaps({ schedules, appointments, branches, dateStr }) {
+export function upcomingGaps({ schedules, appointments, branches, dateStr, now = new Date() }) {
   const taken = occupiedKeys(appointments);
   const gaps = [];
+  if (!dateStr || dateStr < toYmd(now)) return gaps;
   Object.keys(schedules || {}).forEach((key) => {
     const idx = key.indexOf('_');
-    if (idx < 0) return;
+    if (idx < 0 || key.startsWith('_')) return;
     const branchId = key.slice(0, idx);
     const specialistId = key.slice(idx + 1);
     const info = slotsForBooking(schedules, branchId, specialistId, dateStr);
     (info.slots || []).forEach((time) => {
-      if (!taken.has(slotKey(branchId, specialistId, dateStr, time))) {
-        gaps.push({ date: dateStr, time, branchId, specialistId, branchName: (branches || []).find((b) => b.id === branchId)?.name || '' });
-      }
+      if (taken.has(slotKey(branchId, specialistId, dateStr, time))) return;
+      if (!isFutureSlot(dateStr, time, now)) return;
+      gaps.push({ date: dateStr, time, branchId, specialistId, branchName: (branches || []).find((b) => b.id === branchId)?.name || '' });
     });
   });
   return gaps;

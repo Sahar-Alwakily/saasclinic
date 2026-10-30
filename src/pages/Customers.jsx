@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { ref, onValue, push, set, remove, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
-import { FaPlus, FaPhone, FaBirthdayCake, FaTrash, FaPen, FaEye } from 'react-icons/fa';
+import { FaPlus, FaBirthdayCake, FaTrash, FaPen, FaEye } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import CustomerFormModal from '../components/customers/CustomerFormModal';
@@ -87,107 +87,136 @@ const Customers = () => {
     );
   });
 
+  const stats = useMemo(() => {
+    let withSessions = 0;
+    let withTreatments = 0;
+    let afterCare = 0;
+    customers.forEach((c) => {
+      if ((c.sessions || []).length) withSessions += 1;
+      const treatObj = c.treatments || {};
+      const keys = Object.keys(treatObj);
+      if (keys.length) withTreatments += 1;
+      afterCare += Object.values(treatObj).filter((t) => t.currentPhase === 'after').length;
+    });
+    return { withSessions, withTreatments, afterCare };
+  }, [customers]);
+
   if (loading) {
-    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-pink-500" /></div>;
+    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5" dir="rtl">
       <ToastContainer position="top-left" rtl />
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800 dark:text-white">ملفات العملاء</h1>
-          <p className="text-gray-500 text-sm mt-1">إدارة بيانات عملائك وسجلاتهم</p>
+          <h1 className="text-[22px] font-bold text-[#111827]">العميلات</h1>
+          <p className="text-sm text-[#8a9199] mt-1">ملفات العميلات، الجلسات، والعلاجات.</p>
         </div>
         <button
+          type="button"
           onClick={() => { setEditing(null); setShowModal(true); }}
-          className="flex items-center gap-2 bg-pink-500 text-white px-5 py-2.5 rounded-xl hover:bg-pink-600 transition shadow-sm font-medium"
+          className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold"
         >
           <FaPlus /> عميلة جديدة
         </button>
       </div>
 
-      <div className="bg-white dark:bg-slate-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="saas-card stat-card-mint p-4">
+          <p className="text-xs text-[#047857]">العميلات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{customers.length}</p>
+        </div>
+        <div className="saas-card stat-card-sky p-4">
+          <p className="text-xs text-[#0369a1]">لديهن جلسات</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{stats.withSessions}</p>
+        </div>
+        <div className="saas-card stat-card-lilac p-4">
+          <p className="text-xs text-[#6d28d9]">علاجات نشطة</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{stats.withTreatments}</p>
+        </div>
+        <div className="saas-card stat-card-gold p-4">
+          <p className="text-xs text-[#b45309]">بعد العلاج</p>
+          <p className="stat-num text-[28px] leading-none mt-2">{stats.afterCare}</p>
+        </div>
+      </div>
+
+      <div className="saas-card p-2">
         <input
           type="text"
           placeholder="ابحث بالاسم أو رقم الهاتف..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-3 bg-transparent outline-none text-sm dark:text-white"
+          className="w-full p-3 bg-transparent outline-none text-sm"
         />
       </div>
 
       {filteredCustomers.length === 0 ? (
-        <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-gray-100 dark:border-slate-700 text-center py-20">
-          <div className="text-5xl mb-4">👥</div>
-          <h3 className="text-lg font-bold text-gray-800 dark:text-white mb-2">لا توجد نتائج</h3>
-          <p className="text-gray-500 text-sm">لم يتم العثور على عملاء مطابقين.</p>
+        <div className="saas-card text-center py-16">
+          <h3 className="text-lg font-bold text-[#111827] mb-2">لا توجد نتائج</h3>
+          <p className="text-sm text-[#8a9199]">لم يتم العثور على عميلات مطابقات.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredCustomers.map((cust) => {
             const treatObj = cust.treatments || {};
             const treatCount = Object.keys(treatObj).length;
             const afterCount = Object.values(treatObj).filter((t) => t.currentPhase === 'after').length;
             return (
-              <div
-                key={cust.id}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-slate-700 relative group flex flex-col"
-              >
-                <div className="absolute top-4 left-4 flex gap-1 z-10">
-                  <button
-                    type="button"
-                    onClick={(e) => { e.stopPropagation(); setEditing(cust); setShowModal(true); }}
-                    className="w-8 h-8 bg-violet-50 text-violet-600 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100"
-                  >
-                    <FaPen className="text-xs" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => handleDelete(cust.id, e)}
-                    className="w-8 h-8 bg-rose-50 dark:bg-rose-900/30 text-rose-500 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 hover:bg-rose-100"
-                  >
-                    <FaTrash className="text-xs" />
-                  </button>
-                </div>
-
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-14 h-14 rounded-full bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400 flex items-center justify-center text-xl font-bold">
-                    {cust.firstName?.charAt(0) || '؟'}
+              <article key={cust.id} className="saas-card p-5 flex flex-col">
+                <div className="flex items-start justify-between gap-3 mb-4">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg font-bold shrink-0">
+                      {cust.firstName?.charAt(0) || '؟'}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-bold text-[#111827] truncate">{cust.firstName} {cust.lastName}</h3>
+                      <p className="text-xs text-[#8a9199] mt-0.5" dir="ltr">{cust.phone}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800 dark:text-white">{cust.firstName} {cust.lastName}</h3>
-                    <p className="text-sm text-gray-500">عميلة</p>
+                  <div className="flex gap-1 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setEditing(cust); setShowModal(true); }}
+                      className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center"
+                    >
+                      <FaPen className="text-xs" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => handleDelete(cust.id, e)}
+                      className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center"
+                    >
+                      <FaTrash className="text-xs" />
+                    </button>
                   </div>
                 </div>
 
-                <div className="space-y-2 mt-auto pt-4 border-t border-gray-100 dark:border-slate-700">
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                    <FaPhone className="text-pink-400 text-xs" />
-                    <span dir="ltr">{cust.phone}</span>
-                  </div>
+                <div className="space-y-2 mt-auto">
                   {cust.birthDate && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <FaBirthdayCake className="text-pink-400 text-xs" />
+                    <div className="flex items-center gap-2 text-sm text-[#6b7280]">
+                      <FaBirthdayCake className="text-amber-500 text-xs" />
                       <span>{cust.birthDate}</span>
                     </div>
                   )}
-                  <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
-                    <span className="bg-pink-50 dark:bg-pink-900/20 rounded-lg px-2 py-1">{cust.sessions?.length || 0} جلسة</span>
-                    <span className="bg-violet-50 dark:bg-violet-900/20 rounded-lg px-2 py-1">{treatCount} علاج</span>
-                    <span className="bg-stone-50 dark:bg-slate-700 rounded-lg px-2 py-1">ختم إعلان {cust.adsStamp?.signature ? '✓' : '—'}</span>
-                    <span className="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg px-2 py-1">{afterCount} بعد العلاج</span>
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    <span className="nura-chip nura-chip-mint">{cust.sessions?.length || 0} جلسة</span>
+                    <span className="nura-chip nura-chip-sky">{treatCount} علاج</span>
+                    <span className="nura-chip nura-chip-gold">{afterCount} بعد العلاج</span>
+                    <span className={`nura-chip ${cust.adsStamp?.signature ? 'nura-chip-lilac' : 'nura-chip-rose'}`}>
+                      {cust.adsStamp?.signature ? 'ختم إعلان' : 'بدون ختم'}
+                    </span>
                   </div>
                 </div>
 
                 <button
                   type="button"
                   onClick={() => navigate(`/customers/${cust.id}`)}
-                  className="mt-4 pt-3 border-t border-gray-100 dark:border-slate-700 text-center text-pink-600 font-medium text-sm flex items-center justify-center gap-2 w-full"
+                  className="mt-4 w-full py-2.5 rounded-xl bg-[#10b981] text-white font-bold text-sm flex items-center justify-center gap-2"
                 >
                   <FaEye /> فتح الملف
                 </button>
-              </div>
+              </article>
             );
           })}
         </div>

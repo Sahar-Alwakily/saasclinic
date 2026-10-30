@@ -12,8 +12,16 @@ const emptyMedical = {
   isBreastfeeding: false,
 };
 
-const CustomerFormModal = ({ show, onClose, onSubmit, initial, title = 'عميلة' }) => {
-  const [tab, setTab] = useState('profile');
+const CustomerFormModal = ({
+  show,
+  onClose,
+  onSubmit,
+  initial,
+  title = 'عميلة',
+  startTab = 'profile',
+  medicalOnly = false,
+}) => {
+  const [tab, setTab] = useState(startTab);
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -27,7 +35,7 @@ const CustomerFormModal = ({ show, onClose, onSubmit, initial, title = 'عميل
 
   useEffect(() => {
     if (!show) return;
-    setTab('profile');
+    setTab(medicalOnly ? 'medical' : startTab);
     setForm({
       firstName: initial?.firstName || '',
       lastName: initial?.lastName || '',
@@ -51,28 +59,30 @@ const CustomerFormModal = ({ show, onClose, onSubmit, initial, title = 'عميل
           e.preventDefault();
           onSubmit(form);
         }}
-        className="bg-white dark:bg-slate-800 rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
+        className="bg-white rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
       >
-        <div className="bg-pink-500 p-5 text-white flex justify-between items-center">
+        <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
           <h3 className="font-bold text-lg">{title}</h3>
           <button type="button" onClick={onClose} className="w-8 h-8 rounded-full bg-white/20"><FaTimes className="mx-auto" /></button>
         </div>
-        <div className="flex border-b">
-          {[['profile', 'البيانات'], ['medical', 'المعلومات الطبية'], ['ads', 'ختم الإعلانات']].map(([id, label]) => (
-            <button key={id} type="button" onClick={() => setTab(id)} className={`flex-1 py-3 text-sm font-bold ${tab === id ? 'text-pink-600 border-b-2 border-pink-500' : 'text-gray-400'}`}>{label}</button>
-          ))}
-        </div>
+        {!medicalOnly && (
+          <div className="flex gap-1.5 p-3 bg-[#f8faf9]">
+            {[['profile', 'البيانات'], ['medical', 'المعلومات الطبية'], ['ads', 'ختم الإعلانات']].map(([id, label]) => (
+              <button key={id} type="button" onClick={() => setTab(id)} className={`flex-1 py-2 text-xs font-bold rounded-full ${tab === id ? 'bg-[#10b981] text-white' : 'bg-white text-emerald-800 border border-[#e4eee8]'}`}>{label}</button>
+            ))}
+          </div>
+        )}
         <div className="p-5 space-y-3">
           {tab === 'profile' && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <input required placeholder="الاسم الأول *" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="p-2.5 border rounded-xl dark:bg-slate-700" />
-                <input placeholder="اسم العائلة" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="p-2.5 border rounded-xl dark:bg-slate-700" />
+                <input required placeholder="الاسم الأول *" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
+                <input placeholder="اسم العائلة" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
               </div>
-              <input required placeholder="الهاتف *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" dir="ltr" />
-              <input placeholder="رقم الهوية" value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" dir="ltr" />
-              <input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" />
-              <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700">
+              <input required placeholder="الهاتف *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
+              <input placeholder="رقم الهوية" value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
+              <input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
+              <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200">
                 <option value="female">أنثى</option>
                 <option value="male">ذكر</option>
               </select>
@@ -80,11 +90,11 @@ const CustomerFormModal = ({ show, onClose, onSubmit, initial, title = 'عميل
           )}
           {tab === 'medical' && (
             <>
-              <textarea placeholder="الحساسية" value={med.allergies} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, allergies: e.target.value } })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" rows={2} />
-              <textarea placeholder="الأمراض المزمنة" value={med.chronicDiseases} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, chronicDiseases: e.target.value } })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" rows={2} />
-              <textarea placeholder="الأدوية الحالية" value={med.currentMedications} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, currentMedications: e.target.value } })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" rows={2} />
-              <textarea placeholder="عمليات سابقة" value={med.previousSurgeries} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, previousSurgeries: e.target.value } })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" rows={2} />
-              <textarea placeholder="ملاحظات طبية" value={med.notes} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, notes: e.target.value } })} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" rows={2} />
+              <textarea placeholder="الحساسية" value={med.allergies} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, allergies: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
+              <textarea placeholder="الأمراض المزمنة" value={med.chronicDiseases} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, chronicDiseases: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
+              <textarea placeholder="الأدوية الحالية" value={med.currentMedications} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, currentMedications: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
+              <textarea placeholder="عمليات سابقة" value={med.previousSurgeries} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, previousSurgeries: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
+              <textarea placeholder="ملاحظات طبية" value={med.notes} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, notes: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
               {form.gender === 'female' && (
                 <div className="space-y-2 text-sm">
                   <label className="flex items-center gap-2"><input type="checkbox" checked={!!med.isPregnant} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, isPregnant: e.target.checked } })} /> حامل</label>
@@ -106,7 +116,7 @@ const CustomerFormModal = ({ show, onClose, onSubmit, initial, title = 'عميل
               />
             </div>
           )}
-          <button type="submit" className="w-full bg-pink-500 text-white py-3 rounded-xl font-bold">حفظ</button>
+          <button type="submit" className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold">حفظ</button>
         </div>
       </form>
     </div>

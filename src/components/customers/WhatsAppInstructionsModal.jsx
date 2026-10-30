@@ -123,7 +123,7 @@ const WhatsAppInstructionsModal = ({ show, onClose, client, treatment, activePha
   return (
     <div className="fixed inset-0 z-[80] bg-black/50 flex items-end sm:items-center justify-center p-0 sm:p-4" dir="rtl">
       <div className="bg-white dark:bg-slate-800 w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl overflow-hidden">
-        <div className="bg-gradient-to-l from-emerald-400 to-teal-500 text-white p-5 flex justify-between items-center">
+        <div className="bg-[#172B3A] text-white p-4 flex justify-between items-center">
           <h3 className="font-bold flex items-center gap-2"><FaWhatsapp /> تعليمات واتساب</h3>
           <button type="button" onClick={onClose}><FaTimes /></button>
         </div>

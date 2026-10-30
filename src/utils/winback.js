@@ -104,7 +104,7 @@ export function firstOpenSlots(schedules, count = 3) {
     const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
     for (const key of keys) {
       const idx = key.indexOf('_');
-      if (idx < 0) continue;
+      if (idx < 0 || key.startsWith('_')) continue;
       const branchId = key.slice(0, idx);
       const specialistId = key.slice(idx + 1);
       const info = slotsForBooking(schedules, branchId, specialistId, dateStr);

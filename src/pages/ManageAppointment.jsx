@@ -85,7 +85,7 @@ const ManageAppointment = () => {
       specialistId: apt.specialistId || '',
       date: apt.date,
       time: apt.time,
-      price: apt.price || 0,
+      price: 0,
       createdAt: Date.now(),
       open: true,
     });

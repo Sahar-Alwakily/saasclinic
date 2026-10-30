@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { ref, onValue, push, set } from 'firebase/database';
+import { ref, onValue, push, set, update, increment } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { FaTimes, FaCheck, FaArrowLeft, FaShoppingBag, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
 
@@ -11,9 +11,10 @@ import { DRAFT_STORAGE_KEY } from '../components/themes/themeUtils';
 import { slotsForBooking } from '../utils/scheduleSlots';
 import {
   mergeAptSettings, slotKey, occupiedKeys, claimSlot, makeToken, appendHistory,
-  needsExtraConfirm, isHoliday, manageUrl,
+  manageUrl,
 } from '../utils/appointmentOps';
 import { hasCap } from '../config/plans';
+import { resolvePublicTheme } from '../utils/platformTemplates';
 import { useLocale } from '../context/LocaleContext';
 import LangSwitcher from '../components/i18n/LangSwitcher';
 
@@ -22,6 +23,7 @@ const PublicBooking = () => {
   const { clinicId } = useParams();
   const [searchParams] = useSearchParams();
   const isDraft = searchParams.get('draft') === '1';
+  const adminPreview = searchParams.get('preview') === '1';
   const preview = useMemo(() => getPreviewClinic(clinicId), [clinicId]);
   const draftRef = useRef(null);
 
@@ -47,7 +49,8 @@ const PublicBooking = () => {
   const [bookedApts, setBookedApts] = useState([]);
   const [aptSettings, setAptSettings] = useState(mergeAptSettings(null));
   const [policyOk, setPolicyOk] = useState(false);
-  const [extraOk, setExtraOk] = useState(false);
+  const [templates, setTemplates] = useState(null);
+  const [planConfig, setPlanConfig] = useState(null);
   const [manageLink, setManageLink] = useState('');
   const queryApplied = useRef(false);
 
@@ -87,8 +90,11 @@ const PublicBooking = () => {
       }
     };
     window.addEventListener('message', onMsg);
+    if (isDraft || adminPreview) {
+      try { window.parent.postMessage({ type: 'clinic-draft-ready', clinicId }, '*'); } catch { /* ignore */ }
+    }
     return () => window.removeEventListener('message', onMsg);
-  }, [clinicId, isDraft]);
+  }, [clinicId, isDraft, adminPreview]);
 
   useEffect(() => {
     if (!clinicId || preview) return;
@@ -127,25 +133,43 @@ const PublicBooking = () => {
     const unsubAptSet = onValue(ref(database, `clinics/${clinicId}/appointmentSettings`), (snap) => {
       setAptSettings(mergeAptSettings(snap.val()));
     });
-    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); unsubSched(); unsubUsers(); unsubApts(); unsubAptSet(); };
+    const unsubTpl = onValue(ref(database, 'platform/templates'), (snap) => setTemplates(snap.val()));
+    const unsubPlans = onValue(ref(database, 'platform/planConfig'), (snap) => setPlanConfig(snap.val()));
+    return () => { unsubInfo(); unsubServ(); unsubProd(); unsubBranch(); unsubBlog(); unsubSched(); unsubUsers(); unsubApts(); unsubAptSet(); unsubTpl(); unsubPlans(); };
   }, [clinicId, preview]);
 
   const handleCheckout = async () => {
     if (!orderData.name || !orderData.phone || !orderData.address) return alert(t('book.fillAll'));
-    if (preview || isDraft) {
+    if (preview || isDraft || adminPreview) {
       setCart([]);
       setCheckoutStep(3);
       return;
     }
     try {
       const orderRef = push(ref(database, `clinics/${clinicId}/orders`));
+      const total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
       await set(orderRef, {
         customerInfo: orderData,
         items: cart,
-        total: cart.reduce((sum, item) => sum + (item.price * item.qty), 0),
+        total,
         status: 'pending',
+        paymentStatus: 'unpaid',
+        deliveryStatus: 'pending',
         createdAt: Date.now(),
       });
+      await set(ref(database, `platform/productOrders/${orderRef.key}`), {
+        clinicId,
+        clinicName: clinic?.name || '',
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        deliveryStatus: 'pending',
+        total,
+        customerName: orderData.name,
+        customerPhone: orderData.phone || '',
+        itemSummary: cart.map((i) => `${i.title || i.name || 'منتج'}×${i.qty}`).join('، '),
+        createdAt: Date.now(),
+      });
+      await update(ref(database, `meta/clinics/${clinicId}`), { orderCount: increment(1), lastActivityAt: Date.now() });
       setCart([]);
       setCheckoutStep(3);
     } catch (error) {
@@ -155,13 +179,11 @@ const PublicBooking = () => {
 
   const handleBookSubmit = async () => {
     if (!bookingData.branchId) return alert(t('book.pickBranchFirst'));
-    if (preview || isDraft) {
+    if (preview || isDraft || adminPreview) {
       setIsSuccess(true);
       return;
     }
     try {
-      const price = Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0);
-      if (needsExtraConfirm(price, aptSettings) && !extraOk) return alert(t('book.extraAlert'));
       if (!policyOk) return alert(t('book.policyAlert'));
       const specialistId = bookingData.specialistId || '';
       const key = slotKey(bookingData.branchId, specialistId, bookingData.date, bookingData.time);
@@ -169,7 +191,7 @@ const PublicBooking = () => {
       const locked = await claimSlot(database, clinicId, key, aptRef.key);
       if (!locked) return alert(t('book.slotGone'));
       const token = makeToken();
-      const status = aptSettings.autoConfirm && !needsExtraConfirm(price, aptSettings) ? 'confirmed' : 'pending';
+      const status = aptSettings.autoConfirm ? 'confirmed' : 'pending';
       await set(aptRef, {
         customerName: bookingData.name,
         phoneNumber: bookingData.phone,
@@ -181,10 +203,9 @@ const PublicBooking = () => {
         time: bookingData.time,
         branchId: bookingData.branchId,
         branchName: bookingData.branchName,
-        price,
         campaignId: searchParams.get('wb') || '',
         status,
-        extraConfirmRequired: needsExtraConfirm(price, aptSettings),
+        extraConfirmRequired: false,
         manageToken: token,
         reminderVariant: Math.random() < 0.5 ? 'A' : 'B',
         slotKey: key,
@@ -192,6 +213,7 @@ const PublicBooking = () => {
         history: appendHistory({}, { action: 'created', by: 'customer', status }),
       });
       await set(ref(database, `clinics/${clinicId}/manageTokens/${token}`), { appointmentId: aptRef.key });
+      await update(ref(database, `meta/clinics/${clinicId}`), { bookingCount: increment(1), lastActivityAt: Date.now() });
       setManageLink(manageUrl(clinicId, token));
       setIsSuccess(true);
     } catch (error) {
@@ -242,16 +264,13 @@ const PublicBooking = () => {
   const resolvedSpecialistId = bookingData.specialistId
     || staff.find((u) => u.branch === bookingData.branchId && selectedService && (u.category === selectedService.category || u.category === 'all'))?.id
     || '';
-  let slotInfo = slotsForBooking(schedules, bookingData.branchId, resolvedSpecialistId, bookingData.date);
+  let slotInfo = slotsForBooking(schedules, bookingData.branchId, resolvedSpecialistId, bookingData.date, aptSettings);
   const takenSlots = occupiedKeys(bookedApts);
   if (slotInfo.slots?.length) {
     slotInfo = {
       ...slotInfo,
       slots: slotInfo.slots.filter((t) => !takenSlots.has(slotKey(bookingData.branchId, resolvedSpecialistId || bookingData.specialistId, bookingData.date, t))),
     };
-  }
-  if (bookingData.date && isHoliday(bookingData.date, aptSettings)) {
-    slotInfo = { ...slotInfo, slots: [], closed: true, missing: false, dayName: t('book.holiday') };
   }
   if ((preview || isDraft) && slotInfo.missing && bookingData.date) {
     const dayIdx = new Date(`${bookingData.date}T12:00:00`).getDay();
@@ -282,13 +301,33 @@ const PublicBooking = () => {
     );
   }
 
-  const shopOn = hasCap(clinic, 'marketing');
-  const themesOn = hasCap(clinic, 'websitePro');
-  const publicProducts = shopOn && clinic.showProducts !== false ? products : [];
-  const publicPosts = shopOn && clinic.showBlog !== false ? posts : [];
-  const themeName = themesOn ? clinic.storeTheme : 'beauty';
+  if (!preview && !isDraft && !adminPreview && clinic.isActive === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FBF4F0] text-[#3A2A28] p-6 text-center" dir={dir}>
+        <p className="font-display text-4xl mb-3">✦</p>
+        <h1 className="text-2xl font-bold mb-2">العيادة متوقفة مؤقتاً</h1>
+        <p className="text-sm opacity-70">الحجز غير متاح حالياً. تواصلي مع العيادة لاحقاً.</p>
+      </div>
+    );
+  }
 
-  const pageClinic = { ...clinic, storeTheme: themeName, showProducts: shopOn && clinic.showProducts !== false, showBlog: shopOn && clinic.showBlog !== false };
+  if (!preview && !isDraft && !adminPreview && clinic.websitePublished === false) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FBF4F0] text-[#3A2A28] p-6 text-center" dir={dir}>
+        <p className="font-display text-4xl mb-3">✦</p>
+        <h1 className="text-2xl font-bold mb-2">الموقع غير منشور</h1>
+        <p className="text-sm opacity-70">هذه العيادة لم تنشر صفحتها العامة بعد.</p>
+      </div>
+    );
+  }
+
+  const themesOn = hasCap(clinic, 'websitePro', planConfig);
+  const publicProducts = clinic.showProducts !== false ? products : [];
+  const publicPosts = clinic.showBlog !== false ? posts : [];
+  const resolved = resolvePublicTheme(clinic, templates, themesOn);
+  const themeName = resolved.renderer;
+
+  const pageClinic = { ...clinic, storeTheme: themeName, showProducts: clinic.showProducts !== false, showBlog: clinic.showBlog !== false };
   const pageSections = clinicSections(clinic);
 
   const primaryColor = clinic.primaryColor || '#C48B7A';
@@ -454,7 +493,6 @@ const PublicBooking = () => {
                             <p className="font-bold">{s.title}</p>
                             {s.description && <p className="text-xs opacity-60 mt-1 line-clamp-2">{s.description}</p>}
                             {s.duration && <p className="text-xs opacity-50 mt-1">{s.duration}</p>}
-                            <p className="text-sm font-bold mt-2" style={{ color: primaryColor }}>{s.price} ₪</p>
                           </button>
                         ))}
                       </div>
@@ -494,12 +532,6 @@ const PublicBooking = () => {
                           <label className="flex items-start gap-2 text-xs opacity-70">
                             <input type="checkbox" checked={policyOk} onChange={(e) => setPolicyOk(e.target.checked)} className="mt-1" />
                             <span>{aptSettings.cancellationPolicy}{aptSettings.depositPolicyEnabled ? ` ${aptSettings.depositNote}` : ''}</span>
-                          </label>
-                        )}
-                        {needsExtraConfirm(Number((services.find((s) => s.id === bookingData.serviceId || s.title === bookingData.service) || {}).price || 0), aptSettings) && (
-                          <label className="flex items-start gap-2 text-xs opacity-70">
-                            <input type="checkbox" checked={extraOk} onChange={(e) => setExtraOk(e.target.checked)} className="mt-1" />
-                            {t('book.extraConfirm')}
                           </label>
                         )}
                         <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId || !policyOk} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>{t('book.confirmSession')}</button>

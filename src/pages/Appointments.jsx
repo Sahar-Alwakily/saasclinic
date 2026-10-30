@@ -1,31 +1,37 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
+import { WaitlistView, GapsView, RemindersView, AttendanceView } from './appointment/AppointmentViews';
 import { ref, onValue, update, push } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { FaChevronRight, FaChevronLeft, FaClock, FaCheckCircle, FaWhatsapp, FaPhone } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import ScheduleSettingsModal from '../components/settings/ScheduleSettingsModal';
-import WeeklyBoard, { StatusLegend, STATUS_COLORS } from '../components/appointments/WeeklyBoard';
+import WeeklyBoard, { ResourceDayBoard, StatusLegend, STATUS_COLORS } from '../components/appointments/WeeklyBoard';
 import {
-  APT_STATUSES, appendHistory, releaseSlot, slotKey, manageUrl, reminderBody, waDigits,
+  APT_STATUSES, appendHistory, releaseSlot, slotKey, manageUrl, waDigits,
 } from '../utils/appointmentOps';
+import { deliverAppointmentReminder } from '../utils/sendClinicWaReminder';
 import {
   startOfWeek, addDays, toYmd, hoursRangeFromSchedules, formatHourLabel, parseHourFromLabel,
 } from '../utils/scheduleSlots';
 
-const Appointments = () => {
+const AppointmentsCalendar = () => {
   const { clinicPath, clinicId, clinicInfo, hasCap = () => false } = useClinic();
   const [appointments, setAppointments] = useState([]);
   const [schedules, setSchedules] = useState({});
   const [loading, setLoading] = useState(true);
-  const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [weekAnchor, setWeekAnchor] = useState(() => startOfWeek(new Date()));
   const [selected, setSelected] = useState(null);
   const [cancelFor, setCancelFor] = useState(null);
   const [reason, setReason] = useState('');
   const [historyFor, setHistoryFor] = useState(null);
   const [reschedule, setReschedule] = useState({ date: '', time: '' });
+  const [tab, setTab] = useState('calendar');
+  const [range, setRange] = useState('day');
+  const [dayAnchor, setDayAnchor] = useState(() => new Date());
+  const [staffFilter, setStaffFilter] = useState('all');
+  const [staff, setStaff] = useState([]);
 
   useEffect(() => {
     if (!clinicPath) return undefined;
@@ -40,10 +46,15 @@ const Appointments = () => {
     const u2 = schPath
       ? onValue(ref(database, schPath), (s) => setSchedules(s.val() || {}))
       : () => {};
-    return () => { u1(); u2(); };
+    const u3 = onValue(ref(database, clinicPath('users')), (s) => {
+      const all = s.val() ? Object.entries(s.val()).map(([id, item]) => ({ id, ...item })) : [];
+      setStaff(all.filter((u) => u.role !== 'admin'));
+    });
+    return () => { u1(); u2(); u3(); };
   }, [clinicPath]);
 
-  const weekStart = useMemo(() => startOfWeek(weekAnchor), [weekAnchor]);
+  const weekStart = useMemo(() => startOfWeek(range === 'week' ? weekAnchor : dayAnchor), [weekAnchor, dayAnchor, range]);
+  const dayStr = useMemo(() => toYmd(dayAnchor), [dayAnchor]);
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => toYmd(addDays(weekStart, i))), [weekStart]);
   const weekApts = useMemo(
     () => appointments.filter((a) => weekDays.includes(a.date)),
@@ -52,7 +63,8 @@ const Appointments = () => {
   const hours = useMemo(() => {
     const base = hoursRangeFromSchedules(schedules);
     let { start, end } = base;
-    weekApts.forEach((a) => {
+    const source = range === 'day' ? appointments.filter((a) => a.date === dayStr) : weekApts;
+    source.forEach((a) => {
       const h = parseHourFromLabel(a.time);
       if (h == null) return;
       start = Math.min(start, h);
@@ -60,7 +72,7 @@ const Appointments = () => {
     });
     if (end <= start) return { start: 8, end: 20 };
     return { start, end };
-  }, [schedules, weekApts]);
+  }, [schedules, weekApts, appointments, dayStr, range]);
 
   const hourOptions = useMemo(() => {
     const list = [];
@@ -82,9 +94,14 @@ const Appointments = () => {
         return;
       }
       await patch(apt, { status: newStatus }, { action: newStatus, by: 'staff' });
-      if (newStatus === 'confirmed' && apt.phoneNumber && apt.manageToken) {
-        const body = reminderBody(clinicInfo?.name, apt, clinicId, apt.reminderVariant || 'A');
-        window.open(`https://wa.me/${waDigits(apt.phoneNumber)}?text=${encodeURIComponent(body)}`, '_blank');
+      if (newStatus === 'confirmed' && apt.phoneNumber) {
+        await deliverAppointmentReminder({
+          clinicId,
+          clinicName: clinicInfo?.name,
+          apt: { ...apt, status: 'confirmed' },
+          eventId: 'confirm',
+          hoursKey: 'confirm',
+        });
       }
       toast.success('تم تحديث الحالة');
       setSelected((s) => (s?.id === apt.id ? { ...s, ...apt, status: newStatus } : s));
@@ -106,9 +123,16 @@ const Appointments = () => {
       specialistId: cancelFor.specialistId || '',
       date: cancelFor.date,
       time: cancelFor.time,
-      price: cancelFor.price || 0,
+      price: 0,
       createdAt: Date.now(),
       open: true,
+    });
+    await deliverAppointmentReminder({
+      clinicId,
+      clinicName: clinicInfo?.name,
+      apt: { ...cancelFor, status: 'cancelled' },
+      eventId: 'cancel',
+      hoursKey: 'cancelled',
     });
     toast.success('سُجّل الإلغاء وأُتيح الموعد لقائمة الانتظار — بلا عقوبة آلية');
     setCancelFor(null);
@@ -128,71 +152,200 @@ const Appointments = () => {
         time: reschedule.time,
         status: 'rescheduled',
       }, { action: 'rescheduled', by: 'staff', from: `${selected.date} ${selected.time}`, to: `${reschedule.date} ${reschedule.time}` });
+      const next = { ...selected, date: reschedule.date, time: reschedule.time, status: 'rescheduled' };
+      await deliverAppointmentReminder({
+        clinicId,
+        clinicName: clinicInfo?.name,
+        apt: next,
+        eventId: 'reschedule',
+        hoursKey: 'rescheduled',
+      });
       toast.success('أُعيدت جدولة الموعد');
-      setSelected({ ...selected, date: reschedule.date, time: reschedule.time, status: 'rescheduled' });
+      setSelected(next);
     } catch {
       toast.error('تعذّرت إعادة الجدولة');
     }
   };
 
-  const unplaced = weekApts.filter((a) => parseHourFromLabel(a.time) == null);
+  const dayApts = useMemo(
+    () => appointments.filter((a) => a.date === dayStr),
+    [appointments, dayStr],
+  );
+  const staffCols = useMemo(() => {
+    const fromUsers = staff.map((s) => ({ id: s.id, name: s.name || 'موظفة', branch: s.branch }));
+    const extraIds = [...new Set(dayApts.map((a) => a.specialistId).filter(Boolean))]
+      .filter((id) => !fromUsers.some((s) => s.id === id));
+    const extras = extraIds.map((id) => {
+      const apt = dayApts.find((a) => a.specialistId === id);
+      return { id, name: apt?.specialistName || 'موظفة', branch: apt?.branchId };
+    });
+    const cols = [...fromUsers, ...extras];
+    if (dayApts.some((a) => !a.specialistId)) cols.push({ id: '', name: 'بدون تعيين' });
+    if (staffFilter !== 'all') return cols.filter((s) => (s.id || 'none') === staffFilter);
+    return cols.length ? cols : [{ id: '', name: 'العيادة' }];
+  }, [staff, dayApts, staffFilter]);
+  const scopedApts = range === 'day' ? dayApts : weekApts;
+  const visibleApts = staffFilter === 'all'
+    ? scopedApts
+    : scopedApts.filter((a) => (a.specialistId || 'none') === staffFilter);
+  const unplaced = visibleApts.filter((a) => parseHourFromLabel(a.time) == null);
+  const totalVisible = visibleApts.filter((a) => a.status !== 'cancelled').length;
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#4d7cff]" /></div>;
+  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#111827]" /></div>;
 
   const weekLabel = `${weekStart.toLocaleDateString('ar', { day: 'numeric', month: 'short' })} — ${addDays(weekStart, 6).toLocaleDateString('ar', { day: 'numeric', month: 'short' })}`;
+  const dayLabel = dayAnchor.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const tone = selected ? (STATUS_COLORS[selected.status] || STATUS_COLORS.pending) : null;
+  const pick = (apt) => {
+    setSelected(apt);
+    setReschedule({ date: apt.date, time: apt.time });
+    if (apt.date) setDayAnchor(new Date(`${apt.date}T12:00:00`));
+  };
 
   return (
     <div className="space-y-4">
       <ToastContainer position="top-left" rtl />
       <div className="flex justify-between items-center flex-wrap gap-3">
-        <div>
-          <h1 className="font-product text-2xl md:text-3xl">تقويم الحجوزات</h1>
-          <p className="text-stone-500 text-sm mt-1">أسبوع حسب ساعات الجدول — اللون يبيّن حالة الموعد</p>
+        <h1 className="text-[22px] font-bold text-[#111827]">تقويم الحجوزات</h1>
+        <div className="flex flex-wrap gap-2">
+          {hasCap('ops') && (
+            <>
+              <Link to="/appointments/waitlist" className="nura-chip nura-chip-lilac">قائمة الانتظار</Link>
+              <Link to="/appointments/gaps" className="nura-chip nura-chip-sky">المواعيد المتاحة</Link>
+              <Link to="/appointments/reminders" className="nura-chip nura-chip-gold">التذكيرات</Link>
+            </>
+          )}
+          <Link to="/appointments/attendance" className="nura-chip nura-chip-rose">الحضور</Link>
+          <Link to="/appointments/schedule" className="flex items-center gap-2 bg-[#111827] text-white px-3 py-2 rounded-2xl font-bold text-sm">
+            <FaClock /> الدوام
+          </Link>
         </div>
-        <div className="flex gap-2">
-          {hasCap('ops') && <Link to="/ops" className="px-4 py-2.5 rounded-xl bg-[#4d7cff]/10 text-[#4d7cff] font-bold text-sm">ملء الفراغ</Link>}
-          <button type="button" onClick={() => setShowScheduleModal(true)} className="flex items-center gap-2 bg-[#14121c] text-white px-4 py-2.5 rounded-xl font-medium text-sm">
-            <FaClock /> ساعات الجدول
-          </button>
-        </div>
+      </div>
+
+      <div className="flex gap-1 border-b border-[#ebeef2]">
+        <button type="button" onClick={() => setTab('calendar')} className={`px-4 py-2.5 text-sm font-bold ${tab === 'calendar' ? 'text-[#059669] border-b-2 border-[#10b981]' : 'text-[#9ca3af]'}`}>التقويم</button>
+        <button type="button" onClick={() => setTab('log')} className={`px-4 py-2.5 text-sm font-bold ${tab === 'log' ? 'text-[#059669] border-b-2 border-[#10b981]' : 'text-[#9ca3af]'}`}>سجل الحجوزات</button>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setWeekAnchor(addDays(weekStart, -7))} className="w-10 h-10 rounded-xl bg-white border border-[#e4ddd0] flex items-center justify-center" aria-label="الأسبوع السابق">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2 bg-white border border-[#ebeef2] rounded-2xl px-3 py-2">
+            <span className="w-8 h-8 rounded-xl bg-[#111827] text-white text-sm font-bold flex items-center justify-center">{dayAnchor.getDate()}</span>
+            <span className="text-lg font-bold text-[#111827]">{totalVisible}</span>
+            <span className="text-xs text-[#8a9199]">موعد</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => { setDayAnchor(new Date()); setWeekAnchor(startOfWeek(new Date())); }}
+            className="px-3 py-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold"
+          >
+            اليوم
+          </button>
+          <button
+            type="button"
+            onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, -7)) : setDayAnchor(addDays(dayAnchor, -1)))}
+            className="w-9 h-9 rounded-full bg-white border border-[#ebeef2] flex items-center justify-center"
+            aria-label="السابق"
+          >
             <FaChevronRight />
           </button>
-          <button type="button" onClick={() => setWeekAnchor(startOfWeek(new Date()))} className="px-3 py-2 rounded-xl bg-white border border-[#e4ddd0] text-sm font-bold">هذا الأسبوع</button>
-          <button type="button" onClick={() => setWeekAnchor(addDays(weekStart, 7))} className="w-10 h-10 rounded-xl bg-white border border-[#e4ddd0] flex items-center justify-center" aria-label="الأسبوع التالي">
+          <span className="font-bold text-sm text-[#111827] min-w-[12rem] text-center">{range === 'week' ? weekLabel : dayLabel}</span>
+          <button
+            type="button"
+            onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, 7)) : setDayAnchor(addDays(dayAnchor, 1)))}
+            className="w-9 h-9 rounded-full bg-white border border-[#ebeef2] flex items-center justify-center"
+            aria-label="التالي"
+          >
             <FaChevronLeft />
           </button>
-          <span className="font-bold text-sm">{weekLabel}</span>
+          <div className="flex bg-emerald-50 rounded-full p-1">
+            <button
+              type="button"
+              onClick={() => {
+                setRange('day');
+                if (selected?.date) setDayAnchor(new Date(`${selected.date}T12:00:00`));
+              }}
+              className={`px-3 py-1 rounded-full text-xs font-bold ${range === 'day' ? 'bg-[#10b981] text-white shadow-sm' : 'text-[#047857]'}`}
+            >
+              يوم
+            </button>
+            <button type="button" onClick={() => setRange('week')} className={`px-3 py-1 rounded-full text-xs font-bold ${range === 'week' ? 'bg-[#10b981] text-white shadow-sm' : 'text-[#047857]'}`}>أسبوع</button>
+          </div>
         </div>
-        <StatusLegend />
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={staffFilter}
+            onChange={(e) => setStaffFilter(e.target.value)}
+            className="px-3 py-2 rounded-2xl bg-white border border-[#ebeef2] text-sm font-bold"
+          >
+            <option value="all">كل الفريق</option>
+            {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            {dayApts.some((a) => !a.specialistId) && <option value="none">بدون تعيين</option>}
+          </select>
+          <StatusLegend />
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr_20rem] gap-4 items-start">
-        <WeeklyBoard
-          weekStart={weekStart}
-          hourStart={hours.start}
-          hourEnd={hours.end}
-          appointments={weekApts}
-          selectedId={selected?.id}
-          onSelect={(apt) => {
-            setSelected(apt);
-            setReschedule({ date: apt.date, time: apt.time });
-          }}
-        />
+      {tab === 'log' && (
+        <div className="saas-card overflow-hidden">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                {['العميلة', 'الخدمة', 'الموعد', 'المختصة', 'الحالة'].map((h) => <th key={h}>{h}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {visibleApts.length === 0 && (
+                <tr><td colSpan={5} className="text-center text-[#8a9199] py-10">لا حجوزات في هذه الفترة.</td></tr>
+              )}
+              {visibleApts.map((a) => (
+                <tr key={a.id} className="cursor-pointer hover:bg-[#f8fafb]" onClick={() => pick(a)}>
+                  <td className="font-bold">{a.customerName}</td>
+                  <td>{a.service || '—'}</td>
+                  <td>{a.date} · {a.time}</td>
+                  <td>{a.specialistName || '—'}</td>
+                  <td>{APT_STATUSES.find((s) => s.id === a.status)?.label || a.status}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
+      {tab === 'calendar' && (
+      <div className={`grid gap-4 items-start ${selected ? 'lg:grid-cols-[1fr_20rem]' : ''}`}>
+        {range === 'day' ? (
+          <ResourceDayBoard
+            dateStr={dayStr}
+            hourStart={hours.start}
+            hourEnd={hours.end}
+            appointments={visibleApts}
+            staff={staffCols}
+            schedules={schedules}
+            selectedId={selected?.id}
+            onSelect={pick}
+          />
+        ) : (
+          <WeeklyBoard
+            weekStart={weekStart}
+            hourStart={hours.start}
+            hourEnd={hours.end}
+            appointments={visibleApts}
+            selectedId={selected?.id}
+            onSelect={pick}
+          />
+        )}
+
+        {selected && (
         <aside className="saas-card p-4 space-y-3 lg:sticky lg:top-24">
-          {!selected && <p className="text-sm text-stone-400">اضغطي حجزاً في الجدول لفتح التأكيد أو الإلغاء أو إعادة الجدولة.</p>}
-          {selected && (
-            <>
               <div className="rounded-xl p-3 text-sm" style={{ background: tone.bg, border: `1px solid ${tone.border}`, color: tone.text }}>
-                <p className="font-bold">{selected.customerName}</p>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="font-bold">{selected.customerName}</p>
+                  <button type="button" onClick={() => setSelected(null)} className="text-xs opacity-60" aria-label="إغلاق">✕</button>
+                </div>
                 <p className="text-xs mt-1">{selected.date} · {selected.time}</p>
                 <p className="text-xs">{selected.service}{selected.branchName ? ` · ${selected.branchName}` : ''}</p>
+                {selected.specialistName && <p className="text-xs mt-0.5">{selected.specialistName}</p>}
                 <p className="text-xs font-bold mt-1">{APT_STATUSES.find((s) => s.id === selected.status)?.label}</p>
               </div>
               <p className="text-xs text-stone-500 flex items-center gap-1" dir="ltr"><FaPhone className="text-[10px]" /> {selected.phoneNumber}</p>
@@ -221,20 +374,20 @@ const Appointments = () => {
                 </button>
               </div>
               {['pending', 'confirmed', 'rescheduled'].includes(selected.status) && (
-                <div className="border-t border-[#e4ddd0] pt-3 space-y-2">
+                <div className="border-t border-[#E5E9EC] pt-3 space-y-2">
                   <p className="text-xs font-bold">إعادة جدولة</p>
-                  <input type="date" value={reschedule.date} onChange={(e) => setReschedule({ ...reschedule, date: e.target.value })} className="w-full p-2 rounded-xl bg-[#f3efe6] text-sm" />
-                  <select value={reschedule.time} onChange={(e) => setReschedule({ ...reschedule, time: e.target.value })} className="w-full p-2 rounded-xl bg-[#f3efe6] text-sm">
+                  <input type="date" value={reschedule.date} onChange={(e) => setReschedule({ ...reschedule, date: e.target.value })} className="w-full p-2 rounded-xl bg-[#F7F8F6] text-sm" />
+                  <select value={reschedule.time} onChange={(e) => setReschedule({ ...reschedule, time: e.target.value })} className="w-full p-2 rounded-xl bg-[#F7F8F6] text-sm">
                     {hourOptions.map((t) => <option key={t} value={t}>{t}</option>)}
                     {reschedule.time && !hourOptions.includes(reschedule.time) && <option value={reschedule.time}>{reschedule.time}</option>}
                   </select>
                   <button type="button" onClick={saveReschedule} className="w-full py-2 rounded-xl bg-[#eab308] text-[#854d0e] font-bold text-sm">حفظ كإعادة جدولة (أصفر)</button>
                 </div>
               )}
-            </>
-          )}
         </aside>
+        )}
       </div>
+      )}
 
       {unplaced.length > 0 && (
         <p className="text-xs text-amber-700">{unplaced.length} حجز هذا الأسبوع بلا ساعة مقروءة — لن يظهر في الجدول.</p>
@@ -266,9 +419,18 @@ const Appointments = () => {
         </div>
       )}
 
-      <ScheduleSettingsModal show={showScheduleModal} onClose={() => setShowScheduleModal(false)} />
     </div>
   );
+};
+
+const Appointments = () => {
+  const { pathname } = useLocation();
+  if (pathname === '/appointments/waitlist') return <WaitlistView />;
+  if (pathname === '/appointments/gaps') return <GapsView />;
+  if (pathname === '/appointments/reminders') return <RemindersView />;
+  if (pathname === '/appointments/attendance') return <AttendanceView />;
+  if (pathname === '/appointments/schedule') return <ScheduleSettingsModal embedded />;
+  return <AppointmentsCalendar />;
 };
 
 export default Appointments;

@@ -1,0 +1,86 @@
+{
+  "rules": {
+    "meta": {
+      "users": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || root.child('meta/superAdmins').child(auth.uid).exists())",
+          ".write": "auth != null && (auth.uid === $uid || root.child('meta/superAdmins').child(auth.uid).exists())"
+        }
+      },
+      "superAdmins": {
+        ".read": "auth != null",
+        "$uid": {
+          ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || (!root.child('meta/superAdmins').exists() && auth.uid === $uid))"
+        }
+      },
+      "clinics": {
+        ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).exists())",
+        "$cid": {
+          ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)"
+        }
+      }
+    },
+    "platform": {
+      "templates": {
+        ".read": true,
+        ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()"
+      },
+      "planConfig": {
+        ".read": true,
+        ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()"
+      },
+      "activity": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        ".write": "auth != null"
+      },
+      "auditLog": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        ".write": "auth != null"
+      },
+      "supportSessions": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        "$token": {
+          ".read": "auth != null",
+          ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()"
+        }
+      },
+      "requests": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        "$rid": {
+          ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).exists())"
+        }
+      },
+      "productOrders": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        "$oid": {
+          ".write": true
+        }
+      }
+    },
+    "clinics": {
+      "$cid": {
+        "info": {
+          ".read": true,
+          ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)"
+        },
+        "services": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "products": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "blog": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "branches": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "users": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "scheduleSettings": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "appointmentSettings": { ".read": true, ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "appointments": { ".read": true, ".write": true },
+        "slotLocks": { ".read": true, ".write": true },
+        "manageTokens": { ".read": true, ".write": true },
+        "waitlistOffers": { ".read": true, ".write": true },
+        "orders": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": true },
+        "customers": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "supportRequests": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
+        "adminAudit": { ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()", ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()" },
+        "subscriptionHistory": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()" },
+        "$other": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" }
+      }
+    }
+  }
+}

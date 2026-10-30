@@ -2,7 +2,7 @@ import React from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import { SECTION_FIELDS, sectionLabel } from './sectionCatalog';
 
-const fieldClass = 'w-full p-3 rounded-xl bg-[#f3efe6] dark:bg-[#1e1b28] outline-none text-sm';
+const fieldClass = 'w-full p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none text-sm';
 
 function ListEditor({ items, onChange, fields, addLabel }) {
   const list = Array.isArray(items) ? items : [];
@@ -19,7 +19,7 @@ function ListEditor({ items, onChange, fields, addLabel }) {
   return (
     <div className="space-y-2">
       {list.map((row, i) => (
-        <div key={i} className="rounded-xl border border-[#e4ddd0] p-2 space-y-2">
+        <div key={i} className="rounded-xl border border-[#E5E9EC] p-2 space-y-2">
           {fields.map((f) => (
             f.kind === 'textarea' ? (
               <textarea
@@ -40,12 +40,12 @@ function ListEditor({ items, onChange, fields, addLabel }) {
               />
             )
           ))}
-          <button type="button" onClick={() => remove(i)} className="text-xs text-[#c2410c] font-bold flex items-center gap-1">
+          <button type="button" onClick={() => remove(i)} className="text-xs text-[#9A3F32] font-bold flex items-center gap-1">
             <FaTrash /> حذف
           </button>
         </div>
       ))}
-      <button type="button" onClick={add} className="text-xs font-bold text-[#4d7cff] flex items-center gap-1">
+      <button type="button" onClick={add} className="text-xs font-bold text-[#172B3A] flex items-center gap-1">
         <FaPlus /> {addLabel}
       </button>
     </div>
@@ -63,12 +63,12 @@ function StringsEditor({ items, onChange }) {
             onChange={(e) => onChange(list.map((v, idx) => (idx === i ? e.target.value : v)))}
             className={fieldClass}
           />
-          <button type="button" onClick={() => onChange(list.filter((_, idx) => idx !== i))} className="text-[#c2410c] px-2" aria-label="حذف">
+          <button type="button" onClick={() => onChange(list.filter((_, idx) => idx !== i))} className="text-[#9A3F32] px-2" aria-label="حذف">
             <FaTrash />
           </button>
         </div>
       ))}
-      <button type="button" onClick={() => onChange([...list, ''])} className="text-xs font-bold text-[#4d7cff] flex items-center gap-1">
+      <button type="button" onClick={() => onChange([...list, ''])} className="text-xs font-bold text-[#172B3A] flex items-center gap-1">
         <FaPlus /> أضيفي نقطة
       </button>
     </div>
@@ -97,7 +97,7 @@ export default function SectionSettingsPanel({ section, onChange }) {
   return (
     <div className="p-5 space-y-4" dir="rtl">
       <div>
-        <p className="text-[11px] tracking-[0.18em] uppercase text-[#4d7cff] font-semibold">إعدادات</p>
+        <p className="text-[11px] tracking-[0.18em] uppercase text-[#172B3A] font-semibold">إعدادات</p>
         <h2 className="font-product text-xl">{sectionLabel(section.type)}</h2>
       </div>
       {fields.length === 0 && (

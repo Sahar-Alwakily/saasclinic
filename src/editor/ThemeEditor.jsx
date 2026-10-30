@@ -24,6 +24,7 @@ export default function ThemeEditor({ embedded = false }) {
   const [saving, setSaving] = useState(false);
   const [store, setStore] = useState(storeFromClinic(null));
   const [rightTab, setRightTab] = useState('section');
+  const [previewW, setPreviewW] = useState('100%');
 
   useEffect(() => {
     const list = normalizeSections(clinicInfo?.sections) || createDefaultSections();
@@ -71,6 +72,12 @@ export default function ThemeEditor({ embedded = false }) {
     setSaving(true);
     try {
       await update(ref(database, clinicPath('info')), { ...store, sections });
+      await update(ref(database, `meta/clinics/${clinicId}`), {
+        name: clinicInfo?.name || store.name,
+        storeTheme: store.storeTheme,
+        websitePublished: store.websitePublished !== false,
+        updatedAt: Date.now(),
+      });
       toast.success('حُفظت الواجهة والأقسام');
     } catch {
       toast.error('تعذّر الحفظ');
@@ -99,19 +106,21 @@ export default function ThemeEditor({ embedded = false }) {
       {!embedded && <ToastContainer position="top-left" rtl />}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <p className="text-[11px] tracking-[0.22em] uppercase text-[#4d7cff] font-semibold">واجهة العيادة</p>
+          <p className="text-[11px] tracking-[0.22em] uppercase text-[#172B3A] font-semibold">واجهة العيادة</p>
           <h1 className="font-product text-2xl">محرر الأقسام</h1>
         </div>
         <div className="flex flex-wrap gap-2">
           {!embedded && (
-            <button type="button" onClick={() => navigate('/settings')} className="px-3 py-2 rounded-xl bg-[#f3efe6] text-sm font-bold flex items-center gap-2">
+            <button type="button" onClick={() => navigate('/settings')} className="px-3 py-2 rounded-xl bg-[#F7F8F6] text-sm font-bold flex items-center gap-2">
               <FaArrowRight /> رجوع
             </button>
           )}
-          <button type="button" onClick={openPreview} className="px-3 py-2 rounded-xl bg-[#f3efe6] text-sm font-bold flex items-center gap-2">
+          <button type="button" onClick={() => setPreviewW('100%')} className={`px-3 py-2 rounded-xl text-sm font-bold ${previewW === '100%' ? 'bg-[#172B3A] text-white' : 'bg-[#F7F8F6]'}`}>حاسوب</button>
+          <button type="button" onClick={() => setPreviewW('390px')} className={`px-3 py-2 rounded-xl text-sm font-bold ${previewW === '390px' ? 'bg-[#172B3A] text-white' : 'bg-[#F7F8F6]'}`}>جوال</button>
+          <button type="button" onClick={openPreview} className="px-3 py-2 rounded-xl bg-[#F7F8F6] text-sm font-bold flex items-center gap-2">
             <FaExternalLinkAlt /> معاينة
           </button>
-          <button type="button" onClick={save} disabled={saving} className="px-4 py-2 rounded-xl bg-[#14121c] text-white text-sm font-bold flex items-center gap-2 disabled:opacity-50">
+          <button type="button" onClick={save} disabled={saving} className="px-4 py-2 rounded-xl bg-[#172B3A] text-white text-sm font-bold flex items-center gap-2 disabled:opacity-50">
             <FaSave /> {saving ? 'جاري الحفظ...' : 'حفظ'}
           </button>
         </div>
@@ -122,17 +131,17 @@ export default function ThemeEditor({ embedded = false }) {
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold">الأقسام</p>
             <div className="relative">
-              <button type="button" onClick={() => setAddOpen((v) => !v)} className="text-xs font-bold px-2 py-1 rounded-lg bg-[#4d7cff] text-white flex items-center gap-1">
+              <button type="button" onClick={() => setAddOpen((v) => !v)} className="text-xs font-bold px-2 py-1 rounded-lg bg-[#172B3A] text-white flex items-center gap-1">
                 <FaPlus /> إضافة قسم
               </button>
               {addOpen && (
-                <div className="absolute left-0 top-full mt-1 z-20 w-44 rounded-xl bg-white dark:bg-[#1e1b28] border border-[#e4ddd0] shadow-lg overflow-hidden">
+                <div className="absolute left-0 top-full mt-1 z-20 w-44 rounded-xl bg-white dark:bg-[#1A2C38] border border-[#E5E9EC] shadow-lg overflow-hidden">
                   {addableTypes().map((type) => (
                     <button
                       key={type}
                       type="button"
                       onClick={() => addType(type)}
-                      className="block w-full text-right px-3 py-2 text-sm hover:bg-[#f3efe6]"
+                      className="block w-full text-right px-3 py-2 text-sm hover:bg-[#F7F8F6]"
                     >
                       {sectionLabel(type)}
                     </button>
@@ -158,22 +167,23 @@ export default function ThemeEditor({ embedded = false }) {
           )}
         </aside>
 
-        <section className="saas-card overflow-hidden min-h-[28rem]">
+        <section className="saas-card overflow-hidden min-h-[28rem] flex justify-center bg-[#F7F8F6]">
           <iframe
             ref={iframeRef}
             title="معاينة الصفحة"
             src={`/book/${clinicId}?draft=1`}
-            className="w-full h-full min-h-[28rem] bg-white"
+            className="h-full min-h-[28rem] bg-white mx-auto"
+            style={{ width: previewW, maxWidth: '100%' }}
             onLoad={onIframeLoad}
           />
         </section>
 
         <aside className="saas-card overflow-y-auto max-h-[80vh]">
-          <div className="flex border-b border-[#e4ddd0] sticky top-0 bg-white dark:bg-[#16141f] z-10">
-            <button type="button" onClick={() => setRightTab('section')} className={`flex-1 py-2 text-xs font-bold ${rightTab === 'section' ? 'text-[#4d7cff] border-b-2 border-[#4d7cff]' : 'text-stone-400'}`}>
+          <div className="flex border-b border-[#E5E9EC] sticky top-0 bg-white dark:bg-[#16141f] z-10">
+            <button type="button" onClick={() => setRightTab('section')} className={`flex-1 py-2 text-xs font-bold ${rightTab === 'section' ? 'text-[#172B3A] border-b-2 border-[#172B3A]' : 'text-stone-400'}`}>
               القسم
             </button>
-            <button type="button" onClick={() => setRightTab('identity')} className={`flex-1 py-2 text-xs font-bold ${rightTab === 'identity' ? 'text-[#4d7cff] border-b-2 border-[#4d7cff]' : 'text-stone-400'}`}>
+            <button type="button" onClick={() => setRightTab('identity')} className={`flex-1 py-2 text-xs font-bold ${rightTab === 'identity' ? 'text-[#172B3A] border-b-2 border-[#172B3A]' : 'text-stone-400'}`}>
               الهوية
             </button>
           </div>
