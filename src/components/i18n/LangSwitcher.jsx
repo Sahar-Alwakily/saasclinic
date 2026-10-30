@@ -13,8 +13,8 @@ const LangSwitcher = ({ tone = 'dark' }) => {
           onClick={() => setLang(l.id)}
           className={`px-2 py-1 rounded ${
             lang === l.id
-              ? light ? 'bg-[#172B3A] text-white' : 'bg-white text-[#172B3A]'
-              : light ? 'text-[#75818B] hover:text-[#172B3A]' : 'text-white/60 hover:text-white'
+              ? light ? 'bg-[#10b981] text-white' : 'bg-white text-[#111827]'
+              : light ? 'text-[#6b7280] hover:text-[#047857]' : 'text-white/60 hover:text-white'
           }`}
         >
           {l.id.toUpperCase()}
