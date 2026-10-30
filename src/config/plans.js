@@ -154,12 +154,6 @@ export const PAID_PLAN_IDS = ['starter', 'pro', 'business'];
 
 export const paidPlans = () => PAID_PLAN_IDS.map((id) => PLANS[id]);
 
-export const ADDONS = [
-  { id: 'whatsapp', name: 'واتساب Cloud API', note: 'إرسال قوالب وجدولة — تُسعَّر لاحقاً حسب الرسالة' },
-  { id: 'domain', name: 'دومين مخصص', note: 'الصفحة العامة تعمل على رابط نورا حتى الربط' },
-  { id: 'payments', name: 'بوابة دفع', note: 'العربون والطلبات تُسجَّل يدوياً حتى الربط' },
-];
-
 export const getPlan = (id) => PLANS[id] || PLANS.trial;
 
 export function mergePlan(clinicInfo, planConfig) {

@@ -26,6 +26,7 @@ import Winback from './pages/Winback';
 import FillOps from './pages/FillOps';
 import ManageAppointment from './pages/ManageAppointment';
 import WaitlistOffer from './pages/WaitlistOffer';
+import GroupOffer from './pages/GroupOffer';
 import Website from './pages/Website';
 import Assistant from './pages/Assistant';
 import Marketing from './pages/Marketing';
@@ -84,6 +85,7 @@ function App() {
             <Route path="/book/:clinicId/branch/:branchId" element={<PublicBranch />} />
             <Route path="/book/:clinicId/manage/:token" element={<ManageAppointment />} />
             <Route path="/book/:clinicId/offer/:token" element={<WaitlistOffer />} />
+            <Route path="/group/:clinicId/:offerId" element={<GroupOffer />} />
 
             {/* مسارات محمية (للعاملين بالعيادة فقط) */}
             <Route element={<ProtectedApp><DashboardLayout /></ProtectedApp>}>

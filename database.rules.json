@@ -55,6 +55,14 @@
         "$oid": {
           ".write": true
         }
+      },
+      "whatsappIndex": {
+        ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+        ".write": false
+      },
+      "twilioRoutes": {
+        ".read": false,
+        ".write": false
       }
     },
     "clinics": {
@@ -74,11 +82,35 @@
         "slotLocks": { ".read": true, ".write": true },
         "manageTokens": { ".read": true, ".write": true },
         "waitlistOffers": { ".read": true, ".write": true },
+        "groupOffers": {
+          "$oid": {
+            ".read": true,
+            ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)",
+            "accepts": {
+              "$key": {
+                ".write": "!data.exists() && newData.child('name').isString() && newData.child('phone').isString()"
+              }
+            }
+          }
+        },
         "orders": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": true },
         "customers": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
         "supportRequests": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" },
         "adminAudit": { ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()", ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()" },
         "subscriptionHistory": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()" },
+        "secrets": { ".read": false, ".write": false },
+        "messagingWallet": {
+          ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)",
+          ".write": false
+        },
+        "messagingUsage": {
+          ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)",
+          ".write": false
+        },
+        "waWebhookErrors": {
+          ".read": "auth != null && root.child('meta/superAdmins').child(auth.uid).exists()",
+          ".write": false
+        },
         "$other": { ".read": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)", ".write": "auth != null && (root.child('meta/superAdmins').child(auth.uid).exists() || root.child('meta/users').child(auth.uid).child('clinicId').val() === $cid)" }
       }
     }

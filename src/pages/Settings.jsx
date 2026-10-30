@@ -4,7 +4,8 @@ import { ref, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaBuilding, FaSave, FaDesktop, FaShieldAlt, FaPlug } from 'react-icons/fa';
+import { FaBuilding, FaSave, FaDesktop, FaShieldAlt, FaPlug, FaWhatsapp } from 'react-icons/fa';
+import WhatsAppConnectPanel from '../components/settings/WhatsAppConnectPanel';
 import { getGeminiKey, setGeminiKey } from '../utils/geminiKey';
 
 const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
@@ -39,7 +40,7 @@ const Settings = () => {
 
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t === 'store' || t === 'whatsapp') {
+    if (t === 'store') {
       setSearchParams({}, { replace: true });
       setActiveTab('profile');
       return;
@@ -98,6 +99,9 @@ const Settings = () => {
         <button type="button" onClick={() => goTab('privacy')} className={tabCls('privacy')}>
           <FaShieldAlt /> الخصوصية
         </button>
+        <button type="button" onClick={() => goTab('whatsapp')} className={tabCls('whatsapp')}>
+          <FaWhatsapp /> واتساب
+        </button>
         <button type="button" onClick={() => goTab('integrations')} className={tabCls('integrations')}>
           <FaPlug /> التكاملات
         </button>
@@ -130,6 +134,8 @@ const Settings = () => {
               </button>
             </section>
           )}
+
+          {activeTab === 'whatsapp' && <WhatsAppConnectPanel />}
 
           {activeTab === 'integrations' && (
             <section className="saas-card p-5 space-y-4">

@@ -11,7 +11,7 @@ import {
   noshowFollowupBody, waDigits, makeToken, appendHistory,
 } from '../../utils/appointmentOps';
 import { addDays, toYmd, parseTimeOffset, isFutureSlot } from '../../utils/scheduleSlots';
-import { deliverAppointmentReminder } from '../../utils/sendClinicWaReminder';
+import { deliverAppointmentReminder, deliverUtilityNotice } from '../../utils/sendClinicWaReminder';
 import WhatsAppRemindersPanel from '../../components/settings/WhatsAppRemindersPanel';
 import {
   shiftsFromDay, openShift, shiftMs, dayWorkedMs, monthWorkedMs, monthDaysPresent,
@@ -133,8 +133,22 @@ function useAptDesk() {
       });
       await update(ref(database, clinicPath(`waitlist/${entry.id}`)), { status: 'offered' });
       const url = `${window.location.origin}/book/${clinicId}/offer/${token}`;
-      const body = `شاغر مناسب لجلسة ${vacancy.service} يوم ${vacancy.date} ${vacancy.time}. للقبول خلال ${settings.waitlistOfferMinutes} دقيقة: ${url}`;
-      window.open(`https://wa.me/${waDigits(entry.phone)}?text=${encodeURIComponent(body)}`, '_blank');
+      const notice = await deliverUtilityNotice({
+        clinicId,
+        eventId: 'waitlist',
+        toPhone: entry.phone,
+        idempotencyKey: token,
+        vars: {
+          1: entry.name || 'عميلتنا',
+          2: clinicInfo?.name || 'العيادة',
+          3: `${vacancy.date} ${vacancy.time}`,
+          4: url,
+        },
+      });
+      if (!notice.ok) {
+        const body = `شاغر مناسب لجلسة ${vacancy.service} يوم ${vacancy.date} ${vacancy.time}. للقبول خلال ${settings.waitlistOfferMinutes} دقيقة: ${url}`;
+        window.open(`https://wa.me/${waDigits(entry.phone)}?text=${encodeURIComponent(body)}`, '_blank');
+      }
     }));
     await logAudit('waitlist-offers', { vacancyId: vacancy.id, count: ranked.length });
     toast.success('أُرسلت العروض — أول قبول يثبت الموعد');

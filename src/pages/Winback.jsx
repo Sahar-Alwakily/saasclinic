@@ -12,6 +12,7 @@ import {
   groupLapsed, buildMessage, firstOpenSlots, waDigits, suggestSegments, campaignMetrics,
   channelInsights, monthlyReport, publicServiceLabel, normalizePhone,
 } from '../utils/winback';
+import { deliverUtilityNotice } from '../utils/sendClinicWaReminder';
 
 const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
 
@@ -212,9 +213,23 @@ const Winback = () => {
     }
     const ch = msg.channel || 'whatsapp';
     if (ch === 'whatsapp' && settings.channels.whatsapp) {
-      window.open(`https://wa.me/${waDigits(msg.phone)}?text=${encodeURIComponent(msg.body || '')}`, '_blank');
-      await update(ref(database, clinicPath(`winbackMessages/${msg.id}`)), { status: 'sent', sentAt: Date.now(), attempt: (msg.attempt || 0) + 1 });
-      toast.success('فُتح واتساب — سجّلّي الحالة بعد الإرسال');
+      const notice = await deliverUtilityNotice({
+        clinicId,
+        eventId: 'followup',
+        toPhone: msg.phone,
+        idempotencyKey: msg.id,
+        vars: {
+          1: msg.name || 'عميلتنا',
+          2: clinicInfo?.name || 'العيادة',
+          3: campaign?.title || 'زيارة سابقة',
+          4: `${window.location.origin}/book/${clinicId}`,
+        },
+      });
+      if (!notice.ok) {
+        window.open(`https://wa.me/${waDigits(msg.phone)}?text=${encodeURIComponent(msg.body || '')}`, '_blank');
+      }
+      await update(ref(database, clinicPath(`winbackMessages/${msg.id}`)), { status: 'sent', sentAt: Date.now(), attempt: (msg.attempt || 0) + 1, channelResult: notice.ok ? 'template' : 'wa.me' });
+      toast.success(notice.ok ? 'أُرسل قالب المتابعة المعتمد' : 'فُتح واتساب — سجّلي الحالة بعد الإرسال');
     } else {
       toast.error('هذه القناة غير مفعّلة أو غير متصلة');
       await update(ref(database, clinicPath(`winbackMessages/${msg.id}`)), { status: 'failed', lastError: 'channel-disabled', attempt: (msg.attempt || 0) + 1, nextRetryAt: Date.now() + 3600000 });

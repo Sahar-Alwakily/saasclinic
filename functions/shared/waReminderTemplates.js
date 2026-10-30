@@ -38,6 +38,20 @@ export const WA_REMINDER_EVENTS = [
     approvalNameSuffix: 'reschedule',
     defaultBody: 'مرحباً {{1}}، تم تغيير موعدك في {{2}} ليصبح بتاريخ {{3}} الساعة {{4}}. نتطلع إلى رؤيتك.',
   },
+  {
+    id: 'waitlist',
+    label: 'عرض قائمة الانتظار',
+    event: 'waitlist.offer',
+    approvalNameSuffix: 'waitlist',
+    defaultBody: 'مرحباً {{1}}، توفر شاغر في {{2}} بتاريخ {{3}}. للقبول خلال المهلة: {{4}}',
+  },
+  {
+    id: 'followup',
+    label: 'متابعة بعد الزيارة',
+    event: 'patient.followup',
+    approvalNameSuffix: 'followup',
+    defaultBody: 'مرحباً {{1}}، نود الاطمئنان عليك من {{2}}. آخر زيارة {{3}}. للحجز: {{4}}',
+  },
 ];
 
 export const SAMPLE_TEMPLATE_VARS = {
@@ -149,6 +163,12 @@ export function policyBindingForEvent(eventId, settings) {
   }
   if (eventId === 'reschedule') {
     return { bound: true, rule: 'مربوط بقاعدة إعادة الجدولة: يُرسل عند تغيير التاريخ أو الساعة.' };
+  }
+  if (eventId === 'waitlist') {
+    return { bound: true, rule: 'مربوط بعرض قائمة الانتظار: يُرسل عند عرض شاغر، بعد اعتماد القالب.' };
+  }
+  if (eventId === 'followup') {
+    return { bound: true, rule: 'مربوط بمتابعة العودة: يُرسل قالباً معتمداً، والنص الحر يبقى على واتساب اليدوي إن لم يُعتمد القالب.' };
   }
   return { bound: false, rule: '' };
 }

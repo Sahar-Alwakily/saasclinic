@@ -37,3 +37,15 @@ export async function deliverAppointmentReminder({
     return { channel: 'none', error: err.message };
   }
 }
+
+export async function deliverUtilityNotice({ clinicId, eventId, toPhone, vars, idempotencyKey }) {
+  const phone = String(toPhone || '').trim().replace(/[\s()-]/g, '');
+  if (!/^\+[1-9]\d{7,14}$/.test(phone)) return { ok: false, skipped: 'not_e164' };
+  try {
+    const fn = httpsCallable(functions, 'sendClinicUtilityNotice');
+    const res = await fn({ clinicId, eventId, toPhone: phone, vars, idempotencyKey });
+    return res.data || {};
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+}

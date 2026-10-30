@@ -1,13 +1,13 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  FaCheckCircle, FaCalendarAlt, FaUsers, FaStore, FaChartLine, FaArrowLeft, FaArrowRight,
+  FaCheckCircle, FaCalendarAlt, FaUsers, FaStore, FaChartLine, FaBullhorn, FaArrowLeft, FaArrowRight,
 } from 'react-icons/fa';
-import { paidPlans, ADDONS, PLANS } from '../config/plans';
+import { paidPlans, PLANS } from '../config/plans';
 import { useLocale } from '../context/LocaleContext';
 import LangSwitcher from '../components/i18n/LangSwitcher';
 
-const FEATURE_ICONS = [FaCalendarAlt, FaUsers, FaStore, FaChartLine];
+const FEATURE_ICONS = [FaCalendarAlt, FaUsers, FaStore, FaChartLine, FaBullhorn];
 const CARD_WASH = ['stat-card-mint', 'stat-card-sky', 'stat-card-gold', 'stat-card-lilac'];
 
 const LandingPage = () => {
@@ -145,19 +145,6 @@ const LandingPage = () => {
                 </div>
               );
             })}
-          </div>
-
-          <div className="saas-card mt-4 p-5">
-            <h3 className="text-base font-bold text-[#111827]">{t('land.addonsTitle')}</h3>
-            <p className="text-sm text-[#8a9199] mt-1 mb-4">{t('land.addonsLead')}</p>
-            <div className="grid sm:grid-cols-3 gap-3 text-sm">
-              {ADDONS.map((a) => (
-                <div key={a.id} className="rounded-2xl bg-[#f8faf9] border border-[#e4eee8] p-3">
-                  <p className="font-bold text-[#111827]">{t(`addons.${a.id}.name`)}</p>
-                  <p className="text-[#8a9199] mt-1">{t(`addons.${a.id}.note`)}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>

@@ -102,6 +102,7 @@ const NAV = [
     children: [
       { to: '/settings', label: 'بيانات العيادة' },
       { to: '/settings?tab=privacy', label: 'الخصوصية' },
+      { to: '/settings?tab=whatsapp', label: 'واتساب' },
       { to: '/settings?tab=integrations', label: 'التكاملات' },
     ],
   },

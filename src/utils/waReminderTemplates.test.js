@@ -17,9 +17,9 @@ import {
 } from './waReminderTemplates';
 
 describe('catalog', () => {
-  it('exposes five reminder templates with required variables', () => {
+  it('exposes the appointment, waitlist, and follow-up templates with required variables', () => {
     expect(WA_REMINDER_EVENTS.map((e) => e.id)).toEqual([
-      'confirm', 'reminder_24h', 'reminder_day', 'cancel', 'reschedule',
+      'confirm', 'reminder_24h', 'reminder_day', 'cancel', 'reschedule', 'waitlist', 'followup',
     ]);
     WA_REMINDER_EVENTS.forEach((e) => {
       expect(bodyHasRequiredVars(e.defaultBody)).toBe(true);

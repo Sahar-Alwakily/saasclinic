@@ -27,6 +27,19 @@ import {
   wrapWhatsAppAddress,
 } from './twilioContent.js';
 import { decryptSecret, encryptSecret, wrapConfigured } from './secrets.js';
+import { consumeWalletIfEnabled, gateOutbound, recordWaUsage } from './waUsage.js';
+import { sendClinicWhatsAppTemplate } from './clinicTwilioSend.js';
+export {
+  prepareWhatsAppConnect,
+  completeWhatsAppOnboarding,
+  syncWhatsAppSender,
+  disconnectWhatsApp,
+  adminManageWhatsApp,
+  sendClinicUtilityNotice,
+  twilioWhatsAppWebhook,
+  twilioSmsOtpWebhook,
+  readWhatsAppOtp,
+} from './whatsappOnboarding.js';
 
 initializeApp();
 setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
@@ -75,6 +88,9 @@ async function loadTwilioCreds(clinicId) {
     whatsappFrom: wrapWhatsAppAddress(from),
     displayNumber: messaging.displayNumber || from,
     messaging,
+    senderOnline: secret.senderOnline === true,
+    senderSuspended: secret.suspended === true,
+    managedSubaccount: secret.managedSubaccount === true,
     usingPlatformFallback: Boolean(!secret.authTokenEnc && authToken && accountSid === process.env.TWILIO_ACCOUNT_SID),
   };
 }
@@ -261,6 +277,13 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
     return { ok: false, skipped: 'opt_out' };
   }
   const creds = await loadTwilioCreds(clinicId);
+  const outbound = await gateOutbound(clinicId);
+  if (!outbound.ok && !creds.managedSubaccount) return outbound;
+  if (creds.senderSuspended) return { ok: false, skipped: 'suspended' };
+  if (creds.managedSubaccount && !creds.senderOnline) {
+    return { ok: false, skipped: 'sender_not_online', status: creds.messaging?.onboarding?.senderStatus || '' };
+  }
+  if (!outbound.ok) return outbound;
   const recSnap = await db().ref(`clinics/${clinicId}/waReminderTemplates/${eventId}`).get();
   const rec = mergeTemplateRecord(eventId, recSnap.val());
   rec.accountSid = rec.accountSid || creds.accountSid;
@@ -279,7 +302,11 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
   if (existing?.providerSid || existing?.status === 'sent' || existing?.status === 'sending') {
     return { ok: false, skipped: 'duplicate' };
   }
-  await sendingRef.set({ status: 'sending', at: Date.now(), hoursKey: hoursKey || null });
+  const attempts = Number(existing?.attempts || 0);
+  if (existing?.status === 'failed' && (!existing.retryable || attempts >= 3)) {
+    return { ok: false, skipped: 'failed_terminal' };
+  }
+  await sendingRef.set({ status: 'sending', at: Date.now(), hoursKey: hoursKey || null, attempts: attempts + 1 });
   const vars = fillTemplateVars({
     patientName: apt.customerName,
     clinicName,
@@ -287,12 +314,23 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
     time: apt.time,
   });
   try {
-    const msg = await sendContentMessage(creds.accountSid, creds.authToken, {
-      from: creds.whatsappFrom,
-      to: wrapWhatsAppAddress(apt.phoneNumber),
-      contentSid: rec.contentSid,
-      contentVariables: vars,
-    });
+    const sent = creds.managedSubaccount
+      ? await sendClinicWhatsAppTemplate({
+        clinicId,
+        to: apt.phoneNumber,
+        contentSid: rec.contentSid,
+        contentVariables: vars,
+        statusCallback: creds.messaging?.onboarding?.webhookUrl || '',
+      })
+      : { ok: true, msg: await sendContentMessage(creds.accountSid, creds.authToken, {
+        from: creds.whatsappFrom,
+        to: wrapWhatsAppAddress(apt.phoneNumber),
+        contentSid: rec.contentSid,
+        contentVariables: vars,
+        statusCallback: creds.messaging?.onboarding?.webhookUrl || '',
+      }) };
+    if (!sent.ok) return sent;
+    const msg = sent.msg;
     const stamp = {
       status: 'sent',
       at: Date.now(),
@@ -316,6 +354,16 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
       at: Date.now(),
       status: 'sent',
     });
+    if (msg.sid) {
+      await db().ref(`clinics/${clinicId}/waDelivery/${msg.sid}`).set({
+        appointmentId: apt.id,
+        eventId,
+        status: msg.status || 'accepted',
+        at: Date.now(),
+      });
+    }
+    await recordWaUsage(clinicId, 'sent');
+    await consumeWalletIfEnabled(clinicId, outbound.wallet);
     return { ok: true, providerSid: msg.sid, fallback: false };
   } catch (err) {
     const retryable = err.status >= 500 || err.status === 429;
@@ -325,6 +373,7 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
       error: err.message,
       retryable,
       hoursKey: hoursKey || null,
+      attempts: attempts + 1,
     });
     await db().ref(`clinics/${clinicId}/waMessageLogs`).push({
       appointmentId: apt.id,
@@ -335,6 +384,7 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
       status: 'failed',
       retryable,
     });
+    await recordWaUsage(clinicId, 'failed');
     return { ok: false, error: err.message, retryable, fallback: 'wa.me' };
   }
 }
