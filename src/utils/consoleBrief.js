@@ -1,6 +1,6 @@
 import {
   clinicHealth, dailyTasks, interventionAlerts, occupancyInsights, siteStatus,
-  inDateRange,
+  inDateRange, toYmd,
 } from './clinicInsights';
 
 export const CONSOLE_PAGES = [
@@ -16,7 +16,7 @@ export const CONSOLE_PAGES = [
   { path: '/services', label: 'الخدمات', about: 'جلسات العيادة: الاسم والمدة والمختصة' },
   { path: '/products', label: 'المنتجات', about: 'كتالوج المتجر وطلبيات العميلات' },
   { path: '/website', label: 'موقع العيادة', about: 'معلومات الصفحة والمدونة وإظهارها أو إخفاؤها' },
-  { path: '/assistant', label: 'المساعد الذكي', about: 'شات الكونسول ووارد واتساب المسجّل', cap: 'assistant' },
+  { path: '/assistant', label: 'نورا الذكية', about: 'شات الكونسول ووارد واتساب المسجّل', cap: 'assistant' },
   { path: '/winback', label: 'استرجاع العميلات', about: 'حملات العودة وحد التواصل', cap: 'winback' },
   { path: '/marketing', label: 'التسويق', about: 'حملات، كوبونات', cap: 'marketing' },
   { path: '/website?tab=blog', label: 'المدونة', about: 'مقالات الموقع وإظهارها أو إخفاؤها' },
@@ -53,6 +53,21 @@ export function buildConsoleBrief({
   blog = [],
   settings,
 }) {
+  const todayYmd = toYmd(new Date());
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowYmd = toYmd(tomorrowDate);
+  const dayCounts = (ymd) => {
+    const list = (appointments || []).filter((a) => a.date === ymd);
+    return {
+      date: ymd,
+      total: list.length,
+      pending: list.filter((a) => a.status === 'pending').length,
+      cancelled: list.filter((a) => a.status === 'cancelled').length,
+    };
+  };
+  const todayBookings = dayCounts(todayYmd);
+  const tomorrowBookings = dayCounts(tomorrowYmd);
   const health = clinicHealth({ appointments, customers });
   const tasks = dailyTasks({ appointments, schedules, branches, messages, settings });
   const occupancy = occupancyInsights({ appointments, schedules, branches });
@@ -88,6 +103,8 @@ export function buildConsoleBrief({
       رابط: site.url,
       نواقص: site.checks.filter((c) => !c.ok).map((c) => c.label),
     },
+    مواعيد_اليوم: todayBookings,
+    مواعيد_بكرة: tomorrowBookings,
     عدد_العميلات: customers.length,
     عدد_الخدمات: services.length,
     شاشات_مفتوحة_بالباقة: pages.map((p) => `${p.path} — ${p.label}: ${p.about}`),
@@ -107,6 +124,8 @@ export function buildConsoleBrief({
   const topCancel = Object.entries(cancelHot).sort((a, b) => b[1] - a[1])[0] || null;
 
   return {
+    todayBookings,
+    tomorrowBookings,
     health,
     tasks,
     occupancy,
@@ -136,7 +155,11 @@ function topic(question) {
   const n = foldAr(question);
   if (!n || /^(مرحبا|اهلا|اهلين|سلام|هاي|هلو|hello|hi|صباح الخير|مساء الخير)$/.test(n) || (n.length <= 12 && (n.includes('مرحبا') || n.includes('اهلين')))) return 'hi';
   if (n.includes('زباين') || n.includes('زبائن') || n.includes('اجيب') || n.includes('جيب') || n.includes('عملاء') || n.includes('عميلات جدد') || n.includes('تسويق') || n.includes('ازيد حجز') || n.includes('اكثر حجز')) return 'acquire';
-  const book = n.includes('حجز') || n.includes('موعد');
+  const book = /حجز|حجوز|موعد/.test(n);
+  const tomorrow = /بكرا|بكره|غدا|غد|باكر/.test(n);
+  if (book && tomorrow) return 'tomorrowBook';
+  if (book && /اليوم/.test(n)) return 'todayBook';
+  if (book && /كم|عدد|قديش/.test(n)) return 'book';
   if (n.includes('املا') || n.includes('شاغر') || n.includes('فراغ') || n.includes('انتظار') || n.includes('طابور')) return 'fill';
   if ((n.includes('انخفض') || n.includes('ليش') || n.includes('لماذا') || n.includes('سبب')) && book) return 'drop';
   if (n.includes('ازدحام') || n.includes('ساعه') || n.includes('ساعات') || n.includes('ايام') || n.includes('امتلاء')) return 'crowd';
@@ -147,6 +170,7 @@ function topic(question) {
   if (n.includes('موقع') || n.includes('صفحه') || n.includes('حجز عام') || n.includes('ثيم')) return 'site';
   if (n.includes('تدخل') || n.includes('اليوم') || n.includes('شغل اليوم')) return 'today';
   if (book) return 'book';
+  if (tomorrow) return 'tomorrowFollow';
   const pageHit = CONSOLE_PAGES.find((p) => n.includes(foldAr(p.label)));
   if (pageHit) return 'page';
   return 'chat';
@@ -160,11 +184,24 @@ function hasPage(brief, path) {
   return (brief.pages || []).some((p) => p.path === path);
 }
 
-export function spokenLocal(brief, question = '') {
+function previousTopic(history) {
+  const users = (history || []).filter((item) => item?.role === 'user' && item.text);
+  for (let i = users.length - 1; i >= 0; i -= 1) {
+    const kind = topic(users[i].text);
+    if (kind !== 'chat' && kind !== 'hi' && kind !== 'tomorrowFollow') return kind;
+  }
+  return 'todayBook';
+}
+
+export function spokenLocal(brief, question = '', history = []) {
   const t = brief.tasks || { pending: [], gaps: [], followups: [], failed: [], noshowToday: [] };
   const waiting = brief.waiting || 0;
   const site = brief.site || {};
-  const kind = topic(question);
+  let kind = topic(question);
+  if (kind === 'tomorrowFollow') {
+    const prev = previousTopic(history);
+    kind = prev === 'fill' ? 'fill' : prev === 'rev' ? 'rev' : 'tomorrowBook';
+  }
 
   if (kind === 'hi') {
     return {
@@ -195,6 +232,18 @@ export function spokenLocal(brief, question = '') {
     ];
     if (hasPage(brief, '/winback')) links.push({ path: '/winback', label: 'الاسترجاع' });
     return { answer: lines.join('\n'), links: uniqueLinks(links) };
+  }
+
+  if (kind === 'todayBook' || kind === 'tomorrowBook') {
+    const day = (kind === 'tomorrowBook' ? brief.tomorrowBookings : brief.todayBookings) || {};
+    const total = day.total || 0;
+    const when = kind === 'tomorrowBook' ? 'بكرا' : 'اليوم';
+    return {
+      answer: total
+        ? `${when} في ${total} حجز: معلّق ${day.pending || 0}، ملغي ${day.cancelled || 0}.`
+        : `${when} ما في حجوزات.`,
+      links: [{ path: '/appointments', label: 'التقويم' }],
+    };
   }
 
   if (kind === 'chat') {
@@ -286,7 +335,10 @@ export function localConsoleAnswer(question, brief) {
     lines.push(missing.length ? `ناقص: ${missing.join('، ')}` : 'الصفحة مكتملة');
     links.push({ path: '/website', label: 'موقع' });
   } else if (kind === 'book') {
-    lines.push(`حجز ${curr.total || 0} · مؤكد ${curr.confirmed || 0} · معلّق ${curr.pending || 0} · ملغي ${curr.cancelled || 0}`);
+    const total = curr.total || 0;
+    lines.push(total
+      ? `هذا الشهر عندك ${total} حجز: مؤكد ${curr.confirmed || 0}، معلّق ${curr.pending || 0}، ملغي ${curr.cancelled || 0}.`
+      : 'هذا الشهر ما في حجوزات مسجّلة.');
     links.push({ path: '/appointments', label: 'تقويم' });
   } else if (kind === 'page') {
     const n = foldAr(question);

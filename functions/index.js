@@ -22,7 +22,6 @@ import {
   createContentTemplate,
   fetchApprovalRequests,
   fetchTwilioAccount,
-  sendContentMessage,
   submitWhatsAppApproval,
   wrapWhatsAppAddress,
 } from './twilioContent.js';
@@ -39,7 +38,9 @@ export {
   twilioWhatsAppWebhook,
   twilioSmsOtpWebhook,
   readWhatsAppOtp,
+  submitWhatsAppOtp,
 } from './whatsappOnboarding.js';
+export { clinicChatAgent } from './clinicChatAgent.js';
 
 initializeApp();
 setGlobalOptions({ region: 'us-central1', maxInstances: 10 });
@@ -69,8 +70,8 @@ async function loadTwilioCreds(clinicId) {
   const secret = secretSnap.val() || {};
   const publicSnap = await db().ref(`clinics/${clinicId}/messaging`).get();
   const messaging = publicSnap.val() || {};
-  const accountSid = secret.accountSid || messaging.twilio?.accountSid || process.env.TWILIO_ACCOUNT_SID || '';
-  const from = secret.whatsappFrom || messaging.twilio?.whatsappFrom || process.env.TWILIO_WHATSAPP_FROM || '';
+  const accountSid = secret.subaccountSid || secret.accountSid || '';
+  const from = secret.whatsappFrom || '';
   let authToken = '';
   if (secret.authTokenEnc) {
     try {
@@ -78,9 +79,6 @@ async function loadTwilioCreds(clinicId) {
     } catch {
       authToken = '';
     }
-  }
-  if (!authToken && process.env.TWILIO_AUTH_TOKEN && accountSid === process.env.TWILIO_ACCOUNT_SID) {
-    authToken = process.env.TWILIO_AUTH_TOKEN;
   }
   return {
     accountSid,
@@ -91,7 +89,7 @@ async function loadTwilioCreds(clinicId) {
     senderOnline: secret.senderOnline === true,
     senderSuspended: secret.suspended === true,
     managedSubaccount: secret.managedSubaccount === true,
-    usingPlatformFallback: Boolean(!secret.authTokenEnc && authToken && accountSid === process.env.TWILIO_ACCOUNT_SID),
+    usingPlatformFallback: false,
   };
 }
 
@@ -314,21 +312,13 @@ async function sendEventForAppointment({ clinicId, apt, eventId, clinicName, cus
     time: apt.time,
   });
   try {
-    const sent = creds.managedSubaccount
-      ? await sendClinicWhatsAppTemplate({
-        clinicId,
-        to: apt.phoneNumber,
-        contentSid: rec.contentSid,
-        contentVariables: vars,
-        statusCallback: creds.messaging?.onboarding?.webhookUrl || '',
-      })
-      : { ok: true, msg: await sendContentMessage(creds.accountSid, creds.authToken, {
-        from: creds.whatsappFrom,
-        to: wrapWhatsAppAddress(apt.phoneNumber),
-        contentSid: rec.contentSid,
-        contentVariables: vars,
-        statusCallback: creds.messaging?.onboarding?.webhookUrl || '',
-      }) };
+    const sent = await sendClinicWhatsAppTemplate({
+      clinicId,
+      to: apt.phoneNumber,
+      contentSid: rec.contentSid,
+      contentVariables: vars,
+      statusCallback: creds.messaging?.onboarding?.webhookUrl || '',
+    });
     if (!sent.ok) return sent;
     const msg = sent.msg;
     const stamp = {

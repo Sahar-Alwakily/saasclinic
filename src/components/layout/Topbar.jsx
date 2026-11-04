@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { Search } from 'lucide-react';
 import { useClinic } from '../../context/ClinicContext';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../dashboard/ThemeToggle';
+import NotificationBell from './NotificationBell';
 import { useShellNav } from './shellNav';
-import { FaBars, FaBell, FaSearch } from 'react-icons/fa';
+import { FaBars } from 'react-icons/fa';
 
 const TITLES = [
   ['/appointments/waitlist', 'قائمة الانتظار'],
@@ -18,7 +20,7 @@ const TITLES = [
   ['/treatments', 'متابعة العلاجات'],
   ['/products', 'المنتجات'],
   ['/website', 'موقع العيادة'],
-  ['/assistant', 'المساعد'],
+  ['/assistant', 'نورا الذكية'],
   ['/winback', 'استرجاع العميلات'],
   ['/marketing', 'التسويق'],
   ['/blog', 'المحتوى'],
@@ -76,7 +78,7 @@ const Topbar = () => {
           navigate(next ? `/customers` : '/dashboard');
         }}
       >
-        <FaSearch className="text-xs" />
+        <Search size={14} />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -87,9 +89,7 @@ const Topbar = () => {
       </form>
       <div className="flex items-center gap-2">
         <ThemeToggle />
-        <button type="button" className="w-10 h-10 rounded-full bg-white border border-[#ebeef2] text-[#6b7280] flex items-center justify-center" aria-label="تنبيهات">
-          <FaBell className="text-sm" />
-        </button>
+        <NotificationBell />
         <div className="hidden sm:flex items-center gap-2 ps-1">
           <div className="w-9 h-9 rounded-full bg-[#ecfdf3] text-[#15803d] font-bold flex items-center justify-center text-sm">{initial}</div>
           <div className="leading-tight min-w-0">

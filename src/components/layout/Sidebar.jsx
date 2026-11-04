@@ -68,7 +68,7 @@ const NAV = [
       { to: '/website?tab=blog', label: 'المدونة' },
     ],
   },
-  { to: '/assistant', label: 'المساعد الذكي', icon: FaRobot, admin: true, cap: 'assistant' },
+  { to: '/assistant', label: 'نورا الذكية', icon: FaRobot, admin: true, cap: 'assistant' },
   { to: '/winback', label: 'استرجاع العميلات', icon: FaPaperPlane, admin: true, cap: 'winback' },
   {
     to: '/marketing',

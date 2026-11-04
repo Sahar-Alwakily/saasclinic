@@ -63,11 +63,11 @@ const ConsoleChat = () => {
           pathname,
         });
       } else {
-        reply = spokenLocal(brief, q);
+        reply = spokenLocal(brief, q, prior);
       }
       setMessages((m) => [...m, { role: 'assistant', text: reply.answer, links: reply.links || [] }]);
     } catch {
-      const local = spokenLocal(brief, q);
+      const local = spokenLocal(brief, q, prior);
       setMessages((m) => [...m, {
         role: 'assistant',
         text: local.answer,

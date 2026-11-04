@@ -1,0 +1,155 @@
+{
+  "temporary": true,
+  "note": "داتا تجريبية مؤقتة لصفحة استرجاع العميلات. المفاتيح كلها تبدأ بـ demo-. احذفي هالمفاتيح لما تخلصي المراجعة.",
+  "services": {
+    "demo-laser": {
+      "title": "ليزر (تجريبي)",
+      "category": "laser",
+      "imageUrl": "",
+      "description": "خدمة تجريبية مؤقتة للاسترجاع",
+      "duration": "45",
+      "specialistId": "",
+      "specialistName": "",
+      "faqs": [],
+      "temporaryDemo": true,
+      "createdAt": 1780297200000
+    },
+    "demo-vitamins": {
+      "title": "فيتامينات (تجريبي)",
+      "category": "vitamins",
+      "imageUrl": "",
+      "description": "خدمة تجريبية مؤقتة للاسترجاع",
+      "duration": "30",
+      "specialistId": "",
+      "specialistName": "",
+      "faqs": [],
+      "temporaryDemo": true,
+      "createdAt": 1780297200000
+    }
+  },
+  "customers": {
+    "demo-lina": { "firstName": "لينا", "lastName": "خالد", "phone": "0591000001", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-sara": { "firstName": "سارة", "lastName": "عمر", "phone": "0591000002", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-hadeel": { "firstName": "هديل", "lastName": "ناصر", "phone": "0591000003", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-rana": { "firstName": "رنا", "lastName": "يوسف", "phone": "0591000004", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-maisa": { "firstName": "ميساء", "lastName": "علي", "phone": "0599000001", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-dina": { "firstName": "دينا", "lastName": "فهد", "phone": "0591000005", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-noura": { "firstName": "نورا", "lastName": "حداد", "phone": "0591000006", "gender": "female", "doNotContact": true, "winbackOptOut": true, "optOutAt": 1790838000000, "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1790838000000, "sessions": [], "treatments": {} },
+    "demo-lama": { "firstName": "لمى", "lastName": "سعيد", "phone": "0591000007", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} },
+    "demo-huda": { "firstName": "هدى", "lastName": "كريم", "phone": "0591000008", "gender": "female", "birthDate": "", "idNumber": "", "medicalInfo": {}, "adsStamp": null, "temporaryDemo": true, "createdAt": 1780297200000, "updatedAt": 1780297200000, "sessions": [], "treatments": {} }
+  },
+  "appointments": {
+    "demo-apt-lina-1": { "customerName": "لينا خالد", "phoneNumber": "0591000001", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-04-01", "time": "10:00 ص", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-lina-2": { "customerName": "لينا خالد", "phoneNumber": "0591000001", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-07-01", "time": "10:00 ص", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-sara": { "customerName": "سارة عمر", "phoneNumber": "0591000002", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-07-10", "time": "11:00 ص", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-hadeel": { "customerName": "هديل ناصر", "phoneNumber": "0591000003", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-06-20", "time": "12:00 م", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-rana-1": { "customerName": "رنا يوسف", "phoneNumber": "0591000004", "service": "فيتامينات (تجريبي)", "serviceId": "demo-vitamins", "date": "2026-08-01", "time": "09:00 ص", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "attended", "price": 180, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-rana-2": { "customerName": "رنا يوسف", "phoneNumber": "0591000004", "service": "فيتامينات (تجريبي)", "serviceId": "demo-vitamins", "date": "2026-09-15", "time": "09:00 ص", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "attended", "price": 180, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-maisa": { "customerName": "ميساء علي", "phoneNumber": "0599000001", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-07-01", "time": "01:00 م", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-dina": { "customerName": "دينا فهد", "phoneNumber": "0591000005", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-07-01", "time": "02:00 م", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-noura": { "customerName": "نورا حداد", "phoneNumber": "0591000006", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-05-01", "time": "10:00 ص", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-lama-old": { "customerName": "لمى سعيد", "phoneNumber": "0591000007", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-08-01", "time": "10:00 ص", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1780297200000 },
+    "demo-apt-lama-next": { "customerName": "لمى سعيد", "phoneNumber": "0591000007", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-11-05", "time": "10:00 ص", "branchId": "demo-nablus", "branchName": "فرع نابلس", "status": "confirmed", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1790838000000 },
+    "demo-apt-huda": { "customerName": "هدى كريم", "phoneNumber": "0591000008", "service": "ليزر (تجريبي)", "serviceId": "demo-laser", "date": "2026-10-20", "time": "11:00 ص", "branchId": "demo-ramallah", "branchName": "فرع رام الله", "status": "attended", "price": 350, "specialistId": "", "temporaryDemo": true, "createdAt": 1790838000000 }
+  },
+  "winbackOffers": {
+    "demo-offer": {
+      "title": "خصم عودة 15% (تجريبي)",
+      "discountType": "percent",
+      "value": 15,
+      "expiresAt": "2026-12-31",
+      "serviceId": "demo-laser",
+      "adminApproved": true,
+      "usedBy": {},
+      "temporaryDemo": true,
+      "createdAt": 1790838000000
+    }
+  },
+  "winbackCampaigns": {
+    "demo-camp-review": {
+      "name": "حملة خريف للمراجعة",
+      "status": "review",
+      "channel": "whatsapp",
+      "offerId": "demo-offer",
+      "abTest": true,
+      "targetIds": ["591000001", "591000002", "591000003", "591000004"],
+      "holdoutIds": ["599000001"],
+      "temporaryDemo": true,
+      "createdAt": 1790838000000
+    },
+    "demo-camp-live": {
+      "name": "حملة أيلول (نتائج)",
+      "status": "active",
+      "channel": "whatsapp",
+      "offerId": "demo-offer",
+      "abTest": true,
+      "targetIds": ["591000001", "591000002"],
+      "holdoutIds": ["599000001"],
+      "temporaryDemo": true,
+      "createdAt": 1790838000000,
+      "launchedAt": 1790838000000
+    }
+  },
+  "winbackMessages": {
+    "demo-msg-lina": {
+      "campaignId": "demo-camp-live",
+      "customerId": "demo-lina",
+      "phone": "0591000001",
+      "phoneKey": "591000001",
+      "name": "لينا خالد",
+      "channel": "whatsapp",
+      "status": "read",
+      "variant": "A",
+      "body": "مرحبا لينا، تذكير تجريبي لحجز جلسة.",
+      "attempt": 1,
+      "replied": true,
+      "temporaryDemo": true,
+      "createdAt": 1790838000000,
+      "sentAt": 1790838000000,
+      "readAt": 1790931600000
+    },
+    "demo-msg-sara": {
+      "campaignId": "demo-camp-live",
+      "customerId": "demo-sara",
+      "phone": "0591000002",
+      "phoneKey": "591000002",
+      "name": "سارة عمر",
+      "channel": "whatsapp",
+      "status": "delivered",
+      "variant": "B",
+      "body": "مرحبا سارة، تذكير تجريبي لحجز جلسة.",
+      "attempt": 1,
+      "replied": false,
+      "temporaryDemo": true,
+      "createdAt": 1790838000000,
+      "sentAt": 1790838000000,
+      "deliveredAt": 1790928000000
+    },
+    "demo-msg-dina": {
+      "campaignId": "demo-camp-live",
+      "customerId": "demo-dina",
+      "phone": "0591000005",
+      "phoneKey": "591000005",
+      "name": "دينا فهد",
+      "channel": "whatsapp",
+      "status": "sent",
+      "variant": "A",
+      "body": "رسالة حديثة، عشان دينا تطلع مستبعدة بسبب سقف التواصل.",
+      "attempt": 1,
+      "temporaryDemo": true,
+      "createdAt": 1793174400000,
+      "sentAt": 1793174400000
+    }
+  },
+  "winbackInbox": {
+    "demo-inbox": {
+      "messageId": "demo-msg-lina",
+      "name": "لينا خالد",
+      "phone": "0591000001",
+      "body": "بدي أحجز الأسبوع الجاي",
+      "temporaryDemo": true,
+      "createdAt": 1790931600000,
+      "status": "open"
+    }
+  }
+}

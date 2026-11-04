@@ -32,7 +32,7 @@ const Assistant = () => {
     <div className="space-y-6">
       <div>
         <p className="text-[11px] tracking-[0.22em] uppercase text-[#658B83] font-semibold">inbox</p>
-        <h1 className="font-product text-3xl">المساعد الذكي</h1>
+        <h1 className="font-product text-3xl">نورا الذكية</h1>
         <p className="text-sm text-stone-500 mt-1">
           شات الكونسول ثابت أسفل اليسار على كل الشاشات: يقرأ الحجوزات والحضور ويقترح الخطوة. هذه الصفحة لوارد واتساب المسجّل وساعات الهدوء.
         </p>

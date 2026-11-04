@@ -733,3 +733,30 @@ export const readWhatsAppOtp = onCall(async (request) => {
   }
   return { ok: true, received: true, code: decryptSecret(secret.otp.codeEnc) };
 });
+
+export const submitWhatsAppOtp = onCall(async (request) => {
+  const clinicId = String(request.data?.clinicId || '');
+  await requireClinicAdmin(request, clinicId);
+  const code = String(request.data?.code || '').replace(/\D/g, '');
+  if (!/^\d{4,8}$/.test(code)) {
+    throw new HttpsError('invalid-argument', 'Enter the 4 to 8 digit code from the SMS.');
+  }
+  const secret = await loadSecret(clinicId);
+  const state = secret.onboardingState || {};
+  if (!state.nonce || state.uid !== request.auth.uid || Number(state.expiresAt) < Date.now()) {
+    throw new HttpsError('permission-denied', 'No open WhatsApp signup session.');
+  }
+  if (state.numberSource !== 'twilio') {
+    return { ok: false, error: 'This code is only for a Twilio SMS number. A clinic-owned number is verified inside Meta.' };
+  }
+  const capturedAt = Date.now();
+  await db().ref(`clinics/${clinicId}/secrets/twilio/otp`).set({
+    codeEnc: encryptSecret(code),
+    to: state.phoneE164 || '',
+    messageSid: 'clinic-entered',
+    capturedAt,
+    expiresAt: capturedAt + 10 * 60 * 1000,
+  });
+  logStep(clinicId, secret.subaccountSid || secret.accountSid, 'otp_submitted');
+  return { ok: true, received: true };
+});

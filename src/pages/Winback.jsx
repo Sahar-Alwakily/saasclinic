@@ -18,11 +18,11 @@ const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outlin
 
 const TABS = [
   { id: 'detect', label: 'الاكتشاف' },
-  { id: 'chance', label: 'فرصة العودة' },
-  { id: 'campaigns', label: 'الحملات' },
-  { id: 'offers', label: 'العروض' },
-  { id: 'auto', label: 'الأتمتة' },
-  { id: 'results', label: 'النتائج' },
+  { id: 'chance', label: 'جاهزات للعودة' },
+  { id: 'campaigns', label: 'حملات التواصل' },
+  { id: 'offers', label: 'عروض وخصومات' },
+  { id: 'auto', label: 'رسائل تلقائية' },
+  { id: 'results', label: 'نتائج التواصل' },
   { id: 'advanced', label: 'المتقدم' },
 ];
 
@@ -120,6 +120,15 @@ const Winback = () => {
 
   const toggleSelect = (phoneKey) => setSelected((prev) => ({ ...prev, [phoneKey]: !prev[phoneKey] }));
   const selectedJourneys = ranked.filter((j) => selected[j.phoneKey]);
+
+  const contactWhatsApp = (journey) => {
+    if (journey.doNotContact) return toast.info('هذه العميلة طلبت عدم التواصل');
+    const digits = waDigits(journey.phone);
+    if (!digits) return toast.error('لا يوجد رقم واتساب');
+    const clinic = clinicInfo?.name || 'العيادة';
+    const text = `مرحبا ${journey.displayName}، معكِ ${clinic}. مرّ وقت على آخر زيارة، وحابين نحجزلكِ موعد لما يناسبك.`;
+    window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const saveSettings = async () => {
     await set(ref(database, clinicPath('winbackSettings')), settingsForm);
@@ -293,7 +302,7 @@ const Winback = () => {
       <ToastContainer position="top-left" rtl />
       <div>
         <h1 className="text-[22px] font-bold text-[#111827]">استرجاع العميلات المنقطعات</h1>
-        <p className="text-sm text-[#8a9199] mt-1">اكتشاف، مراجعة، حملة مصرّح بها، دون توصيات طبية آلية.</p>
+        <p className="text-sm text-[#8a9199] mt-1">اكتشفي العميلات اللواتي يحتجن للمتابعة، وأرسلي لهن العروض أو رسائل التواصل بضغطة زر.</p>
       </div>
 
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
@@ -305,19 +314,19 @@ const Winback = () => {
       {tab === 'detect' && (
         <div className="space-y-4">
           <div className="grid md:grid-cols-4 gap-3">
-            <Stat label="منقطعات" value={lapsed.length} tone="gold" />
-            <Stat label="مؤهلات للحملة" value={ranked.length} tone="mint" />
-            <Stat label="قادم لديهن موعد" value={journeys.filter((j) => j.upcoming.length).length} tone="sky" />
+            <Stat label="بحاجة لاسترجاع" value={lapsed.length} tone="gold" />
+            <Stat label="جاهزات للتواصل الآن" value={ranked.length} tone="mint" />
+            <Stat label="لديهن مواعيد قادمة" value={journeys.filter((j) => j.upcoming.length).length} tone="sky" />
             <Stat label="طلبن عدم التواصل" value={journeys.filter((j) => j.doNotContact).length} tone="rose" />
           </div>
           <div className="grid md:grid-cols-2 gap-4">
             <div className="saas-card p-4">
-              <h3 className="font-bold mb-3 text-[#111827]">حسب الخدمة السابقة</h3>
+              <h3 className="font-bold mb-3 text-[#111827]">توزيع العميلات حسب الخدمة</h3>
               {Object.entries(groups.byService).map(([k, n]) => <p key={k} className="text-sm flex justify-between py-1"><span>{k}</span><span className="font-bold">{n}</span></p>)}
               {!Object.keys(groups.byService).length && <p className="text-sm text-gray-400">لا بيانات بعد</p>}
             </div>
             <div className="saas-card p-4">
-              <h3 className="font-bold mb-3 text-[#111827]">حسب الفرع وآخر زيارة</h3>
+              <h3 className="font-bold mb-3 text-[#111827]">توزيع العميلات حسب الفرع</h3>
               {lapsed.slice(0, 8).map((j) => (
                 <p key={j.phoneKey} className="text-sm flex justify-between py-1 gap-2">
                   <span className="truncate">{j.displayName} · {j.lastBranch || '—'}</span>
@@ -333,7 +342,7 @@ const Winback = () => {
                   <th className="p-3 text-right">العميلة</th>
                   <th className="p-3 text-right">آخر خدمة / فرع</th>
                   <th className="p-3 text-right">آخر زيارة</th>
-                  <th className="p-3 text-right">حد الانقطاع</th>
+                  <th className="p-3 text-right">فترة الغياب</th>
                   <th className="p-3 text-right">الحالة</th>
                 </tr>
               </thead>
@@ -345,7 +354,12 @@ const Winback = () => {
                     <td className="p-3">{j.daysSince} يوم</td>
                     <td className="p-3">{j.thresholdDays} يوم {j.lastService ? `(${publicServiceLabel(j.lastService, services)})` : ''}</td>
                     <td className="p-3 text-xs">
-                      {j.upcoming.length ? 'موعد قادم' : j.doNotContact ? 'بدون تواصل' : j.holdout ? 'مجموعة مقارنة' : j.eligible ? 'مؤهلة' : 'مستبعدة (سقف تواصل)'}
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span>{j.upcoming.length ? 'موعد قادم' : j.doNotContact ? 'بدون تواصل' : j.holdout ? 'مجموعة مقارنة' : j.eligible ? 'مؤهلة' : 'مستبعدة (سقف تواصل)'}</span>
+                        <button type="button" onClick={() => contactWhatsApp(j)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#10b981] text-white font-bold">
+                          <FaWhatsapp /> تواصل واتساب
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -393,7 +407,7 @@ const Winback = () => {
 
       {tab === 'campaigns' && (
         <div className="space-y-4">
-          {campaigns.length === 0 && <p className="text-gray-400 text-center py-10">لا حملات بعد. اختاري العميلات من «فرصة العودة».</p>}
+          {campaigns.length === 0 && <p className="text-gray-400 text-center py-10">لا حملات بعد. اختاري العميلات من «جاهزات للعودة».</p>}
           {campaigns.map((c) => {
             const campMsgs = messages.filter((m) => m.campaignId === c.id);
             return (
