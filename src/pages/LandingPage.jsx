@@ -190,7 +190,7 @@ const LandingPage = () => {
                     </div>
                     <DemoNav icon="calendar_today" label="جدول المواعيد" badge="14 اليوم" active />
                     <DemoNav icon="hourglass_empty" label="قائمة الانتظار" badge="3 شواغر" />
-                    <DemoNav icon="description" label="الملفات العملاء" />
+                    <DemoNav icon="description" label="ملفات العملاء" />
                     <DemoNav icon="chat_bubble" label="إشعارات WhatsApp" />
                     <DemoNav icon="insights" label="تقارير الإشغال" />
                     <div className="mt-4 p-3 rounded-lg bg-emerald-50/70 border border-emerald-200/60">
