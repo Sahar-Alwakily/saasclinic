@@ -142,7 +142,7 @@ const LandingPage = () => {
             الجيل الجديد من منصات تشغيل العيادات السحابية • Aesthetic Clinic OS
           </div>
           <h1 className="text-3xl sm:text-5xl lg:text-[58px] font-bold tracking-tight leading-[1.18] text-slate-900 max-w-4xl mx-auto">
-            منصة تشغيل سريرية متكاملة لعيادات التجميل،
+            منصة تشغيل متكاملة لعيادات التجميل،
             <br className="hidden sm:inline" />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006948] via-emerald-600 to-teal-700"> من الحجز الأول حتى الإجراء الطبي الموثق.</span>
           </h1>

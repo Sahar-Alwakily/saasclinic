@@ -39,6 +39,7 @@ const Dashboard = () => {
   const [settings, setSettings] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
   const [range, setRange] = useState('week');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (loadingClinic || !clinicId || !clinicPath) return undefined;
@@ -103,7 +104,7 @@ const Dashboard = () => {
   const greet = hour < 12 ? 'صباح الخير' : 'مساء الخير';
   const who = clinicInfo?.ownerName || clinicInfo?.name || 'وَرَف';
   const dateLabel = now.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' });
-  const branchName = branches.find((b) => b?.name)?.name;
+  const branchLabel = branches.map((b) => b?.name).filter(Boolean).join(' · ');
   const todayYmd = toYmd(new Date());
   const todayApts = appointments.filter((a) => a.date === todayYmd);
   const pendingToday = todayApts.filter((a) => a.status === 'pending').length;
@@ -122,17 +123,25 @@ const Dashboard = () => {
       ? occupancy.byDay.map((d) => ({ label: d.name.replace('ال', '').slice(0, 4), a: d.count }))
       : (occupancy.lookahead || []).map((d) => ({ label: d.name, a: d.booked, b: d.gaps }));
   const chartMax = Math.max(1, ...chartRows.map((r) => Math.max(r.a || 0, r.b || 0)));
-  const branchMap = new Map();
-  appointments.forEach((a) => {
-    if (a.status === 'cancelled') return;
-    const key = a.branchName || 'العيادة';
-    const row = branchMap.get(key) || { name: key, total: 0, pending: 0, attended: 0 };
-    row.total += 1;
-    if (a.status === 'pending') row.pending += 1;
-    if (a.status === 'attended') row.attended += 1;
-    branchMap.set(key, row);
-  });
-  const branchRows = [...branchMap.values()].sort((x, y) => y.total - x.total).slice(0, 6);
+  const tallyBranch = (list) => {
+    const row = { total: 0, pending: 0, attended: 0, today: 0 };
+    list.forEach((a) => {
+      if (a.status === 'cancelled') return;
+      row.total += 1;
+      if (a.status === 'pending') row.pending += 1;
+      if (a.status === 'attended') row.attended += 1;
+      if (a.date === todayYmd) row.today += 1;
+    });
+    return row;
+  };
+  const branchRows = branches.map((b) => ({
+    id: b.id,
+    name: b.name || 'فرع',
+    address: b.address || '',
+    phone: b.phone || '',
+    ...tallyBranch(appointments.filter((a) => a.branchId === b.id || (b.name && a.branchName === b.name))),
+  }));
+  const hourMax = Math.max(1, ...occupancy.byHour.map((h) => h.count));
   const weekBooked = (occupancy.lookahead || []).reduce((n, d) => n + d.booked, 0);
   const weekGaps = (occupancy.lookahead || []).reduce((n, d) => n + d.gaps, 0);
 
@@ -140,7 +149,7 @@ const Dashboard = () => {
     <div className="max-w-[1360px] mx-auto space-y-5 text-[#141b2b]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-xs text-[#6d7a77]">{dateLabel}{branchName ? ` · ${branchName}` : ''}</p>
+          <p className="text-xs text-[#6d7a77]">{dateLabel}{branchLabel ? ` · ${branchLabel}` : ''}</p>
           <h1 className="text-[26px] font-extrabold tracking-tight mt-1">{greet}، {who}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -249,40 +258,105 @@ const Dashboard = () => {
         </section>
       </div>
 
-      <section className={`${card} p-5`}>
-        <h2 className="font-extrabold mb-3">الحجوزات حسب الفرع</h2>
-        {branchRows.length === 0 && <p className="text-sm text-[#6d7a77]">لا حجوزات غير ملغاة بعد.</p>}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-extrabold">{branchRows.length === 2 ? 'الفرعان' : branchRows.length === 1 ? 'الفرع' : 'الفروع'}</h2>
+          <Link to="/branches" className="text-xs font-bold text-[#059669]">الفروع والجداول</Link>
+        </div>
+        {branchRows.length === 0 && <p className={`${card} p-5 text-sm text-[#6d7a77]`}>لا فروع محفوظة بعد.</p>}
         {branchRows.length > 0 && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>{['الفرع', 'الحجوزات', 'معلّق', 'حضرت', 'نسبة الحضور'].map((h) => <th key={h}>{h}</th>)}</tr>
-              </thead>
-              <tbody>
-                {branchRows.map((b) => {
-                  const rate = b.total ? Math.round((b.attended / b.total) * 100) : 0;
-                  return (
-                    <tr key={b.name}>
-                      <td className="font-bold">{b.name}</td>
-                      <td>{b.total}</td>
-                      <td>{b.pending}</td>
-                      <td>{b.attended}</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-1.5 rounded-full bg-[#eef0ff] overflow-hidden">
-                            <div className="h-full bg-[#10b981]" style={{ width: `${rate}%` }} />
-                          </div>
-                          <span className="text-xs font-bold">{rate}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className={`grid gap-3 ${branchRows.length === 1 ? 'grid-cols-1' : 'md:grid-cols-2'}`}>
+            {branchRows.map((b) => {
+              const rate = b.total ? Math.round((b.attended / b.total) * 100) : 0;
+              return (
+                <article key={b.id} className={`${card} p-5`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <h3 className="font-extrabold truncate">{b.name}</h3>
+                      {b.address && <p className="text-xs text-[#6d7a77] mt-1">{b.address}</p>}
+                      {b.phone && <p className="text-xs text-[#6d7a77] mt-0.5" dir="ltr">{b.phone}</p>}
+                    </div>
+                    <span className="text-[11px] font-bold px-2 py-1 rounded-full bg-[#ecfdf5] text-[#059669] shrink-0">{b.today} اليوم</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+                    <div className="rounded-xl bg-[#f7f8ff] py-2">
+                      <p className="text-[11px] text-[#6d7a77]">الحجوزات</p>
+                      <p className="font-extrabold">{b.total}</p>
+                    </div>
+                    <div className="rounded-xl bg-[#fffbeb] py-2">
+                      <p className="text-[11px] text-[#b45309]">معلّق</p>
+                      <p className="font-extrabold text-[#b45309]">{b.pending}</p>
+                    </div>
+                    <div className="rounded-xl bg-[#ecfdf5] py-2">
+                      <p className="text-[11px] text-[#059669]">حضرت</p>
+                      <p className="font-extrabold text-[#059669]">{b.attended}</p>
+                    </div>
+                  </div>
+                  <div className="mt-3 flex items-center gap-2">
+                    <div className="flex-1 h-1.5 rounded-full bg-[#eef0ff] overflow-hidden">
+                      <div className="h-full bg-[#10b981]" style={{ width: `${rate}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-[#059669]">{rate}% حضور</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
         )}
       </section>
+
+      <div className="grid xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        <section className={`${card} p-5`}>
+          <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+            <div>
+              <h2 className="font-extrabold">ساعات الازدحام</h2>
+              <p className="text-xs text-[#6d7a77] mt-1">من آخر {occupancy.sample} حجز خلال 60 يوماً{occupancy.sample < 8 ? ' · العيّنة صغيرة والتقدير تقريبي' : ''}</p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-[11px] font-bold">
+              {occupancy.peakHour?.count > 0 && <span className="px-2 py-1 rounded-full bg-[#ecfdf5] text-[#059669]">الذروة {occupancy.peakHour.label} · {occupancy.peakHour.count}</span>}
+              {occupancy.quietHour && <span className="px-2 py-1 rounded-full bg-[#f3f0ff] text-[#6b4eff]">الأهدأ {occupancy.quietHour.label}</span>}
+              {occupancy.peakDay?.count > 0 && <span className="px-2 py-1 rounded-full bg-[#fffbeb] text-[#b45309]">{occupancy.peakDay.name} أعلى يوم</span>}
+            </div>
+          </div>
+          {occupancy.sample === 0 ? (
+            <p className="text-sm text-[#6d7a77]">لا حجوزات في آخر 60 يوماً لحساب ساعات الازدحام.</p>
+          ) : (
+            <div className="flex items-end gap-1.5 h-40">
+              {occupancy.byHour.map((h) => {
+                const hot = h.hour === occupancy.peakHour?.hour && h.count > 0;
+                return (
+                  <div key={h.hour} className="flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-1" title={`${h.label}: ${h.count}`}>
+                    <div className="w-full flex-1 flex items-end">
+                      <div className={`w-full rounded-t-md ${hot ? 'bg-[#10b981]' : 'bg-[#c4b5fd]'}`} style={{ height: `${Math.max(h.count ? 8 : 0, (h.count / hourMax) * 100)}%` }} />
+                    </div>
+                    <span className="text-[10px] text-[#6d7a77]">{h.label}</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        <section className={`${card} p-5`}>
+          <h2 className="font-extrabold mb-3">ملاحظات ذكية</h2>
+          <ul className="space-y-2">
+            {(occupancy.tips || []).map((tip) => (
+              <li key={tip} className="rounded-xl bg-[#f7f8ff] px-3 py-2 text-sm">{tip}</li>
+            ))}
+            {health.curr?.attendRate != null && (
+              <li className="rounded-xl bg-[#ecfdf5] px-3 py-2 text-sm text-[#065f46]">نسبة الحضور هذا الشهر {health.curr.attendRate}%.</li>
+            )}
+            {(occupancy.services || []).length > 0 && (
+              <li className="rounded-xl bg-white border border-[#eceefe] px-3 py-2 text-sm">
+                <p className="text-[11px] font-bold text-[#6d7a77] mb-1">أكثر الخدمات حجزاً</p>
+                {occupancy.services.map((s) => (
+                  <p key={s.name} className="flex justify-between gap-2"><span className="truncate">{s.name}</span><span className="font-bold">{s.count}</span></p>
+                ))}
+              </li>
+            )}
+          </ul>
+        </section>
+      </div>
 
       <div className="grid lg:grid-cols-[0.7fr_1.3fr] gap-4">
         <section className={`${card} p-5`}>
@@ -308,17 +382,61 @@ const Dashboard = () => {
 
       {userRole !== 'worker' && (
         <section className={`${card} p-5`}>
-          <div className="flex flex-wrap justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <h2 className="font-extrabold">الموقع</h2>
-              <p className="text-xs text-[#6d7a77] mt-1">جاهزية {site.ready}/{site.total} · خدمات ناقصة {site.thinServices.length}</p>
+              <h2 className="font-extrabold">الموقع والحجز</h2>
+              <p className="text-xs text-[#6d7a77] mt-1">{site.published ? 'صفحة الحجز ظاهرة' : 'صفحة الحجز ناقصة'} · الثيم {site.theme} · جاهزية {site.ready}/{site.total}</p>
             </div>
-            <div className="flex gap-3 text-xs font-bold">
-              <Link to="/products" className="text-[#059669]">المنتجات</Link>
-              <Link to="/website" className="text-[#059669]">الموقع</Link>
-              <a href={site.url || `/book/${clinicId}`} target="_blank" rel="noreferrer" className="text-[#6b4eff]">فتح الحجز</a>
+            <div className="flex flex-wrap gap-2 text-xs font-bold">
+              <Link to="/website" className="px-3 py-2 rounded-xl bg-[#10b981] text-white">تعديل الموقع</Link>
+              <Link to="/services" className="px-3 py-2 rounded-xl bg-[#f7f8ff]">الخدمات</Link>
+              <Link to="/products" className="px-3 py-2 rounded-xl bg-[#f7f8ff]">المنتجات</Link>
+              <a href={site.url || `/book/${clinicId}`} target="_blank" rel="noreferrer" className="px-3 py-2 rounded-xl bg-[#f3f0ff] text-[#6b4eff]">فتح الحجز</a>
             </div>
           </div>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <p className="text-xs font-mono text-[#3d4947] break-all" dir="ltr">{site.url || '—'}</p>
+            {site.url && (
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(site.url);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 1500);
+                  } catch { /* clipboard blocked */ }
+                }}
+                className="text-xs font-bold text-[#059669]"
+              >
+                {copied ? 'تم النسخ' : 'نسخ الرابط'}
+              </button>
+            )}
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {site.checks.map((c) => (
+              <span key={c.id} className={`text-[11px] font-bold px-2 py-1 rounded-full ${c.ok ? 'bg-[#ecfdf5] text-[#059669]' : 'bg-rose-50 text-rose-600'}`}>{c.ok ? 'جاهز' : 'ناقص'} · {c.label}</span>
+            ))}
+          </div>
+          <div className="mt-4 grid sm:grid-cols-3 gap-2 text-sm">
+            <div className="rounded-xl bg-[#f7f8ff] p-3">
+              <p className="text-[11px] text-[#6d7a77]">ظهور الأقسام</p>
+              <p className="font-bold mt-1">{site.showServices ? 'الخدمات ظاهرة' : 'الخدمات مخفية'}</p>
+              <p className="text-xs text-[#6d7a77]">{site.showProducts ? 'المنتجات ظاهرة' : 'المنتجات مخفية'} · {site.showBlog ? 'المدونة ظاهرة' : 'المدونة مخفية'}</p>
+            </div>
+            <div className="rounded-xl bg-[#f7f8ff] p-3">
+              <p className="text-[11px] text-[#6d7a77]">الخدمات على الموقع</p>
+              <p className="font-bold mt-1">{site.services.length} خدمة</p>
+              <p className="text-xs text-[#6d7a77]">{site.thinServices.length ? `${site.thinServices.length} بلا وصف` : 'كلها بوصف'}</p>
+            </div>
+            <div className="rounded-xl bg-[#f7f8ff] p-3">
+              <p className="text-[11px] text-[#6d7a77]">المدونة</p>
+              <p className="font-bold mt-1">{site.blogCount} تدوينة</p>
+              <Link to="/website" className="text-xs font-bold text-[#059669]">فتح إعدادات الموقع</Link>
+            </div>
+          </div>
+          {site.thinServices.length > 0 && (
+            <p className="mt-3 text-xs text-[#6d7a77]">بلا وصف: {site.thinServices.map((s) => s.title || s.name).filter(Boolean).join(' · ') || 'خدمة بلا اسم'}</p>
+          )}
         </section>
       )}
     </div>
