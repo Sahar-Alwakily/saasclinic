@@ -322,7 +322,7 @@ const LandingPage = () => {
             <div className="relative z-10 grid lg:grid-cols-12 gap-8 items-center">
               <div className="lg:col-span-7">
                 <span className="text-emerald-400 mono text-xs font-semibold tracking-wider uppercase">Focus & Precision</span>
-                <h3 className="text-2xl sm:text-3xl font-bold mt-2 tracking-tight">صُمم حصراً للمجال التجميلي والجلدي</h3>
+                <h3 className="text-2xl sm:text-3xl font-bold mt-2 tracking-tight">صُمم حصراً للمجال التجميلي </h3>
                 <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">ابتعدنا تماماً عن تعقيدات البرامج الطبية العامة القديمة وبرامج المستشفيات التقليدية لنبني بيئة عمل خفيفة تليق بفخامة عيادتك التجميلية وسرعة إيقاع يومك .</p>
                 <div className="mt-6 flex flex-wrap gap-2 text-xs">
                   {['عيادات الحقن والتجميل', 'أطباء الجلدية والتناسلية', 'مراكز إزالة الشعر بالليزر', 'عيادات العناية بالبشرة المتقدمة'].map((tag) => (
