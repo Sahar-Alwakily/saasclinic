@@ -67,7 +67,7 @@ const Login = () => {
             </Link>
             <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs text-[#C5A880]">
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              منظومة تشغيل العيادات السريرية
+              منظومة تشغيل العيادات 
             </span>
           </div>
           <div className="relative z-10 my-auto py-12 max-w-xl">
@@ -77,12 +77,12 @@ const Login = () => {
             </div>
             <h1 className="text-4xl xl:text-5xl font-extrabold text-white leading-[1.25] tracking-tight mb-6 whitespace-pre-line">{t('login.h1')}</h1>
             <p className="text-white/70 text-base leading-relaxed mb-10 max-w-lg">
-              {arabic ? 'كونسول موحّد يجمع المواعيد المجدولة، قائمة الانتظار الذكية لملء الفراغات، واسترجاع العميلات مع السجل السريري الرقمي.' : t('login.lead')}
+              {arabic ? 'كونسول موحّد يجمع المواعيد المجدولة، قائمة الانتظار الذكية لملء الفراغات، واسترجاع العميلات مع السجل  الرقمي.' : t('login.lead')}
             </p>
             <div className="grid grid-cols-3 gap-3.5">
               <Feature icon="calendar_month" title={arabic ? 'إدارة المواعيد' : 'Schedule'} body={arabic ? 'جدولة الغرف وتأكيد العربون' : 'Rooms and deposits'} />
               <Feature icon="auto_awesome" title={arabic ? 'استرجاع ذكي' : 'Win-back'} body={arabic ? 'إعادة المريضات المنقطعات' : 'Bring clients back'} gold />
-              <Feature icon="clinical_notes" title={arabic ? 'الملف السريري' : 'Chart'} body={arabic ? 'توثيق الجرعات والإقرارات' : 'Doses and consent'} />
+              <Feature icon="clinical_notes" title={arabic ? 'الملف العملاء' : 'Chart'} body={arabic ? 'توثيق الجرعات والإقرارات' : 'Doses and consent'} />
             </div>
           </div>
           <div className="relative z-10 flex items-center justify-between text-xs text-white/45 pt-6 border-t border-white/10">

@@ -146,11 +146,11 @@ const RegisterClinic = () => {
                   {arabic ? <>ابدئي بتشغيل عيادتكِ <br /><span className="text-[#C5A880]">بمعايير فندقية وطبية راقية.</span></> : t('register.title')}
                 </h2>
                 <p className="text-white/80 text-xs sm:text-sm leading-relaxed mt-3">
-                  {arabic ? 'منظومة سحابية تربط جدول المواعيد، السجلات السريرية، وقائمة انتظار تملأ الشاغر.' : t('register.trial', { n: trialDays })}
+                  {arabic ? 'منظومة سحابية تربط جدول المواعيد، السجلات العملاء وقائمة انتظار تملأ الشاغر.' : t('register.trial', { n: trialDays })}
                 </p>
               </div>
               <div className="space-y-4">
-                <Perk icon="verified_user" title={arabic ? `تجربة ${trialDays} يوماً بكامل المزايا` : t('register.trial', { n: trialDays })} body={arabic ? 'وصول لكل الوحدات التشغيلية والسريرية.' : ''} />
+                <Perk icon="verified_user" title={arabic ? `تجربة ${trialDays} يوماً بكامل المزايا` : t('register.trial', { n: trialDays })} body={arabic ? 'وصول لكل الوحدات التشغيلية .' : ''} />
                 <Perk icon="credit_card_off" title={arabic ? 'بدون بطاقة ائتمانية' : t('register.trial', { n: trialDays })} body={arabic ? 'لا وسيلة دفع لبدء التجربة.' : ''} />
                 <Perk icon="quickreply" title={arabic ? 'تفعيل الحجز وصفحة العيادة' : 'Booking page'} body={arabic ? 'صفحة حجز خاصة وتأكيدات المواعيد.' : ''} />
               </div>

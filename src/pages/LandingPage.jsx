@@ -55,7 +55,7 @@ const OUTCOMES = [
 
 const MODULES = [
   { icon: 'calendar_month', title: 'إدارة المواعيد والغرف المزدوجة', body: 'جدولة غرف الليزر، غرف الحقن، وجلسات الرتوش بدون تداخل.', active: true },
-  { icon: 'medical_information', title: 'الملف الطبي والسجل السريري (EMR)', body: 'توثيق أنواع المواد، جرعات الفيلر، وإقرارات المريضة الرقمية.' },
+  { icon: 'medical_information', title: 'الملف الطبي والسجل (EMR)', body: 'توثيق أنواع المواد، جرعات الفيلر، وإقرارات المريضة الرقمية.' },
   { icon: 'mark_chat_unread', title: 'بوابة حجز مستقلة وأتمتة الواتساب', body: 'صفحة خاصة بعيادتك وتأكيدات فورية برقم الواتساب الرسمي.' },
   { icon: 'monitoring', title: 'تحليلات الأداء وإيرادات الأجهزة', body: 'ساعات إشغال الأجهزة الطبية، أكثر الخدمات طلباً، وأرباح الفروع.' },
 ];
@@ -86,7 +86,7 @@ const LandingPage = () => {
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             تحديث V2.4 السحابي
           </span>
-          <span className="text-slate-300">منظومة وَرَف السريرية المتخصصة: احصل على تجربة كاملة لمدة {trialDays} يوماً بدون بطاقة ائتمان.</span>
+          <span className="text-slate-300">منظومة وَرَف  المتخصصة: احصل على تجربة كاملة لمدة {trialDays} يوماً بدون بطاقة ائتمان.</span>
           <a className="text-emerald-400 hover:text-emerald-300 font-medium inline-flex items-center gap-0.5 ms-1" href="#pricing">
             استعراض الباقات <Icon name="arrow_back" className="text-xs" />
           </a>
@@ -106,7 +106,7 @@ const LandingPage = () => {
             </span>
           </Link>
           <nav className="hidden md:flex items-center gap-8 text-[13.5px] font-medium text-slate-600">
-            <a className="hover:text-[#006948]" href="#features">المميزات السريرية</a>
+            <a className="hover:text-[#006948]" href="#features">المميزات </a>
             <a className="hover:text-[#006948]" href="#outcomes">الأثر التشغيلي</a>
             <a className="hover:text-[#006948]" href="#specialization">التخصص الطبي</a>
             <a className="hover:text-[#006948]" href="#pricing">الباقات</a>
@@ -147,7 +147,7 @@ const LandingPage = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006948] via-emerald-600 to-teal-700"> من الحجز الأول حتى الإجراء الطبي الموثق.</span>
           </h1>
           <p className="mt-6 text-base sm:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            «وَرَف» يجمع إدارة المواعيد الدقيقة، قائمة الانتظار الذكية لملء الفراغات اللحظية، السجلات السريرية الرقمية (EMR)، وتأكيدات الواتساب الآلية في شاشة موحدة وسلسة.
+            «وَرَف» يجمع إدارة المواعيد الدقيقة، قائمة الانتظار الذكية لملء الفراغات اللحظية، السجلات السيرية الرقمية (EMR)، وتأكيدات الواتساب الآلية في شاشة موحدة وسلسة.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/register" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#006948] text-white px-7 py-3 rounded-xl font-semibold text-sm hover:bg-[#00553a]">
@@ -190,7 +190,7 @@ const LandingPage = () => {
                     </div>
                     <DemoNav icon="calendar_today" label="جدول المواعيد" badge="14 اليوم" active />
                     <DemoNav icon="hourglass_empty" label="قائمة الانتظار" badge="3 شواغر" />
-                    <DemoNav icon="description" label="الملفات السريرية (EMR)" />
+                    <DemoNav icon="description" label="الملفات العملاء" />
                     <DemoNav icon="chat_bubble" label="إشعارات WhatsApp" />
                     <DemoNav icon="insights" label="تقارير الإشغال" />
                     <div className="mt-4 p-3 rounded-lg bg-emerald-50/70 border border-emerald-200/60">
@@ -242,7 +242,7 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center mb-14">
             <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">الأثر التشغيلي الحقيقي</span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">أداء سريري محسوب بالأرقام، لا بمجرد شاشات إدخال.</h2>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">أداء  محسوب بالأرقام، لا بمجرد شاشات إدخال.</h2>
             <p className="mt-3 text-slate-500 text-sm sm:text-base">حوّلنا التحديات اليومية التي ترهق الطبيبة وطاقم الاستقبال إلى نظم ذكية تعمل بهدوء في الخلفية.</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
@@ -289,7 +289,7 @@ const LandingPage = () => {
               <div className="flex items-center justify-between gap-3 pb-5 border-b border-slate-200">
                 <div>
                   <span className="mono text-[11px] text-emerald-700 font-semibold uppercase bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">Module 01</span>
-                  <h3 className="text-xl font-bold text-slate-900 mt-1.5">إدارة الجدولة السريرية وصالة الاستقبال</h3>
+                  <h3 className="text-xl font-bold text-slate-900 mt-1.5">إدارة الجدولة وصالة الاستقبال</h3>
                 </div>
                 <span className="mono text-xs text-slate-400 shrink-0">Sync: iOS / Web / iPad</span>
               </div>
@@ -323,7 +323,7 @@ const LandingPage = () => {
               <div className="lg:col-span-7">
                 <span className="text-emerald-400 mono text-xs font-semibold tracking-wider uppercase">Focus & Precision</span>
                 <h3 className="text-2xl sm:text-3xl font-bold mt-2 tracking-tight">صُمم حصراً للمجال التجميلي والجلدي</h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">ابتعدنا تماماً عن تعقيدات البرامج الطبية العامة القديمة وبرامج المستشفيات التقليدية لنبني بيئة عمل خفيفة تليق بفخامة عيادتك التجميلية وسرعة إيقاع يومك السريري.</p>
+                <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">ابتعدنا تماماً عن تعقيدات البرامج الطبية العامة القديمة وبرامج المستشفيات التقليدية لنبني بيئة عمل خفيفة تليق بفخامة عيادتك التجميلية وسرعة إيقاع يومك .</p>
                 <div className="mt-6 flex flex-wrap gap-2 text-xs">
                   {['عيادات الحقن والتجميل', 'أطباء الجلدية والتناسلية', 'مراكز إزالة الشعر بالليزر', 'عيادات العناية بالبشرة المتقدمة'].map((tag) => (
                     <span key={tag} className="bg-white/10 text-slate-200 px-3 py-1 rounded-md border border-white/10">{tag}</span>
@@ -417,7 +417,7 @@ const LandingPage = () => {
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="bg-slate-900 rounded-2xl p-8 sm:p-12 text-center text-white border border-slate-800">
-            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">ابدأ تشغيل عيادتك بمعايير سريرية فائقة الدقة</h2>
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">ابدأ تشغيل عيادتك بمعايير  فائقة الدقة</h2>
             <p className="mt-3 text-xs sm:text-sm text-slate-400 leading-relaxed max-w-2xl mx-auto">انضم إلى عيادات التجميل التي تدير مواعيدها وتملأ شواغرها بهدوء وسلاسة عبر منصة وَرَف السحابية.</p>
             <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link to="/register" className="w-full sm:w-auto bg-[#006948] hover:bg-[#00553a] text-white px-7 py-2.5 rounded-xl font-semibold text-xs">ابدأ {trialDays} يوماً مجاناً</Link>
@@ -437,13 +437,13 @@ const LandingPage = () => {
                 <span className="w-7 h-7 rounded-md bg-slate-900 text-white flex items-center justify-center font-bold text-xs">و</span>
                 <span className="text-sm font-bold text-slate-900">وَرَف | WARAF</span>
               </div>
-              <p className="text-xs text-slate-500 leading-relaxed max-w-sm">نظام تشغيل وإدارة المواعيد السريرية المتخصص لعيادات التجميل، أطباء الجلدية، ومراكز الليزر الحديثة.</p>
+              <p className="text-xs text-slate-500 leading-relaxed max-w-sm">نظام تشغيل وإدارة المواعيد السيرية المتخصص لعيادات التجميل، أطباء الجلدية، ومراكز الليزر الحديثة.</p>
               <div className="flex items-center gap-2 text-slate-600 text-[11px]">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
                 <span>منصة سحابية لتشغيل العيادة</span>
               </div>
             </div>
-            <FooterCol title="المنظومة" links={[['#features', 'جدول المواعيد'], ['#features', 'قائمة الانتظار الذكية'], ['#features', 'الملف السريري (EMR)'], ['#features', 'أتمتة WhatsApp']]} />
+            <FooterCol title="المنظومة" links={[['#features', 'جدول المواعيد'], ['#features', 'قائمة الانتظار الذكية'], ['#features', 'الملف السيري (EMR)'], ['#features', 'أتمتة WhatsApp']]} />
             <div className="space-y-2.5">
               <h2 className="font-semibold text-slate-900 text-xs">التخصصات</h2>
               <ul className="space-y-1.5">
