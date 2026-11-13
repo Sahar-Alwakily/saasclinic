@@ -47,10 +47,34 @@ const PLAN_COPY = {
 };
 
 const OUTCOMES = [
-  { icon: 'event_available', tone: 'primary', value: '42%−', title: 'تقليل نسبة الغياب', body: 'تأكيدات فورية عبر WhatsApp الرسمي، تذكير تلقائي مجدول، وربط حجز الموعد بعربون رمزي لمنع حجز الأوقات الوهمية.' },
-  { icon: 'autorenew', tone: 'emerald', value: '100%', title: 'تعويض الشواغر الفجائية', body: 'نظام الانتظار الذكي يرسل إشعار القبول الفوري للمريضات المنتظرات بنفس اليوم لملء فراغ الطبيبة فوراً.' },
-  { icon: 'draw', tone: 'primary', value: '0%', title: 'أوراق وملفات تالفة', body: 'سجل رقمي متكامل لكل مريضة، جرعات البوتوكس ومناطق الحقن، صور مقارنة الجلسات، وتوقيع إلكتروني آمن عبر جهاز التابلت.' },
-  { icon: 'group_add', tone: 'emerald', value: '+34%', title: 'معدل إعادة الزيارة', body: 'تنبيهات تلقائية ذكية لمواعيد الرتوش ومراجعات الفيلر أو جلسات الليزر الدورية لتحفيز عودة العميلات تلقائياً.' },
+  {
+    icon: 'calendar_month',
+    tone: 'primary',
+    value: 'إدارة',
+    title: 'إدارة المواعيد والحجوزات',
+    body: 'تنظيم المواعيد، إدارة الحجوزات، وقائمة انتظار ذكية لاستغلال الأوقات الشاغرة وتعويض الإلغاءات بسهولة.'
+  },
+  {
+    icon: 'chat',
+    tone: 'emerald',
+    value: 'تواصل',
+    title: 'التواصل الذكي والآلي',
+    body: 'ردود آلية على استفسارات العملاء عبر WhatsApp، مع تأكيد الحجوزات، التذكير بالمواعيد ومتابعة الجلسات.'
+  },
+  {
+    icon: 'groups',
+    tone: 'primary',
+    value: 'عملاء',
+    title: 'إدارة العملاء والسجلات',
+    body: 'ملفات رقمية منظمة للعملاء، حفظ بياناتهم، توثيق العلاجات والجلسات، ومتابعة تاريخ الزيارات.'
+  },
+  {
+    icon: 'trending_up',
+    tone: 'emerald',
+    value: 'نمو',
+    title: 'التسويق والنمو',
+    body: 'تسويق المنتجات والعلاجات والخدمات، وعرضها عبر موقعك الخاص، مع موقع مخصص للعملاء لاستعراض الخدمات وحجز المواعيد.'
+  },
 ];
 
 const MODULES = [
@@ -241,9 +265,8 @@ const LandingPage = () => {
       <section id="outcomes" className="py-20 bg-slate-50 border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center mb-14">
-            <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">الأثر التشغيلي الحقيقي</span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">وَرَف – منصتك المتكاملة لإدارة وتطوير عملك بكل سهولة واحترافية!</h2>
-            <p className="mt-3 text-slate-500 text-sm sm:text-base">حوّلنا التحديات اليومية التي ترهق الطبيبة وطاقم الاستقبال إلى نظم ذكية   في .</p>
+            <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200"> المميزات والخدمات</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight"> أدر عيادتك بذكاء، وامنح عملاءك تجربة استثنائية!</h2>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {OUTCOMES.map((item) => (
