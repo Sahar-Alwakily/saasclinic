@@ -43,7 +43,7 @@ export const SECTION_FIELDS = {
   hero: [
     { key: 'title', label: 'العنوان', kind: 'textarea' },
     { key: 'subtitle', label: 'النص الفرعي', kind: 'textarea' },
-    { key: 'image', label: 'رابط الصورة', kind: 'url' },
+    { key: 'image', label: 'صورة الغلاف', kind: 'image' },
     { key: 'ctaText', label: 'نص الزر', kind: 'text' },
   ],
   services: [
@@ -54,7 +54,7 @@ export const SECTION_FIELDS = {
   about: [
     { key: 'title', label: 'العنوان', kind: 'text' },
     { key: 'description', label: 'الوصف', kind: 'textarea' },
-    { key: 'image', label: 'رابط الصورة', kind: 'url' },
+    { key: 'image', label: 'الصورة', kind: 'image' },
   ],
   products: [{ key: 'title', label: 'العنوان', kind: 'text' }],
   blog: [{ key: 'title', label: 'العنوان', kind: 'text' }],

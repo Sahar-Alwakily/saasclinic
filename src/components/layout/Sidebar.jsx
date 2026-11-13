@@ -13,12 +13,12 @@ const linkClass = ({ isActive }) =>
   `flex items-center gap-2.5 px-3 py-2.5 rounded-2xl text-[13.5px] font-medium transition-colors ${
     isActive
       ? 'bg-[#10b981] text-white shadow-sm'
-      : 'text-[#6b7280] hover:text-[#047857] hover:bg-[#ecfdf5]'
+      : 'text-[#6b7280] hover:text-[#059669] hover:bg-[#ecfdf5]'
   }`;
 
 const childClass = ({ isActive }) =>
   `block px-3 py-1.5 rounded-xl text-[12px] ${
-    isActive ? 'text-[#047857] font-semibold bg-[#ecfdf5]' : 'text-[#9ca3af] hover:text-[#047857]'
+    isActive ? 'text-[#1F5C4D] font-semibold bg-[#EDF5F2]' : 'text-[#9ca3af] hover:text-[#1F5C4D]'
   }`;
 
 const NAV = [
@@ -65,10 +65,11 @@ const NAV = [
     admin: true,
     children: [
       { to: '/website', label: 'معلومات الموقع' },
+      { to: '/website?tab=policies', label: 'السياسات' },
       { to: '/website?tab=blog', label: 'المدونة' },
     ],
   },
-  { to: '/assistant', label: 'نورا الذكية', icon: FaRobot, admin: true, cap: 'assistant' },
+  { to: '/assistant', label: 'وَرَفَ الذكية', icon: FaRobot, admin: true, cap: 'assistant' },
   { to: '/winback', label: 'استرجاع العميلات', icon: FaPaperPlane, admin: true, cap: 'winback' },
   {
     to: '/marketing',
@@ -101,7 +102,6 @@ const NAV = [
     admin: true,
     children: [
       { to: '/settings', label: 'بيانات العيادة' },
-      { to: '/settings?tab=privacy', label: 'الخصوصية' },
       { to: '/settings?tab=whatsapp', label: 'واتساب' },
       { to: '/settings?tab=integrations', label: 'التكاملات' },
     ],
@@ -161,9 +161,9 @@ const Sidebar = () => {
       }`}
     >
       <div className="px-4 py-5 flex items-center gap-2.5">
-        <div className="w-8 h-8 rounded-lg bg-[#16a34a] text-white text-sm font-bold flex items-center justify-center">ن</div>
+        <div className="w-8 h-8 rounded-lg bg-[#10b981] text-white text-sm font-bold flex items-center justify-center">و</div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold leading-none text-[#111827]">نورا</p>
+          <p className="text-sm font-bold leading-none text-[#1E2229]">وَرَف | WARAF</p>
           <p className="text-[11px] text-[#9ca3af] mt-1 truncate">{clinicInfo?.name || 'تشغيل العيادة'}</p>
         </div>
         <button type="button" className="lg:hidden p-2 text-[#6b7280]" aria-label="إغلاق" onClick={() => setOpen(false)}>

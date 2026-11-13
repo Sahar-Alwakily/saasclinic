@@ -1,16 +1,16 @@
 const ar = {
-  brand: 'نورا',
-  brandMark: 'ن',
+  brand: 'وَرَفَ | WARAFA',
+  brandMark: 'و',
   os: 'clinic operating system',
   nav: { pricing: 'الأسعار', login: 'دخول', trial: '{n} يوماً مجاناً' },
   land: {
     h1a: 'نظام متكامل لتشغيل عيادتك',
     h1b: 'من الحجز حتى المتابعة.',
-    lead: 'نورا هو نظام إدارة متكامل للعيادات، يجمع الحجوزات، قائمة الانتظار، الملف الطبي، وصفحة الحجز العامة في لوحة تحكم واحدة. جميع الإحصائيات معروضة من سجل عيادتك فقط.',
+    lead: 'وَرَفَ | WARAFA هو نظام إدارة متكامل للعيادات، يجمع الحجوزات، قائمة الانتظار، الملف الطبي، وصفحة الحجز العامة في لوحة تحكم واحدة. جميع الإحصائيات معروضة من سجل عيادتك فقط.',
     cta: 'ابدأ الآن {n} يوماً مجاناً',
     outcomesCta: 'شاهد الفرق في عيادتك',
     niche: 'تجميل، ليزر، فيتامينات، كوزمتكا — ليس مستشفى ولا نظام ضريبي.',
-    featuresTitle: 'ماذا يقدم لك نظام نورا؟',
+    featuresTitle: 'ماذا يقدم لك نظام وَرَفَ | WARAFA؟',
     pricingTitle: 'الاشتراك',
     pricingLead: 'ابدئي بتجربة {n} يوماً على كل الوحدات. بعد التجربة تُفتح الأقسام حسب الباقة: تشغيل = تأكيد وحضور؛ عيادة = انتظار وواتساب تشغيلي واسترجاع؛ فروع = بلا حد فريق. الدفع غير مربوط؛ التفعيل اليدوي من شاشة المدفوعات.',
     highlighted: 'الأكثر ملاءمة لعيادة ناشطة',
@@ -18,7 +18,7 @@ const ar = {
     startTrial: 'ابدأ التجربة',
     addonsTitle: 'ميزات قادمة قريباً',
     addonsLead: 'نعمل باستمرار على إضافة ميزات جديدة لتناسب احتياجاتك.',
-    whoTitle: 'لمن نورا — ولمن ليست',
+    whoTitle: 'لمن وَرَفَ | WARAFA — ولمن ليست',
     whoBody: 'مخصصة لعيادات وأخصائيي التجميل الذين يسعون لتقليل الغيابات، واستعادة المرضى المنقطعين، وملء أوقات الفراغ. هي ليست نظاماً لسلسلة مستشفيات ضخمة، وليست بديلاً عن المحاسب، ولا مجرد بوت للرد على واتساب.',
     create: 'أنشئ مساحة عمل',
     footerTag: 'مساحة عمل لعيادة التجميل.',
@@ -140,14 +140,14 @@ const ar = {
 };
 
 const he = {
-  brand: 'נורה',
-  brandMark: 'נ',
+  brand: 'وَرَفَ | WARAFA',
+  brandMark: 'و',
   os: 'clinic operating system',
   nav: { pricing: 'מחירים', login: 'כניסה', trial: '{n} ימים חינם' },
   land: {
     h1a: 'ניהול הקליניקה מהתור',
     h1b: 'עד חזרת הלקוחה.',
-    lead: 'נורה היא סביבת עבודה לקליניקת אסתטיקה: תורים, רשימת המתנה, תיק רפואי ודף הזמנה ציבורי בקונסולה אחת. המספרים מגיעים רק מרישום הקליניקה.',
+    lead: 'وَرَفَ | WARAFA היא סביבת עבודה לקליניקת אסתטיקה: תורים, רשימת המתנה, תיק רפואי ודף הזמנה ציבורי בקונסולה אחת. המספרים מגיעים רק מרישום הקליניקה.',
     cta: 'התחילו {n} ימים בלי כרטיס',
     outcomesCta: 'מה משתנה בקליניקה',
     niche: 'אסתטיקה, לייזר, ויטמינים, קוסמטיקה — לא בית חולים ולא מערכת מס.',
@@ -159,7 +159,7 @@ const he = {
     startTrial: 'התחילו ניסיון',
     addonsTitle: 'תוספות — עדיין לא במנוי הבסיסי',
     addonsLead: 'לא מבטיחים אותן כאילו מוכנות בדף הנחיתה. מתומחרות בחיבור.',
-    whoTitle: 'למי נורה — ולמי לא',
+    whoTitle: 'למי וَرف | WARAFA — ולמי לא',
     whoBody: 'לקליניקה או קוסמטיקאית שרוצה פחות אי־הגעות, מילוי חלונות ריקים והחזרת מי שנעלמה. לא לרשת בתי חולים, ולא תחליף לרואה חשבון או בוט וואטסאפ לבד.',
     create: 'צרו סביבת עבודה',
     footerTag: 'סביבת עבודה לקליניקת אסתטיקה.',
@@ -193,7 +193,7 @@ const he = {
   },
   addons: {
     whatsapp: { name: 'WhatsApp Cloud API', note: 'שליחת תבניות ותזמון — תמחור לפי הודעה בחיבור' },
-    domain: { name: 'דומיין מותאם', note: 'הדף הציבורי רץ על קישור נורה עד החיבור' },
+    domain: { name: 'דומיין מותאם', note: 'הדף הציבורי רץ על קישור וَرف | WARAFA עד החיבור' },
     payments: { name: 'סליקה', note: 'מקדמה והזמנות נרשמות ידנית עד החיבור' },
   },
   login: {
@@ -281,14 +281,14 @@ const he = {
 };
 
 const en = {
-  brand: 'Nura',
-  brandMark: 'N',
+  brand: 'وَرَفَ | WARAFA',
+  brandMark: 'W',
   os: 'clinic operating system',
   nav: { pricing: 'Pricing', login: 'Sign in', trial: '{n} days free' },
   land: {
     h1a: 'Run the clinic from booking',
     h1b: 'through the client’s return.',
-    lead: 'Nura is a workspace for aesthetic clinics: appointments, waitlist, medical file, and a public booking page in one console. Numbers come only from your clinic record.',
+    lead: 'وَرَفَ | WARAFA is a workspace for aesthetic clinics: appointments, waitlist, medical file, and a public booking page in one console. Numbers come only from your clinic record.',
     cta: 'Start {n} days — no card',
     outcomesCta: 'What changes in the clinic',
     niche: 'Aesthetics, laser, vitamins, cosmetics — not a hospital and not tax software.',
@@ -300,7 +300,7 @@ const en = {
     startTrial: 'Start trial',
     addonsTitle: 'Add-ons — not in the base plan yet',
     addonsLead: 'We do not list them as live on the landing page. Priced when connected.',
-    whoTitle: 'Who Nura is for — and who it is not',
+    whoTitle: 'Who وَرَفَ | WARAFA is for — and who it is not',
     whoBody: 'For a clinic or aesthetician who wants fewer no-shows, filled gaps, and clients who came back. Not for hospital chains, and not a replacement for an accountant or a WhatsApp bot alone.',
     create: 'Create a workspace',
     footerTag: 'A workspace for the aesthetic clinic.',
@@ -334,7 +334,7 @@ const en = {
   },
   addons: {
     whatsapp: { name: 'WhatsApp Cloud API', note: 'Templates and scheduling — priced per message when connected' },
-    domain: { name: 'Custom domain', note: 'The public page runs on a Nura URL until connected' },
+    domain: { name: 'Custom domain', note: 'The public page runs on a وَرَفَ | WARAFA URL until connected' },
     payments: { name: 'Payments', note: 'Deposits and orders are recorded manually until connected' },
   },
   login: {
@@ -422,14 +422,14 @@ const en = {
 };
 
 const ru = {
-  brand: 'Нура',
-  brandMark: 'Н',
+  brand: 'وَرَفَ | WARAFA',
+  brandMark: 'W',
   os: 'clinic operating system',
   nav: { pricing: 'Цены', login: 'Вход', trial: '{n} дней бесплатно' },
   land: {
     h1a: 'Ведение клиники от записи',
     h1b: 'до возвращения клиентки.',
-    lead: 'Нура — рабочее пространство для эстетической клиники: записи, лист ожидания, медкарточка и публичная страница записи в одной консоли. Цифры только из журнала клиники.',
+    lead: 'وَرَفَ | WARAFA — рабочее пространство для эстетической клиники: записи, лист ожидания, медкарточка и публичная страница записи в одной консоли. Цифры только из журнала клиники.',
     cta: 'Начать {n} дней без карты',
     outcomesCta: 'Что меняется в клинике',
     niche: 'Эстетика, лазер, витамины, косметология — не больница и не налоговая система.',
@@ -441,7 +441,7 @@ const ru = {
     startTrial: 'Начать пробный период',
     addonsTitle: 'Дополнения — пока не в базовой подписке',
     addonsLead: 'Не обещаем их как готовые на лендинге. Цена при подключении.',
-    whoTitle: 'Для кого Нура — и для кого нет',
+    whoTitle: 'Для кого وَرَفَ | WARAFA — и для кого нет',
     whoBody: 'Для клиники или косметолога, кто хочет меньше неявок, заполнять окна и возвращать тех, кто пропал. Не для сети больниц и не замена бухгалтеру или боту в WhatsApp.',
     create: 'Создать пространство',
     footerTag: 'Рабочее пространство эстетической клиники.',

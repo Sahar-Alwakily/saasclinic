@@ -111,7 +111,7 @@ export async function sendContentMessage(accountSid, authToken, { from, to, cont
 
 export async function createSubaccount(parentSid, parentToken, friendlyName) {
   const body = new URLSearchParams();
-  body.set('FriendlyName', String(friendlyName || 'Nura clinic').slice(0, 64));
+  body.set('FriendlyName', String(friendlyName || 'WARAF A clinic').slice(0, 64));
   const res = await fetch('https://api.twilio.com/2010-04-01/Accounts.json', {
     method: 'POST',
     headers: {
@@ -181,7 +181,7 @@ export async function deleteWhatsAppSender(accountSid, authToken, senderSid) {
 
 export async function createMessagingService(accountSid, authToken, { friendlyName, inboundUrl, statusCallbackUrl }) {
   const body = new URLSearchParams();
-  body.set('FriendlyName', String(friendlyName || 'Nura WhatsApp').slice(0, 64));
+  body.set('FriendlyName', String(friendlyName || 'WARAF A WhatsApp').slice(0, 64));
   if (inboundUrl) body.set('InboundRequestUrl', inboundUrl);
   body.set('InboundMethod', 'POST');
   if (statusCallbackUrl) body.set('StatusCallback', statusCallbackUrl);

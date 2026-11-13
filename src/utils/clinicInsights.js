@@ -483,7 +483,7 @@ export function siteStatus({ clinicInfo, clinicId, services = [], blog = [] }) {
     url,
     theme: info.storeTheme || 'غير محدد',
     published: info.websitePublished !== false && !!info.name,
-    domainNote: 'الرابط الحالي مسار نورا `/book/{معرّف}` — لا دومين مخصص مخزّن بعد.',
+    domainNote: 'الرابط الحالي مسار وَرَفَ | WARAFA `/book/{معرّف}` — لا دومين مخصص مخزّن بعد.',
     checks,
     ready: checks.filter((c) => c.ok).length,
     total: checks.length,

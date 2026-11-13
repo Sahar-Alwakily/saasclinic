@@ -56,7 +56,7 @@ export const WA_REMINDER_EVENTS = [
 
 export const SAMPLE_TEMPLATE_VARS = {
   1: 'سارة',
-  2: 'عيادة نورا',
+  2: 'عيادة وَرَفَ',
   3: '28/10/2026',
   4: '10:00 ص',
 };
@@ -130,6 +130,12 @@ export function parseReminderHours(settings) {
   return [24, 3];
 }
 
+function hoursClause(list) {
+  if (list.length === 1 && list[0] === 2) return 'قبل ساعتين';
+  const unit = list.every((n) => n >= 3 && n <= 10) ? 'ساعات' : 'ساعة';
+  return `قبل ${list.join(' و ')} ${unit}`;
+}
+
 export function policyBindingForEvent(eventId, settings) {
   const hours = parseReminderHours(settings);
   const early = hours.filter((h) => h >= 18);
@@ -146,7 +152,7 @@ export function policyBindingForEvent(eventId, settings) {
     return {
       bound: early.length > 0,
       rule: early.length
-        ? `مربوط بقاعدة التذكيرات: قبل ${early.join(' و ')} ساعة.`
+        ? `مربوط بقاعدة التذكيرات: ${hoursClause(early)}.`
         : 'غير مربوط — أضيفي 24 (أو أي قيمة ≥ 18) في قواعد التذكير.',
     };
   }
@@ -154,7 +160,7 @@ export function policyBindingForEvent(eventId, settings) {
     return {
       bound: sameDay.length > 0,
       rule: sameDay.length
-        ? `مربوط بقاعدة التذكيرات: قبل ${sameDay.join(' و ')} ساعة يوم الموعد.`
+        ? `مربوط بقاعدة التذكيرات: ${hoursClause(sameDay)} يوم الموعد.`
         : 'غير مربوط — أضيفي 3 (أو أي قيمة أقل من 18) في قواعد التذكير.',
     };
   }

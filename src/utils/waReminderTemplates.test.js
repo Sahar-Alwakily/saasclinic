@@ -102,6 +102,8 @@ describe('scheduling and duplicates', () => {
     expect(policyBindingForEvent('reminder_day', settings).bound).toBe(true);
     expect(policyBindingForEvent('reminder_24h', { reminderHoursText: '3' }).bound).toBe(false);
     expect(policyBindingForEvent('confirm', settings).rule).toMatch(/التأكيد/);
+    expect(policyBindingForEvent('reminder_day', settings).rule).toContain('3 ساعات');
+    expect(policyBindingForEvent('reminder_24h', settings).rule).toContain('24 ساعة');
   });
 
   it('selects 24h vs day-of windows from existing reminderHours', () => {

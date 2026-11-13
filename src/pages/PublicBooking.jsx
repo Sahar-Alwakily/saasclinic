@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { ref, onValue, push, set, update, increment } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
-import { FaTimes, FaCheck, FaArrowLeft, FaShoppingBag, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
+import { FaTimes, FaCheck, FaShoppingBag, FaPlus, FaMinus, FaTrash } from 'react-icons/fa';
 
 import SectionRenderer from '../engine/SectionRenderer';
 import { clinicSections } from '../utils/clinicDraft';
@@ -13,10 +13,37 @@ import {
   mergeAptSettings, slotKey, occupiedKeys, claimSlot, makeToken, appendHistory,
   manageUrl,
 } from '../utils/appointmentOps';
+import { publicPolicyList, withPublicPolicies } from '../utils/sitePolicies';
 import { hasCap } from '../config/plans';
 import { resolvePublicTheme } from '../utils/platformTemplates';
+import { publicPlaces } from '../utils/publicPlaces';
 import { useLocale } from '../context/LocaleContext';
-import LangSwitcher from '../components/i18n/LangSwitcher';
+import BeautyBookingWizard from '../components/public/BeautyBookingWizard';
+
+const publicCacheKey = (id) => `warafa_public_${id}`;
+
+function readPublicClinic(clinicId, isDraft) {
+  try {
+    if (isDraft) {
+      const raw = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      const draft = raw ? JSON.parse(raw) : null;
+      if (draft?.clinicId === clinicId && draft.clinic) return draft.clinic;
+    }
+    const raw = sessionStorage.getItem(publicCacheKey(clinicId));
+    const data = raw ? JSON.parse(raw) : null;
+    return data?.clinic || null;
+  } catch {
+    return null;
+  }
+}
+
+function writePublicClinic(clinicId, clinic) {
+  try {
+    if (clinicId && clinic) sessionStorage.setItem(publicCacheKey(clinicId), JSON.stringify({ clinic }));
+  } catch {
+    /* ignore */
+  }
+}
 
 const PublicBooking = () => {
   const { t, dir } = useLocale();
@@ -26,13 +53,14 @@ const PublicBooking = () => {
   const adminPreview = searchParams.get('preview') === '1';
   const preview = useMemo(() => getPreviewClinic(clinicId), [clinicId]);
   const draftRef = useRef(null);
+  const bootClinic = preview?.clinic || readPublicClinic(clinicId, isDraft);
 
-  const [clinic, setClinic] = useState(preview?.clinic || null);
+  const [clinic, setClinic] = useState(bootClinic);
   const [services, setServices] = useState(preview?.services || []);
   const [products, setProducts] = useState(preview?.products || []);
   const [branches, setBranches] = useState(preview?.branches || []);
   const [posts, setPosts] = useState(preview?.posts || []);
-  const [loading, setLoading] = useState(!preview);
+  const [loading, setLoading] = useState(!bootClinic);
 
   const [cart, setCart] = useState([]);
   const [showCart, setShowCart] = useState(false);
@@ -68,7 +96,14 @@ const PublicBooking = () => {
     const applyDraft = (payload) => {
       if (!payload) return;
       draftRef.current = payload;
-      setClinic((prev) => ({ ...(prev || {}), ...payload, _demo: false }));
+      const next = { ...(payload || {}), _demo: false };
+      setClinic((prev) => ({ ...(prev || {}), ...next }));
+      writePublicClinic(clinicId, next);
+      try {
+        sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify({ clinicId, clinic: payload }));
+      } catch {
+        /* ignore */
+      }
       setLoading(false);
     };
 
@@ -100,7 +135,9 @@ const PublicBooking = () => {
     if (!clinicId || preview) return;
     const unsubInfo = onValue(ref(database, `clinics/${clinicId}/info`), (snap) => {
       const val = snap.val();
-      setClinic(val ? { ...val, ...(draftRef.current || {}) } : draftRef.current);
+      const next = val ? { ...val, ...(draftRef.current || {}) } : draftRef.current;
+      setClinic(next);
+      if (next) writePublicClinic(clinicId, next);
       setLoading(false);
     });
     const unsubServ = onValue(ref(database, `clinics/${clinicId}/services`), (snap) => {
@@ -184,7 +221,7 @@ const PublicBooking = () => {
       return;
     }
     try {
-      if (!policyOk) return alert(t('book.policyAlert'));
+      if (publicPolicyList(clinic, aptSettings).length && !policyOk) return alert(t('book.policyAlert'));
       const specialistId = bookingData.specialistId || '';
       const key = slotKey(bookingData.branchId, specialistId, bookingData.date, bookingData.time);
       const aptRef = push(ref(database, `clinics/${clinicId}/appointments`));
@@ -233,19 +270,23 @@ const PublicBooking = () => {
     };
   };
 
+  const places = publicPlaces(clinic, branches);
+
   const openBooking = (opts = {}) => {
     let next = { ...emptyBooking };
     if (opts.serviceId) next = applyServiceToBooking(next, opts.serviceId);
-    if (opts.branchId) {
-      const b = branches.find((x) => x.id === opts.branchId);
-      next.branchId = opts.branchId;
-      next.branchName = b?.name || '';
+    const picked = opts.branchId
+      ? places.find((p) => p.id === opts.branchId)
+      : (places.length === 1 ? places[0] : null);
+    if (picked) {
+      next.branchId = picked.id;
+      next.branchName = opts.branchName || picked.name;
     }
     setBookingData(next);
     setIsSuccess(false);
     setShowBooking(true);
     if (next.branchId && next.serviceId) setBookingStep(3);
-    else if (next.branchId) setBookingStep(2);
+    else if (opts.branchId) setBookingStep(2);
     else setBookingStep(1);
   };
 
@@ -255,7 +296,6 @@ const PublicBooking = () => {
     const bid = searchParams.get('branch');
     if (searchParams.get('book') !== '1') return;
     if (sid && services.length === 0) return;
-    if (bid && branches.length === 0) return;
     queryApplied.current = true;
     openBooking({ serviceId: sid || undefined, branchId: bid || undefined });
   }, [loading, clinic, services, branches, searchParams]);
@@ -285,17 +325,10 @@ const PublicBooking = () => {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#FBF4F0] text-[#3A2A28]" dir={dir}>
-        <p className="font-display text-4xl mb-3">✦</p>
-        <p className="tracking-[0.3em] text-xs uppercase opacity-60">{t('book.preparing')}</p>
-      </div>
-    );
-  }
   if (!clinic) {
+    if (loading) return <div className="min-h-screen bg-white" />;
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#FBF4F0] text-[#8a6f68]" dir={dir}>
+      <div className="min-h-screen flex items-center justify-center bg-white text-[#8a9199]" dir={dir}>
         {t('book.missing')}
       </div>
     );
@@ -327,10 +360,16 @@ const PublicBooking = () => {
   const resolved = resolvePublicTheme(clinic, templates, themesOn);
   const themeName = resolved.renderer;
 
-  const pageClinic = { ...clinic, storeTheme: themeName, showProducts: clinic.showProducts !== false, showBlog: clinic.showBlog !== false };
+  const pageClinic = {
+    ...withPublicPolicies(clinic, aptSettings),
+    storeTheme: themeName,
+    showProducts: clinic.showProducts !== false,
+    showBlog: clinic.showBlog !== false,
+  };
+  const bookingPolicies = publicPolicyList(clinic, aptSettings);
   const pageSections = clinicSections(clinic);
 
-  const primaryColor = clinic.primaryColor || '#C48B7A';
+  const primaryColor = clinic.primaryColor && clinic.primaryColor !== '#C48B7A' ? clinic.primaryColor : (themeName === 'beauty' ? '#3B82F6' : '#C48B7A');
   const isDark = themeName === 'elegant';
   const cartTotal = cart.reduce((sum, item) => sum + (item.price * (item.qty || 1)), 0);
   const panelBg = isDark ? '#141210' : '#fff';
@@ -338,7 +377,6 @@ const PublicBooking = () => {
 
   return (
     <div className="relative" dir={dir}>
-      <div className="fixed top-3 left-3 z-[90]"><LangSwitcher tone="light" /></div>
       <SectionRenderer
         sections={pageSections}
         clinic={pageClinic}
@@ -429,129 +467,27 @@ const PublicBooking = () => {
       )}
 
       {showBooking && (
-        <div className="fixed inset-0 z-[100] overflow-y-auto" dir={dir} style={{ backgroundColor: isDark ? '#0C0B0A' : '#FBF4F0', color: panelText }}>
-          <div className="sticky top-0 backdrop-blur px-5 py-4 flex justify-between items-center border-b" style={{ borderColor: `${primaryColor}33`, backgroundColor: isDark ? '#0C0B0A' : '#FBF4F0' }}>
-            <div>
-              <p className="text-[10px] tracking-[0.3em] uppercase opacity-50">{t('book.session')}</p>
-              <div className="font-bold">{clinic.name}</div>
-            </div>
-            <button onClick={() => setShowBooking(false)} className="opacity-60">{t('book.close')}</button>
-          </div>
-          <div className="max-w-3xl mx-auto p-5 md:p-10">
-            {!isSuccess ? (
-              <>
-                <h1 className="font-display text-2xl sm:text-4xl text-center mb-6 sm:mb-10">{t('book.bookTitle')}</h1>
-                <div className="flex justify-between items-center mb-6 sm:mb-10 relative px-0 sm:px-2">
-                  <div className="absolute top-4 sm:top-1/2 left-4 right-4 h-px -z-10" style={{ backgroundColor: `${primaryColor}33` }} />
-                  {(t('book.steps') || []).map((label, idx) => {
-                    const step = idx + 1;
-                    return (
-                      <div key={label} className="flex flex-col items-center gap-1 sm:gap-2">
-                        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-bold" style={{ backgroundColor: bookingStep >= step ? primaryColor : 'transparent', color: bookingStep >= step ? (isDark ? '#0C0B0A' : '#fff') : undefined, border: `1px solid ${primaryColor}` }}>{step}</div>
-                        <span className="text-[9px] sm:text-[11px] opacity-60">{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 md:p-8 min-h-[280px]" style={{ backgroundColor: panelBg }}>
-                  {bookingStep === 1 && (
-                    <div>
-                      <h2 className="font-display text-2xl text-center mb-6">{t('book.pickBranch')}</h2>
-                      {branches.length === 0 ? (
-                        <p className="text-center opacity-60 py-8">{t('book.noBranches')}</p>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                          {branches.map((b) => {
-                            const selected = bookingData.branchId === b.id;
-                            return (
-                              <button
-                                key={b.id}
-                                onClick={() => { setBookingData({ ...bookingData, branchId: b.id, branchName: b.name }); setBookingStep(bookingData.serviceId ? 3 : 2); }}
-                                className={`p-4 border rounded-2xl hover:shadow-md transition ${dir === 'rtl' ? 'text-right' : 'text-left'}`}
-                                style={{ borderColor: selected ? primaryColor : undefined, backgroundColor: selected ? `${primaryColor}18` : 'transparent' }}
-                              >
-                                <p className="font-bold">{b.name}</p>
-                                {b.address && <p className="text-xs opacity-60 mt-1">{b.address}</p>}
-                                {b.phone && <p className="text-xs opacity-60 mt-1" dir="ltr">{b.phone}</p>}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  {bookingStep === 2 && (
-                    <div>
-                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-4">{t('book.branch')}: {bookingData.branchName}</p>}
-                      <h2 className="font-display text-2xl text-center mb-6">{t('book.pickService')}</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                        {services.length === 0 && (
-                          <p className="md:col-span-2 text-center opacity-60 py-8">{t('book.noServices')}</p>
-                        )}
-                        {services.map((s) => (
-                          <button key={s.id} onClick={() => { setBookingData(applyServiceToBooking({ ...bookingData }, s.id)); setBookingStep(3); }} className={`p-4 border rounded-2xl hover:shadow-md transition ${dir === 'rtl' ? 'text-right' : 'text-left'}`}>
-                            <p className="font-bold">{s.title}</p>
-                            {s.description && <p className="text-xs opacity-60 mt-1 line-clamp-2">{s.description}</p>}
-                            {s.duration && <p className="text-xs opacity-50 mt-1">{s.duration}</p>}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {bookingStep === 3 && (
-                    <div>
-                      <h2 className="font-display text-2xl text-center mb-6">{t('book.when')}</h2>
-                      <input type="date" value={bookingData.date} onChange={(e) => setBookingData({ ...bookingData, date: e.target.value })} className="w-full p-4 border rounded-2xl text-center text-lg outline-none bg-transparent" />
-                      <button onClick={() => bookingData.date && setBookingStep(4)} className="w-full mt-6 text-white py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.next')}</button>
-                    </div>
-                  )}
-                  {bookingStep === 4 && (
-                    <div>
-                      <h2 className="font-display text-2xl text-center mb-2">{t('book.pickHour')}</h2>
-                      {bookingData.specialistName && <p className="text-center text-sm opacity-60 mb-4">{t('book.schedule', { name: bookingData.specialistName })}</p>}
-                      {slotInfo.missing && <p className="text-center text-sm opacity-70 py-8">{t('book.noSchedule')}</p>}
-                      {slotInfo.closed && <p className="text-center text-sm opacity-70 py-8">{t('book.closedDay', { day: slotInfo.dayName })}</p>}
-                      {!slotInfo.missing && !slotInfo.closed && slotInfo.slots.length === 0 && (
-                        <p className="text-center text-sm opacity-70 py-8">{t('book.noSlots')}</p>
-                      )}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-                        {slotInfo.slots.map((t) => (
-                          <button key={t} onClick={() => { setBookingData({ ...bookingData, time: t, specialistId: resolvedSpecialistId || bookingData.specialistId }); setBookingStep(5); }} className="p-3 border rounded-2xl font-bold" style={{ borderColor: bookingData.time === t ? primaryColor : undefined, backgroundColor: bookingData.time === t ? primaryColor : 'transparent', color: bookingData.time === t ? (isDark ? '#0C0B0A' : '#fff') : undefined }}>{t}</button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  {bookingStep === 5 && (
-                    <div>
-                      <h2 className="font-display text-2xl text-center mb-2">{t('book.yourData')}</h2>
-                      {bookingData.branchName && <p className="text-center text-sm opacity-60 mb-6">{t('book.branch')}: {bookingData.branchName}</p>}
-                      <div className="space-y-4">
-                        <input type="text" placeholder={t('book.name')} value={bookingData.name} onChange={(e) => setBookingData({ ...bookingData, name: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" />
-                        <input type="tel" placeholder={t('book.phone')} value={bookingData.phone} onChange={(e) => setBookingData({ ...bookingData, phone: e.target.value })} className="w-full p-3 border rounded-2xl outline-none bg-transparent" dir="ltr" />
-                        {aptSettings.cancellationPolicy && (
-                          <label className="flex items-start gap-2 text-xs opacity-70">
-                            <input type="checkbox" checked={policyOk} onChange={(e) => setPolicyOk(e.target.checked)} className="mt-1" />
-                            <span>{aptSettings.cancellationPolicy}{aptSettings.depositPolicyEnabled ? ` ${aptSettings.depositNote}` : ''}</span>
-                          </label>
-                        )}
-                        <button onClick={handleBookSubmit} disabled={!bookingData.name || !bookingData.phone || !bookingData.branchId || !policyOk} className="w-full text-white py-3 rounded-full font-bold disabled:opacity-40" style={{ backgroundColor: primaryColor }}>{t('book.confirmSession')}</button>
-                      </div>
-                    </div>
-                  )}
-                  {bookingStep > 1 && <button onClick={() => setBookingStep(bookingStep - 1)} className="mt-6 opacity-60 font-bold"><FaArrowLeft className="inline" /> {t('book.back')}</button>}
-                </div>
-              </>
-            ) : (
-              <div className="text-center p-12 mt-8 rounded-[2rem]" style={{ backgroundColor: panelBg }}>
-                <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6" style={{ backgroundColor: `${primaryColor}22`, color: primaryColor }}><FaCheck className="text-3xl" /></div>
-                <h2 className="font-display text-4xl mb-2">{t('book.booked')}</h2>
-                <p className="opacity-70 mb-6">{aptSettings.autoConfirm ? t('book.confirmedPolicy') : t('book.willConfirm')}{bookingData.branchName ? t('book.atBranch', { name: bookingData.branchName }) : ''}</p>
-                {manageLink && <a href={manageLink} className="block mb-4 text-sm font-bold underline">{t('book.manage')}</a>}
-                <button onClick={() => setShowBooking(false)} className="text-white px-8 py-3 rounded-full font-bold" style={{ backgroundColor: primaryColor }}>{t('book.backClinic')}</button>
-              </div>
-            )}
-          </div>
-        </div>
+        <BeautyBookingWizard
+          clinicName={clinic.name}
+          primaryColor={primaryColor}
+          places={places}
+          services={services}
+          bookingData={bookingData}
+          setBookingData={setBookingData}
+          bookingStep={bookingStep}
+          setBookingStep={setBookingStep}
+          slotInfo={slotInfo}
+          applyServiceToBooking={applyServiceToBooking}
+          resolvedSpecialistId={resolvedSpecialistId}
+          onSubmit={handleBookSubmit}
+          onClose={() => setShowBooking(false)}
+          isSuccess={isSuccess}
+          policies={bookingPolicies}
+          policyOk={policyOk}
+          setPolicyOk={setPolicyOk}
+          autoConfirm={aptSettings.autoConfirm}
+          manageLink={manageLink}
+        />
       )}
     </div>
   );

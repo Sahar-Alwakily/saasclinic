@@ -4,17 +4,79 @@ import { onValue, push, ref, remove, set, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { siteStatus } from '../utils/clinicInsights';
+import { SITE_POLICIES, policyText } from '../utils/sitePolicies';
 import { toast, ToastContainer } from 'react-toastify';
-import { FaImage, FaPen, FaPlus, FaTimes, FaTrash, FaExternalLinkAlt, FaCopy } from 'react-icons/fa';
+import { FaImage, FaPen, FaPlus, FaTimes, FaTrash, FaExternalLinkAlt, FaCopy, FaDesktop } from 'react-icons/fa';
 
 const field = 'w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
 const emptyPost = { title: '', content: '', imageUrl: '' };
+
+function PoliciesEditor({ clinicInfo, aptSettings, editing, form, saving, isAdmin, onEdit, onCancel, onChange, onSave }) {
+  if (!editing) {
+    return (
+      <section className="saas-card p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className="font-bold text-[#111827]">سياسات الصفحة العامة</h2>
+            <p className="text-sm text-[#8a9199] mt-1">تظهر للعميلة أسفل الموقع، وتوافق عليها قبل تأكيد الحجز.</p>
+          </div>
+          {isAdmin && (
+            <button type="button" onClick={onEdit} className="nura-chip nura-chip-lilac">
+              <FaPen className="text-[11px]" /> تعديل السياسات
+            </button>
+          )}
+        </div>
+        <dl className="mt-4 space-y-4">
+          {SITE_POLICIES.map((item) => {
+            const saved = String(clinicInfo?.[item.key] || '').trim();
+            const shown = policyText(clinicInfo, aptSettings, item);
+            return (
+              <div key={item.id}>
+                <dt className="text-xs text-[#8a9199]">{item.label}</dt>
+                <dd className="text-sm text-[#111827] mt-1 whitespace-pre-wrap">{shown || '—'}</dd>
+                {!saved && shown && (
+                  <p className="text-[11px] text-[#b45309] mt-1">هذا النص من قواعد المواعيد. احفظيه هنا ليصير من الموقع.</p>
+                )}
+              </div>
+            );
+          })}
+        </dl>
+      </section>
+    );
+  }
+
+  return (
+    <section className="saas-card p-5 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="font-bold text-[#111827]">تعديل السياسات</h2>
+        <button type="button" onClick={onCancel} className="nura-chip nura-chip-rose">
+          <FaTimes className="text-[11px]" /> إلغاء
+        </button>
+      </div>
+      {SITE_POLICIES.map((item) => (
+        <label key={item.id} className="block">
+          <span className="block text-sm font-bold text-[#111827] mb-1">{item.label}</span>
+          <textarea
+            rows={4}
+            value={form[item.key] || ''}
+            onChange={(e) => onChange(item.key, e.target.value)}
+            className={`${field} resize-none`}
+            placeholder={item.placeholder}
+          />
+        </label>
+      ))}
+      <button type="button" onClick={onSave} disabled={saving || !isAdmin} className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold disabled:opacity-60">
+        {saving ? 'جاري الحفظ...' : 'حفظ السياسات'}
+      </button>
+    </section>
+  );
+}
 
 const Website = () => {
   const { clinicId, clinicInfo, clinicPath, isAdmin } = useClinic();
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedTab = searchParams.get('tab');
-  const tab = requestedTab === 'blog' ? 'blog' : 'info';
+  const tab = requestedTab === 'blog' || requestedTab === 'policies' ? requestedTab : 'info';
   const [services, setServices] = useState([]);
   const [blog, setBlog] = useState([]);
   const [products, setProducts] = useState([]);
@@ -22,6 +84,9 @@ const Website = () => {
   const [blogModal, setBlogModal] = useState(false);
   const [blogForm, setBlogForm] = useState(emptyPost);
   const [editingPost, setEditingPost] = useState(null);
+  const [aptSettings, setAptSettings] = useState(null);
+  const [editingPolicies, setEditingPolicies] = useState(false);
+  const [policyForm, setPolicyForm] = useState({});
 
   useEffect(() => {
     if (!clinicPath) return undefined;
@@ -34,7 +99,8 @@ const Website = () => {
     const u3 = onValue(ref(database, clinicPath('products')), (s) => {
       setProducts(s.val() ? Object.entries(s.val()).map(([id, v]) => ({ id, ...v })) : []);
     });
-    return () => { u1(); u2(); u3(); };
+    const u4 = onValue(ref(database, clinicPath('appointmentSettings')), (s) => setAptSettings(s.val()));
+    return () => { u1(); u2(); u3(); u4(); };
   }, [clinicPath]);
 
   const site = siteStatus({ clinicInfo, clinicId, services, blog });
@@ -43,13 +109,18 @@ const Website = () => {
   const goTab = (id) => setSearchParams(id === 'info' ? {} : { tab: id });
 
   const patchInfo = async (partial) => {
-    if (!isAdmin || !clinicPath) return toast.error('التعديل لمالكة العيادة');
+    if (!isAdmin || !clinicPath) {
+      toast.error('التعديل لمالكة العيادة');
+      return false;
+    }
     setSaving(true);
     try {
       await update(ref(database, clinicPath('info')), partial);
       toast.success('حُفظ');
+      return true;
     } catch {
       toast.error('تعذّر الحفظ');
+      return false;
     } finally {
       setSaving(false);
     }
@@ -115,7 +186,7 @@ const Website = () => {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-[22px] font-bold text-[#111827]">موقع العيادة</h1>
-          <p className="text-sm text-[#8a9199] mt-1">جاهزية الصفحة العامة، والمدونة. التصميم من إدارة المنصة.</p>
+          <p className="text-sm text-[#8a9199] mt-1">جاهزية الصفحة العامة، وسياسات العميلات، والمدونة. التصميم من إدارة المنصة.</p>
         </div>
         <div className="flex flex-wrap gap-2">
           {site.url && (
@@ -136,10 +207,13 @@ const Website = () => {
 
       <div className="flex gap-1.5">
         <button type="button" onClick={() => goTab('info')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${tab === 'info' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>معلومات الموقع</button>
+        <button type="button" onClick={() => goTab('policies')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${tab === 'policies' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>السياسات</button>
         <button type="button" onClick={() => goTab('blog')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${tab === 'blog' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>المدونة ({blog.length})</button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <div className="space-y-5">
+      <div className="grid grid-cols-2 gap-3">
         <div className="saas-card stat-card-mint p-4">
           <p className="text-xs text-[#047857]">حالة النشر</p>
           <p className="stat-num text-[28px] leading-none mt-2">{site.published ? 'منشور' : 'ناقص'}</p>
@@ -228,6 +302,31 @@ const Website = () => {
         </>
       )}
 
+      {tab === 'policies' && (
+        <PoliciesEditor
+          clinicInfo={clinicInfo}
+          aptSettings={aptSettings}
+          editing={editingPolicies}
+          form={policyForm}
+          saving={saving}
+          isAdmin={isAdmin}
+          onEdit={() => {
+            const next = {};
+            SITE_POLICIES.forEach((item) => { next[item.key] = policyText(clinicInfo, aptSettings, item); });
+            setPolicyForm(next);
+            setEditingPolicies(true);
+          }}
+          onCancel={() => setEditingPolicies(false)}
+          onChange={(key, value) => setPolicyForm((prev) => ({ ...prev, [key]: value }))}
+          onSave={async () => {
+            const payload = {};
+            SITE_POLICIES.forEach((item) => { payload[item.key] = String(policyForm[item.key] || '').trim(); });
+            const ok = await patchInfo(payload);
+            if (ok) setEditingPolicies(false);
+          }}
+        />
+      )}
+
       {tab === 'blog' && (
         <div className="space-y-4">
           <div className="saas-card p-5 flex items-start justify-between gap-4">
@@ -287,6 +386,23 @@ const Website = () => {
           )}
         </div>
       )}
+      </div>
+
+      <div className="lg:sticky lg:top-6 h-fit">
+        <div className="flex items-center gap-2 mb-3">
+          <FaDesktop className="text-emerald-600" />
+          <h2 className="font-bold text-[#111827]">الصفحة المنشورة</h2>
+        </div>
+        <div className="saas-card overflow-hidden">
+          <div className="bg-[#f8faf9] px-4 py-2.5 border-b border-[#e4eee8] text-[10px] text-[#8a9199] text-center truncate" dir="ltr">
+            {site.url || '—'}
+          </div>
+          {clinicId && (
+            <iframe src={`/book/${clinicId}`} title="الصفحة المنشورة" className="w-full h-[min(70vh,500px)] border-0 bg-[#f8faf9]" />
+          )}
+        </div>
+      </div>
+      </div>
 
       {blogModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

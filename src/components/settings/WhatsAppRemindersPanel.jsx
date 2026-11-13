@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { ref, onValue, update } from 'firebase/database';
 import { httpsCallable } from 'firebase/functions';
 import { database, functions } from '../../APIFirebase/firebase';
@@ -11,6 +12,16 @@ import {
 } from '../../utils/waReminderTemplates';
 
 const field = 'w-full p-3 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-700 outline-none dark:text-white';
+
+const VAR_HINT = {
+  waitlist: '{{1}} الاسم · {{2}} العيادة · {{3}} التاريخ والساعة · {{4}} رابط القبول',
+  followup: '{{1}} الاسم · {{2}} العيادة · {{3}} آخر زيارة · {{4}} رابط الحجز',
+};
+
+const SAMPLE_BY_EVENT = {
+  waitlist: { 3: '28/10/2026 10:00 ص', 4: 'رابط القبول' },
+  followup: { 3: 'زيارة سابقة', 4: 'رابط الحجز' },
+};
 
 const statusTone = {
   draft: 'bg-stone-100 text-stone-600',
@@ -95,8 +106,8 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
             <p>واتساب مربوط · المرسل <span dir="ltr" className="font-mono">{sender}</span></p>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
-              <p>واتساب غير مربوط — لن يُرسل قالب حتى يتحقق Twilio من الحساب.</p>
-              <p className="text-xs text-stone-500">ربط واتساب من إدارة المنصة.</p>
+              <p>واتساب غير مربوط — القالب ما بينرسل قبل تفعيل الربط.</p>
+              <Link to="/settings?tab=whatsapp" className="text-xs font-bold text-emerald-700">الإعدادات ← واتساب</Link>
             </div>
           )}
         </div>
@@ -106,6 +117,7 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
         const preview = previewTemplateBody(rec.body, {
           ...SAMPLE_TEMPLATE_VARS,
           2: clinicInfo?.name || SAMPLE_TEMPLATE_VARS[2],
+          ...(SAMPLE_BY_EVENT[ev.id] || {}),
         });
         const status = rec.approvalStatus || 'draft';
         return (
@@ -140,7 +152,7 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
               onChange={(e) => setDrafts((d) => ({ ...d, [ev.id]: e.target.value }))}
               onBlur={() => saveLocal(ev.id, { body: rec.body, enabled: rec.enabled !== false })}
             />
-            <p className="text-[11px] text-stone-400">المتغيرات: {'{{1}}'} الاسم · {'{{2}}'} العيادة · {'{{3}}'} التاريخ · {'{{4}}'} الساعة</p>
+            <p className="text-[11px] text-stone-400">المتغيرات: {VAR_HINT[ev.id] || '{{1}} الاسم · {{2}} العيادة · {{3}} التاريخ · {{4}} الساعة'}</p>
             <div className="rounded-2xl bg-[#042f24] text-[#5eead4] p-4 text-sm leading-relaxed" dir="rtl">
               <p className="text-[10px] tracking-widest uppercase text-white/40 mb-1">معاينة</p>
               {preview}

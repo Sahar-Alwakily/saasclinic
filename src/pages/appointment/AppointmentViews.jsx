@@ -203,12 +203,20 @@ function useAptDesk() {
   };
 
   const savePolicy = async () => {
-    const reminderHours = String(form.reminderHoursText || (form.reminderHours || []).join(','))
+    const reminderHours = String(form.reminderHoursText ?? (form.reminderHours || []).join(','))
       .split(/[,\s]+/)
       .map(Number)
       .filter((n) => n > 0);
-    await set(ref(database, clinicPath('appointmentSettings')), { ...form, reminderHours });
-    toast.success('حُفظت سياسة المواعيد');
+    if (!reminderHours.length) return toast.error('اكتبي ساعة واحدة على الأقل، مثل 24, 3');
+    const rest = { ...form };
+    delete rest.reminderHoursText;
+    try {
+      await set(ref(database, clinicPath('appointmentSettings')), { ...rest, reminderHours });
+      setForm((prev) => ({ ...prev, reminderHours, reminderHoursText: undefined }));
+      toast.success('حُفظت قواعد المواعيد');
+    } catch {
+      toast.error('تعذّر حفظ القواعد');
+    }
   };
 
   const patchApt = async (apt, data, historyEntry) => {
@@ -642,12 +650,15 @@ export function RemindersView() {
               placeholder="24, 3"
             />
           </label>
-          <p className="text-[11px] text-stone-400 -mt-1">24 فما فوق = قالب «قبل 24 ساعة». أقل من 18 = قالب «يوم الموعد».</p>
+          <p className="text-[11px] text-stone-400 -mt-1">18 ساعة فأكثر = قالب «قبل 24 ساعة». أقل من 18 = قالب «يوم الموعد».</p>
           <label className="text-sm block">سقف الرسائل لكل موعد (يمنع تكرار القالب)
             <input type="number" value={d.form.reminderCap} onChange={(e) => d.setForm({ ...d.form, reminderCap: Number(e.target.value) })} className={`${field} mt-1`} />
           </label>
-          <textarea value={d.form.cancellationPolicy} onChange={(e) => d.setForm({ ...d.form, cancellationPolicy: e.target.value })} className={field} rows={3} />
-          <label className="text-sm block">مهلة العرض (د)
+          <label className="text-sm block">نص الإلغاء للعميلة
+            <textarea value={d.form.cancellationPolicy} onChange={(e) => d.setForm({ ...d.form, cancellationPolicy: e.target.value })} className={`${field} mt-1`} rows={3} />
+            <span className="block text-[11px] text-stone-400 mt-1">يظهر في الحجز العام إذا سياسة الحجوزات على موقع العيادة فاضية.</span>
+          </label>
+          <label className="text-sm block">مهلة قبول عرض الانتظار (بالدقائق)
             <input type="number" value={d.form.waitlistOfferMinutes} onChange={(e) => d.setForm({ ...d.form, waitlistOfferMinutes: Number(e.target.value) })} className={`${field} mt-1`} />
           </label>
           <label className="text-sm block">المنطقة الزمنية

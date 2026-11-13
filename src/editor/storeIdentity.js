@@ -1,11 +1,11 @@
 export const THEME_PRESETS = {
-  beauty: { primaryColor: '#C48B7A', bgColor: '#FBF4F0', textColor: '#3A2A28', fontFamily: 'Tajawal' },
+  beauty: { primaryColor: '#3B82F6', bgColor: '#EFF6FF', textColor: '#1F2937', fontFamily: 'Cairo' },
   elegant: { primaryColor: '#C9A66B', bgColor: '#0C0B0A', textColor: '#F5EDE3', fontFamily: 'serif' },
   minimal: { primaryColor: '#1C1917', bgColor: '#FAF8F5', textColor: '#1C1917', fontFamily: 'Tajawal' },
 };
 
 export const THEMES = [
-  { id: 'beauty', name: 'تجميلي وردي', color: 'bg-rose-400' },
+  { id: 'beauty', name: 'بيوتي', color: 'bg-blue-500' },
   { id: 'elegant', name: 'أتيليه ذهبي', color: 'bg-amber-700' },
   { id: 'minimal', name: 'عيادة هادئة', color: 'bg-stone-800' },
 ];
@@ -26,10 +26,10 @@ export function emptyStore() {
     specialty: '',
     degree: '',
     doctorBio: '',
-    primaryColor: '#C48B7A',
-    bgColor: '#FBF4F0',
-    textColor: '#3A2A28',
-    fontFamily: 'Tajawal',
+    primaryColor: '#3B82F6',
+    bgColor: '#EFF6FF',
+    textColor: '#1F2937',
+    fontFamily: 'Cairo',
     showProducts: true,
     showBlog: true,
     seoTitle: '',

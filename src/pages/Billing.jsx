@@ -49,7 +49,7 @@ const Billing = () => {
       await set(reqRef, payload);
       await set(ref(database, `platform/requests/${reqRef.key}`), payload);
       await update(ref(database, clinicPath('info')), { pendingPlanRequest: id });
-      toast.success('أُرسل طلب الترقية إلى Control Nora. الاشتراك لن يُعلَّم مدفوعاً قبل التعيين اليدوي.');
+      toast.success('أُرسل طلب الترقية إلى وَرَفَ | WARAFA. الاشتراك لن يُعلَّم مدفوعاً قبل التعيين اليدوي.');
     } catch {
       toast.error('تعذّر إرسال الطلب');
     } finally {
@@ -97,7 +97,7 @@ const Billing = () => {
 
       <section className="saas-card p-5 space-y-4">
         <div>
-          <h2 className="font-bold text-[#111827]">اشتراك نورا</h2>
+          <h2 className="font-bold text-[#111827]">اشتراك وَرَفَ | WARAFA</h2>
           <p className="text-sm text-[#8a9199] mt-1">الآن: <b className="text-[#111827]">{plan?.name}</b>. التجربة {PLANS.trial.durationDays} يوماً. الترقية تُرسل كطلب ولا تُعلَّم مدفوعة تلقائياً.</p>
         </div>
         <div className="grid md:grid-cols-3 gap-3">
@@ -129,7 +129,7 @@ const Billing = () => {
             );
           })}
         </div>
-        <Link to="/#pricing" className="text-xs font-bold text-emerald-700">تفاصيل الباقات على صفحة نورا</Link>
+        <Link to="/#pricing" className="text-xs font-bold text-emerald-700">تفاصيل الباقات على صفحة وَرَفَ | WARAFA</Link>
       </section>
     </div>
   );

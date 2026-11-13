@@ -39,7 +39,7 @@ export default function SupportRequests() {
         source: 'support',
       });
       setForm({ type: 'support', description: '', priority: 'normal' });
-      toast.success('أُرسل الطلب إلى Control Nora');
+      toast.success('أُرسل الطلب إلى وَرَفَ | WARAFA');
     } catch {
       toast.error('تعذّر الإرسال');
     } finally {

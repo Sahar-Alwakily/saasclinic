@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaPlus, FaTrash } from 'react-icons/fa';
 import { SECTION_FIELDS, sectionLabel } from './sectionCatalog';
+import ImageUpload from '../components/ImageUpload';
 
 const fieldClass = 'w-full p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none text-sm';
 
@@ -105,7 +106,7 @@ export default function SectionSettingsPanel({ section, onChange }) {
       )}
       {fields.map((field) => (
         <div key={field.key} className="space-y-1">
-          <span className="text-xs font-bold">{field.label}</span>
+          {field.kind !== 'image' && <span className="text-xs font-bold">{field.label}</span>}
           {field.kind === 'quotes' ? (
             <ListEditor
               items={settings.items}
@@ -143,6 +144,8 @@ export default function SectionSettingsPanel({ section, onChange }) {
               onChange={(e) => setField(field.key, Number(e.target.value) || 0)}
               className={fieldClass}
             />
+          ) : field.kind === 'image' ? (
+            <ImageUpload label={field.label} value={settings[field.key] || ''} onChange={(url) => setField(field.key, url)} />
           ) : (
             <input
               type={field.kind === 'url' ? 'url' : 'text'}
@@ -155,9 +158,6 @@ export default function SectionSettingsPanel({ section, onChange }) {
           )}
         </div>
       ))}
-      {(section.type === 'hero' || section.type === 'about') && settings.image ? (
-        <img src={settings.image} alt="" className="h-28 w-full object-cover rounded-xl" />
-      ) : null}
     </div>
   );
 }

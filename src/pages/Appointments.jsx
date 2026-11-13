@@ -7,7 +7,8 @@ import { useClinic } from '../context/ClinicContext';
 import { FaChevronRight, FaChevronLeft, FaClock, FaCheckCircle, FaWhatsapp, FaPhone } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import ScheduleSettingsModal from '../components/settings/ScheduleSettingsModal';
-import WeeklyBoard, { ResourceDayBoard, StatusLegend, STATUS_COLORS } from '../components/appointments/WeeklyBoard';
+import WeeklyBoard, { StatusLegend, STATUS_COLORS } from '../components/appointments/WeeklyBoard';
+import { runConsoleAction } from '../utils/consoleActions';
 import {
   APT_STATUSES, appendHistory, releaseSlot, slotKey, manageUrl, waDigits,
 } from '../utils/appointmentOps';
@@ -32,6 +33,9 @@ const AppointmentsCalendar = () => {
   const [dayAnchor, setDayAnchor] = useState(() => new Date());
   const [staffFilter, setStaffFilter] = useState('all');
   const [staff, setStaff] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState({ name: '', phone: '', service: '', date: '', time: '' });
 
   useEffect(() => {
     if (!clinicPath) return undefined;
@@ -50,7 +54,10 @@ const AppointmentsCalendar = () => {
       const all = s.val() ? Object.entries(s.val()).map(([id, item]) => ({ id, ...item })) : [];
       setStaff(all.filter((u) => u.role !== 'admin'));
     });
-    return () => { u1(); u2(); u3(); };
+    const u4 = onValue(ref(database, clinicPath('branches')), (s) => {
+      setBranches(s.val() ? Object.entries(s.val()).map(([id, item]) => ({ id, ...item })) : []);
+    });
+    return () => { u1(); u2(); u3(); u4(); };
   }, [clinicPath]);
 
   const weekStart = useMemo(() => startOfWeek(range === 'week' ? weekAnchor : dayAnchor), [weekAnchor, dayAnchor, range]);
@@ -171,27 +178,48 @@ const AppointmentsCalendar = () => {
     () => appointments.filter((a) => a.date === dayStr),
     [appointments, dayStr],
   );
-  const staffCols = useMemo(() => {
-    const fromUsers = staff.map((s) => ({ id: s.id, name: s.name || 'موظفة', branch: s.branch }));
-    const extraIds = [...new Set(dayApts.map((a) => a.specialistId).filter(Boolean))]
-      .filter((id) => !fromUsers.some((s) => s.id === id));
-    const extras = extraIds.map((id) => {
-      const apt = dayApts.find((a) => a.specialistId === id);
-      return { id, name: apt?.specialistName || 'موظفة', branch: apt?.branchId };
-    });
-    const cols = [...fromUsers, ...extras];
-    if (dayApts.some((a) => !a.specialistId)) cols.push({ id: '', name: 'بدون تعيين' });
-    if (staffFilter !== 'all') return cols.filter((s) => (s.id || 'none') === staffFilter);
-    return cols.length ? cols : [{ id: '', name: 'العيادة' }];
-  }, [staff, dayApts, staffFilter]);
   const scopedApts = range === 'day' ? dayApts : weekApts;
   const visibleApts = staffFilter === 'all'
     ? scopedApts
     : scopedApts.filter((a) => (a.specialistId || 'none') === staffFilter);
   const unplaced = visibleApts.filter((a) => parseHourFromLabel(a.time) == null);
-  const totalVisible = visibleApts.filter((a) => a.status !== 'cancelled').length;
+  const todayLive = dayApts.filter((a) => a.status !== 'cancelled');
+  const confirmedN = todayLive.filter((a) => ['confirmed', 'attended', 'rescheduled'].includes(a.status)).length;
+  const confirmRate = todayLive.length ? Math.round((confirmedN / todayLive.length) * 100) : 0;
+  const pendingN = dayApts.filter((a) => a.status === 'pending').length;
+  const attendedN = dayApts.filter((a) => a.status === 'attended').length;
+  const branchName = branches.find((b) => b?.name)?.name;
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#111827]" /></div>;
+  const openCreate = () => {
+    setDraft({ name: '', phone: '', service: '', date: dayStr, time: hourOptions[0] || '' });
+    setCreating(true);
+  };
+
+  const createAppointment = async () => {
+    if (!draft.name.trim() || !draft.date || !draft.time) {
+      toast.error('الاسم والتاريخ والساعة مطلوبة');
+      return;
+    }
+    const branch = branches.find((b) => b?.name) || branches[0];
+    try {
+      const res = await runConsoleAction({
+        type: 'addAppointment',
+        name: draft.name.trim(),
+        phone: draft.phone.trim(),
+        service: draft.service.trim(),
+        date: draft.date,
+        time: draft.time,
+        branchId: branch?.id || '',
+        branchName: branch?.name || '',
+      }, { clinicPath, clinicId });
+      toast.success(res.answer || 'تسجّل الموعد');
+      setCreating(false);
+    } catch {
+      toast.error('تعذّر تسجيل الموعد');
+    }
+  };
+
+  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
 
   const weekLabel = `${weekStart.toLocaleDateString('ar', { day: 'numeric', month: 'short' })} — ${addDays(weekStart, 6).toLocaleDateString('ar', { day: 'numeric', month: 'short' })}`;
   const dayLabel = dayAnchor.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -202,92 +230,86 @@ const AppointmentsCalendar = () => {
     if (apt.date) setDayAnchor(new Date(`${apt.date}T12:00:00`));
   };
 
+  const pill = (on) => `inline-flex items-center gap-2 px-3 py-2 rounded-full text-xs font-bold ${on ? 'bg-[#10b981] text-white shadow-sm' : 'bg-white text-[#3d4947] shadow-sm'}`;
+  const card = 'bg-white rounded-2xl shadow-[0_8px_30px_-12px_rgba(20,27,43,0.18)]';
+  const bookedHours = [...new Set(visibleApts.map((a) => parseHourFromLabel(a.time)).filter((h) => h != null))].sort((a, b) => a - b);
+  const timelineHours = bookedHours.length
+    ? Array.from({ length: bookedHours[bookedHours.length - 1] - bookedHours[0] + 1 }, (_, i) => bookedHours[0] + i)
+    : [];
+  const bookUrl = `${window.location.origin}/book/${clinicId}`;
+
   return (
-    <div className="space-y-4">
+    <div className="max-w-[1360px] mx-auto space-y-5 text-[#141b2b]">
       <ToastContainer position="top-left" rtl />
-      <div className="flex justify-between items-center flex-wrap gap-3">
-        <h1 className="text-[22px] font-bold text-[#111827]">تقويم الحجوزات</h1>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-xl">
+          <p className="text-xs text-[#6d7a77]">{range === 'week' ? weekLabel : dayLabel}{branchName ? ` · ${branchName}` : ''}</p>
+          <h1 className="text-[26px] font-extrabold tracking-tight mt-1">المواعيد</h1>
+          <p className="text-sm text-[#6d7a77] mt-1">جدول الفريق وتأكيد الحضور من حجوزات العيادة.</p>
+        </div>
         <div className="flex flex-wrap gap-2">
-          {hasCap('ops') && (
-            <>
-              <Link to="/appointments/waitlist" className="nura-chip nura-chip-lilac">قائمة الانتظار</Link>
-              <Link to="/appointments/gaps" className="nura-chip nura-chip-sky">المواعيد المتاحة</Link>
-              <Link to="/appointments/reminders" className="nura-chip nura-chip-gold">التذكيرات</Link>
-            </>
-          )}
-          <Link to="/appointments/attendance" className="nura-chip nura-chip-rose">الحضور</Link>
-          <Link to="/appointments/schedule" className="flex items-center gap-2 bg-[#111827] text-white px-3 py-2 rounded-2xl font-bold text-sm">
-            <FaClock /> الدوام
+          <Link to="/appointments/schedule" className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white shadow-sm text-sm font-bold">
+            <FaClock /> جدول الدوام
           </Link>
+          {hasCap('ops') && (
+            <Link to="/appointments/reminders" className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#f3f0ff] text-[#6b4eff] text-sm font-bold">
+              تذكيرات الغد
+            </Link>
+          )}
+          <button type="button" onClick={openCreate} className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold hover:bg-[#059669]">
+            + حجز موعد
+          </button>
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-[#ebeef2]">
-        <button type="button" onClick={() => setTab('calendar')} className={`px-4 py-2.5 text-sm font-bold ${tab === 'calendar' ? 'text-[#059669] border-b-2 border-[#10b981]' : 'text-[#9ca3af]'}`}>التقويم</button>
-        <button type="button" onClick={() => setTab('log')} className={`px-4 py-2.5 text-sm font-bold ${tab === 'log' ? 'text-[#059669] border-b-2 border-[#10b981]' : 'text-[#9ca3af]'}`}>سجل الحجوزات</button>
+      <div className="flex flex-wrap gap-2">
+        <button type="button" onClick={() => { setTab('calendar'); setRange('day'); }} className={pill(tab === 'calendar' && range === 'day')}>تقويم الحجوزات</button>
+        {hasCap('ops') && <Link to="/appointments/waitlist" className="inline-flex items-center px-3 py-2 rounded-full text-xs font-bold bg-[#f3f0ff] text-[#6b4eff]">قائمة الانتظار</Link>}
+        {hasCap('ops') && <Link to="/appointments/gaps" className="inline-flex items-center px-3 py-2 rounded-full text-xs font-bold bg-sky-50 text-sky-700">سد الفراغات</Link>}
+        <Link to="/appointments/attendance" className="inline-flex items-center px-3 py-2 rounded-full text-xs font-bold bg-rose-50 text-rose-600">سجل الحضور</Link>
+        <Link to="/appointments/schedule" className="inline-flex items-center px-3 py-2 rounded-full text-xs font-bold bg-amber-50 text-amber-700">جدول المناوبات</Link>
+      </div>
+
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {[
+          { label: 'مواعيد اليوم', value: String(todayLive.length), note: `${pendingN} معلّق · ${attendedN} حضرت`, num: 'text-[#059669]', bar: 'bg-[#10b981]', width: '100%' },
+          { label: 'نسبة التأكيد', value: todayLive.length ? `${confirmRate}%` : '—', note: 'من مواعيد اليوم غير الملغاة', num: 'text-[#059669]', bar: 'bg-[#10b981]', width: `${confirmRate}%` },
+          { label: 'معلّقة', value: String(pendingN), note: 'بانتظار التأكيد', num: 'text-amber-700', bar: 'bg-amber-500', width: todayLive.length ? `${Math.round((pendingN / todayLive.length) * 100)}%` : '0%' },
+          { label: 'حضرت', value: String(attendedN), note: branchName || 'من سجل اليوم', num: 'text-[#6b4eff]', bar: 'bg-[#6b4eff]', width: todayLive.length ? `${Math.round((attendedN / todayLive.length) * 100)}%` : '0%' },
+        ].map((item) => (
+          <div key={item.label} className={`${card} p-4`}>
+            <p className="text-xs font-bold text-[#3d4947]">{item.label}</p>
+            <p className={`text-[32px] font-extrabold leading-none mt-2 ${item.num}`}>{item.value}</p>
+            <div className="mt-3 h-1.5 rounded-full bg-[#eef0ff] overflow-hidden">
+              <div className={`h-full rounded-full ${item.bar}`} style={{ width: item.width }} />
+            </div>
+            <p className="text-[11px] text-[#6d7a77] mt-2">{item.note}</p>
+          </div>
+        ))}
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2 bg-white border border-[#ebeef2] rounded-2xl px-3 py-2">
-            <span className="w-8 h-8 rounded-xl bg-[#111827] text-white text-sm font-bold flex items-center justify-center">{dayAnchor.getDate()}</span>
-            <span className="text-lg font-bold text-[#111827]">{totalVisible}</span>
-            <span className="text-xs text-[#8a9199]">موعد</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => { setDayAnchor(new Date()); setWeekAnchor(startOfWeek(new Date())); }}
-            className="px-3 py-2 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 text-sm font-bold"
-          >
-            اليوم
-          </button>
-          <button
-            type="button"
-            onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, -7)) : setDayAnchor(addDays(dayAnchor, -1)))}
-            className="w-9 h-9 rounded-full bg-white border border-[#ebeef2] flex items-center justify-center"
-            aria-label="السابق"
-          >
-            <FaChevronRight />
-          </button>
-          <span className="font-bold text-sm text-[#111827] min-w-[12rem] text-center">{range === 'week' ? weekLabel : dayLabel}</span>
-          <button
-            type="button"
-            onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, 7)) : setDayAnchor(addDays(dayAnchor, 1)))}
-            className="w-9 h-9 rounded-full bg-white border border-[#ebeef2] flex items-center justify-center"
-            aria-label="التالي"
-          >
-            <FaChevronLeft />
-          </button>
-          <div className="flex bg-emerald-50 rounded-full p-1">
-            <button
-              type="button"
-              onClick={() => {
-                setRange('day');
-                if (selected?.date) setDayAnchor(new Date(`${selected.date}T12:00:00`));
-              }}
-              className={`px-3 py-1 rounded-full text-xs font-bold ${range === 'day' ? 'bg-[#10b981] text-white shadow-sm' : 'text-[#047857]'}`}
-            >
-              يوم
-            </button>
-            <button type="button" onClick={() => setRange('week')} className={`px-3 py-1 rounded-full text-xs font-bold ${range === 'week' ? 'bg-[#10b981] text-white shadow-sm' : 'text-[#047857]'}`}>أسبوع</button>
-          </div>
+        <div className="flex items-center gap-2">
+          <button type="button" onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, -7)) : setDayAnchor(addDays(dayAnchor, -1)))} className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" aria-label="السابق"><FaChevronRight /></button>
+          <span className="font-extrabold text-sm min-w-[14rem] text-center">{range === 'week' ? weekLabel : dayLabel}</span>
+          <button type="button" onClick={() => (range === 'week' ? setWeekAnchor(addDays(weekStart, 7)) : setDayAnchor(addDays(dayAnchor, 1)))} className="w-9 h-9 rounded-full bg-white shadow-sm flex items-center justify-center" aria-label="التالي"><FaChevronLeft /></button>
+          <button type="button" onClick={() => { setDayAnchor(new Date()); setWeekAnchor(startOfWeek(new Date())); }} className="px-3 py-2 rounded-full bg-[#10b981] text-white text-sm font-bold">اليوم</button>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={staffFilter}
-            onChange={(e) => setStaffFilter(e.target.value)}
-            className="px-3 py-2 rounded-2xl bg-white border border-[#ebeef2] text-sm font-bold"
-          >
+          <select value={staffFilter} onChange={(e) => setStaffFilter(e.target.value)} className="px-3 py-2 rounded-xl bg-white shadow-sm text-sm font-bold">
             <option value="all">كل الفريق</option>
             {staff.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
             {dayApts.some((a) => !a.specialistId) && <option value="none">بدون تعيين</option>}
           </select>
-          <StatusLegend />
+          <button type="button" onClick={() => { setTab('calendar'); setRange('day'); }} className={pill(tab === 'calendar' && range === 'day')}>مقارنة الموارد</button>
+          <button type="button" onClick={() => setTab('log')} className={pill(tab === 'log')}>قائمة تفصيلية</button>
+          <button type="button" onClick={() => { setTab('calendar'); setRange('week'); }} className={pill(tab === 'calendar' && range === 'week')}>أسبوعي</button>
         </div>
       </div>
+      <StatusLegend />
 
       {tab === 'log' && (
-        <div className="saas-card overflow-hidden">
+        <div className={`${card} overflow-hidden`}>
           <table className="w-full text-sm">
             <thead>
               <tr>
@@ -299,12 +321,16 @@ const AppointmentsCalendar = () => {
                 <tr><td colSpan={5} className="text-center text-[#8a9199] py-10">لا حجوزات في هذه الفترة.</td></tr>
               )}
               {visibleApts.map((a) => (
-                <tr key={a.id} className="cursor-pointer hover:bg-[#f8fafb]" onClick={() => pick(a)}>
+                <tr key={a.id} className="cursor-pointer hover:bg-[#FDFBF7]" onClick={() => pick(a)}>
                   <td className="font-bold">{a.customerName}</td>
                   <td>{a.service || '—'}</td>
                   <td>{a.date} · {a.time}</td>
                   <td>{a.specialistName || '—'}</td>
-                  <td>{APT_STATUSES.find((s) => s.id === a.status)?.label || a.status}</td>
+                  <td>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${(STATUS_COLORS[a.status] || STATUS_COLORS.pending).chip}`}>
+                      {APT_STATUSES.find((s) => s.id === a.status)?.label || a.status}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -315,16 +341,44 @@ const AppointmentsCalendar = () => {
       {tab === 'calendar' && (
       <div className={`grid gap-4 items-start ${selected ? 'lg:grid-cols-[1fr_20rem]' : ''}`}>
         {range === 'day' ? (
-          <ResourceDayBoard
-            dateStr={dayStr}
-            hourStart={hours.start}
-            hourEnd={hours.end}
-            appointments={visibleApts}
-            staff={staffCols}
-            schedules={schedules}
-            selectedId={selected?.id}
-            onSelect={pick}
-          />
+          <div className={`${card} p-4 space-y-3`}>
+            {timelineHours.length === 0 && (
+              <div className="rounded-2xl bg-[#f7f8ff] p-8 text-center text-sm text-[#6d7a77]">لا مواعيد في هذا اليوم.</div>
+            )}
+            {timelineHours.map((h) => {
+              const row = visibleApts.filter((a) => parseHourFromLabel(a.time) === h);
+              return (
+                <div key={h} className="grid grid-cols-[4.5rem_1fr] gap-3 items-start">
+                  <div className="pt-3 text-center">
+                    <p className="text-sm font-bold">{formatHourLabel(h).split(' ')[0]}</p>
+                    <p className="text-[11px] text-[#8C93A0]">{formatHourLabel(h).split(' ')[1]}</p>
+                  </div>
+                  {row.length === 0 ? (
+                    <div className="rounded-2xl border-2 border-dashed border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                      شاغر في هذا الوقت
+                      {hasCap('ops') && <Link to="/appointments/gaps" className="block mt-1 font-bold text-[#059669]">فتح الفراغات</Link>}
+                    </div>
+                  ) : (
+                    <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {row.map((a) => {
+                        const c = STATUS_COLORS[a.status] || STATUS_COLORS.pending;
+                        return (
+                          <button key={a.id} type="button" onClick={() => pick(a)} className="text-right rounded-2xl p-3 border-2 shadow-sm" style={{ background: c.bg, borderColor: selected?.id === a.id ? '#10b981' : c.border, color: c.text, boxShadow: `inset -4px 0 0 ${c.border}` }}>
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="font-bold text-sm">{a.customerName || 'عميلة'}</p>
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${c.chip}`}>{c.label}</span>
+                            </div>
+                            <p className="text-xs mt-2">{a.service || '—'}{a.specialistName ? ` · ${a.specialistName}` : ''}</p>
+                            <p className="text-[11px] mt-1 font-bold">{a.time}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : (
           <WeeklyBoard
             weekStart={weekStart}
@@ -337,7 +391,7 @@ const AppointmentsCalendar = () => {
         )}
 
         {selected && (
-        <aside className="saas-card p-4 space-y-3 lg:sticky lg:top-24">
+        <aside className={`${card} p-4 space-y-3 lg:sticky lg:top-24`}>
               <div className="rounded-xl p-3 text-sm" style={{ background: tone.bg, border: `1px solid ${tone.border}`, color: tone.text }}>
                 <div className="flex items-start justify-between gap-2">
                   <p className="font-bold">{selected.customerName}</p>
@@ -351,18 +405,18 @@ const AppointmentsCalendar = () => {
               <p className="text-xs text-stone-500 flex items-center gap-1" dir="ltr"><FaPhone className="text-[10px]" /> {selected.phoneNumber}</p>
               <div className="flex flex-wrap gap-2">
                 {selected.status === 'pending' && (
-                  <button type="button" onClick={() => handleStatus(selected, 'confirmed')} className="px-3 py-2 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-bold flex items-center gap-1">
+                  <button type="button" onClick={() => handleStatus(selected, 'confirmed')} className="px-3 py-2 bg-[#10b981] text-white rounded-xl text-sm font-bold flex items-center gap-1">
                     <FaCheckCircle /> تأكيد
                   </button>
                 )}
                 {selected.status === 'rescheduled' && (
-                  <button type="button" onClick={() => handleStatus(selected, 'confirmed')} className="px-3 py-2 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-bold">تأكيد الموعد الجديد</button>
+                  <button type="button" onClick={() => handleStatus(selected, 'confirmed')} className="px-3 py-2 bg-[#10b981] text-white rounded-xl text-sm font-bold">تأكيد الموعد الجديد</button>
                 )}
                 {['pending', 'confirmed', 'rescheduled'].includes(selected.status) && (
                   <>
-                    <button type="button" onClick={() => handleStatus(selected, 'attended')} className="px-3 py-2 bg-blue-50 text-blue-800 rounded-lg text-sm">حضر</button>
-                    <button type="button" onClick={() => handleStatus(selected, 'noshow')} className="px-3 py-2 bg-orange-50 text-orange-800 rounded-lg text-sm">لم يحضر</button>
-                    <button type="button" onClick={() => handleStatus(selected, 'cancelled')} className="px-3 py-2 bg-rose-50 text-rose-700 rounded-lg text-sm">إلغاء</button>
+                    <button type="button" onClick={() => handleStatus(selected, 'attended')} className="px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-bold">حضر</button>
+                    <button type="button" onClick={() => handleStatus(selected, 'noshow')} className="px-3 py-2 bg-orange-50 text-orange-700 rounded-xl text-sm font-bold">لم يحضر</button>
+                    <button type="button" onClick={() => handleStatus(selected, 'cancelled')} className="px-3 py-2 bg-rose-50 text-rose-700 rounded-xl text-sm font-bold">إلغاء</button>
                   </>
                 )}
                 {selected.manageToken && (
@@ -374,14 +428,14 @@ const AppointmentsCalendar = () => {
                 </button>
               </div>
               {['pending', 'confirmed', 'rescheduled'].includes(selected.status) && (
-                <div className="border-t border-[#E5E9EC] pt-3 space-y-2">
+                <div className="border-t border-[#E8E4DC] pt-3 space-y-2">
                   <p className="text-xs font-bold">إعادة جدولة</p>
-                  <input type="date" value={reschedule.date} onChange={(e) => setReschedule({ ...reschedule, date: e.target.value })} className="w-full p-2 rounded-xl bg-[#F7F8F6] text-sm" />
-                  <select value={reschedule.time} onChange={(e) => setReschedule({ ...reschedule, time: e.target.value })} className="w-full p-2 rounded-xl bg-[#F7F8F6] text-sm">
+                  <input type="date" value={reschedule.date} onChange={(e) => setReschedule({ ...reschedule, date: e.target.value })} className="w-full p-2 rounded-xl bg-[#FDFBF7] border border-[#E8E4DC] text-sm" />
+                  <select value={reschedule.time} onChange={(e) => setReschedule({ ...reschedule, time: e.target.value })} className="w-full p-2 rounded-xl bg-[#FDFBF7] border border-[#E8E4DC] text-sm">
                     {hourOptions.map((t) => <option key={t} value={t}>{t}</option>)}
                     {reschedule.time && !hourOptions.includes(reschedule.time) && <option value={reschedule.time}>{reschedule.time}</option>}
                   </select>
-                  <button type="button" onClick={saveReschedule} className="w-full py-2 rounded-xl bg-[#eab308] text-[#854d0e] font-bold text-sm">حفظ كإعادة جدولة (أصفر)</button>
+                  <button type="button" onClick={saveReschedule} className="w-full py-2 rounded-xl bg-amber-400 text-amber-950 font-bold text-sm">حفظ كإعادة جدولة</button>
                 </div>
               )}
         </aside>
@@ -395,26 +449,50 @@ const AppointmentsCalendar = () => {
 
       {cancelFor && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 w-full max-w-md space-y-3" dir="rtl">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-md space-y-3 border border-[#E8E4DC]" dir="rtl">
             <h3 className="font-bold">سبب الإلغاء (اختياري)</h3>
-            <p className="text-xs text-gray-400">لا تُفرض غرامة آلية. العربون إن وُجد يُراجع يدوياً.</p>
-            <input value={reason} onChange={(e) => setReason(e.target.value)} className="w-full p-2.5 border rounded-xl dark:bg-slate-700" />
+            <p className="text-xs text-[#8C93A0]">لا تُفرض غرامة آلية. العربون إن وُجد يُراجع يدوياً.</p>
+            <input value={reason} onChange={(e) => setReason(e.target.value)} className="w-full p-2.5 border border-[#E8E4DC] rounded-xl bg-[#FDFBF7]" />
             <div className="flex gap-2">
-              <button type="button" onClick={() => setCancelFor(null)} className="flex-1 py-2 bg-gray-100 rounded-xl">تراجع</button>
-              <button type="button" onClick={confirmCancel} className="flex-1 py-2 bg-rose-500 text-white rounded-xl font-bold">تأكيد الإلغاء</button>
+              <button type="button" onClick={() => setCancelFor(null)} className="flex-1 py-2 bg-[#F4F1EA] rounded-xl font-bold">تراجع</button>
+              <button type="button" onClick={confirmCancel} className="flex-1 py-2 bg-[#8C3A32] text-white rounded-xl font-bold">تأكيد الإلغاء</button>
             </div>
           </div>
         </div>
       )}
 
+      {creating && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 w-full max-w-md space-y-3 border border-[#E8E4DC]" dir="rtl">
+            <h3 className="font-bold">حجز موعد</h3>
+            <input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} placeholder="اسم العميلة" className="w-full p-2.5 rounded-xl border border-[#E8E4DC] bg-[#FDFBF7] text-sm" />
+            <input value={draft.phone} onChange={(e) => setDraft({ ...draft, phone: e.target.value })} placeholder="الهاتف" className="w-full p-2.5 rounded-xl border border-[#E8E4DC] bg-[#FDFBF7] text-sm" dir="ltr" />
+            <input value={draft.service} onChange={(e) => setDraft({ ...draft, service: e.target.value })} placeholder="الخدمة" className="w-full p-2.5 rounded-xl border border-[#E8E4DC] bg-[#FDFBF7] text-sm" />
+            <input type="date" value={draft.date} onChange={(e) => setDraft({ ...draft, date: e.target.value })} className="w-full p-2.5 rounded-xl border border-[#E8E4DC] bg-[#FDFBF7] text-sm" />
+            <select value={draft.time} onChange={(e) => setDraft({ ...draft, time: e.target.value })} className="w-full p-2.5 rounded-xl border border-[#E8E4DC] bg-[#FDFBF7] text-sm">
+              {hourOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setCreating(false)} className="flex-1 py-2 bg-[#F4F1EA] rounded-xl font-bold">تراجع</button>
+              <button type="button" onClick={createAppointment} className="flex-1 py-2 bg-[#10b981] text-white rounded-xl font-bold">حفظ</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className={`${card} flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-xs`}>
+        <span className="text-[#6d7a77]">رابط الحجز للعميلات</span>
+        <button type="button" onClick={() => navigator.clipboard.writeText(bookUrl).then(() => toast.success('تم نسخ الرابط'))} className="font-bold text-[#059669]" dir="ltr">{bookUrl}</button>
+      </div>
+
       {historyFor && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={() => setHistoryFor(null)}>
-          <div className="bg-white dark:bg-slate-800 rounded-2xl p-5 w-full max-w-md text-sm" dir="rtl" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white rounded-2xl p-5 w-full max-w-md text-sm border border-[#E8E4DC]" dir="rtl" onClick={(e) => e.stopPropagation()}>
             <h3 className="font-bold mb-3">سجل {historyFor.customerName}</h3>
             {(historyFor.history || []).slice().reverse().map((h, i) => (
-              <p key={i} className="py-1 text-gray-600 dark:text-gray-300">{new Date(h.at).toLocaleString('ar')} — {h.action} {h.reason || h.from || ''} {h.to ? `→ ${h.to}` : ''}</p>
+              <p key={i} className="py-1 text-[#6B7280]">{new Date(h.at).toLocaleString('ar')} — {h.action} {h.reason || h.from || ''} {h.to ? `→ ${h.to}` : ''}</p>
             ))}
-            {!(historyFor.history || []).length && <p className="text-gray-400">لا سجل بعد</p>}
+            {!(historyFor.history || []).length && <p className="text-[#8C93A0]">لا سجل بعد</p>}
           </div>
         </div>
       )}

@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ref, onValue } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import {
-  clinicHealth, dailyTasks, interventionAlerts, answerFromData, siteStatus, occupancyInsights, toYmd,
+  clinicHealth, dailyTasks, interventionAlerts, siteStatus, occupancyInsights, toYmd,
 } from '../utils/clinicInsights';
 import { FaUsers, FaCalendarDay, FaChartLine, FaClipboardList } from 'react-icons/fa';
 
@@ -24,12 +24,6 @@ const APT_STATUS = {
   noshow: { label: 'غياب', cls: 'bg-rose-50 text-rose-500' },
 };
 
-const PROMPTS = [
-  { id: 'drop', text: 'ليش انخفضت الحجوزات هذا الشهر؟' },
-  { id: 'crowd', text: 'أي ساعات وأيام فيها ازدحام؟' },
-  { id: 'today', text: 'شو يحتاج تدخل اليوم؟' },
-];
-
 const Dashboard = () => {
   const { clinicInfo, clinicPath, clinicId, loadingClinic, userRole, userCategory, hasCap } = useClinic();
   const navigate = useNavigate();
@@ -44,10 +38,7 @@ const Dashboard = () => {
   const [blog, setBlog] = useState([]);
   const [settings, setSettings] = useState(null);
   const [loadingData, setLoadingData] = useState(true);
-  const [ask, setAsk] = useState(PROMPTS[0].text);
-  const [reply, setReply] = useState(null);
-  const replyRef = useRef(null);
-  const [calDay, setCalDay] = useState(() => toYmd(new Date()));
+  const [range, setRange] = useState('week');
 
   useEffect(() => {
     if (loadingClinic || !clinicId || !clinicPath) return undefined;
@@ -98,418 +89,234 @@ const Dashboard = () => {
     [appointments, schedules, branches],
   );
 
-  const runAsk = (prompt) => {
-    const text = typeof prompt === 'object' && prompt?.text ? prompt.text : (typeof prompt === 'string' && prompt ? prompt : ask);
-    const intent = typeof prompt === 'object' ? prompt.id : undefined;
-    setAsk(text);
-    try {
-      const next = answerFromData(text, { health, tasks, appointments, services, waitlist, occupancy, intent });
-      setReply(next || { answer: 'لا رد من الأرقام المخزّنة.', facts: [], missing: [] });
-    } catch (err) {
-      console.error(err);
-      setReply({ answer: 'تعذّر قراءة الأرقام. حدّثي الصفحة إن استمرّ.', facts: [], missing: [] });
-    }
-    setTimeout(() => replyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
-  };
-
   if (loadingClinic || loadingData) {
     return (
       <div className="flex justify-center items-center h-64" role="status" aria-label="جاري التحميل">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#111827]" />
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1F5C4D]" />
       </div>
     );
   }
 
   const score = health.score;
-  const ring = score == null ? 0 : score;
-  const circ = 2 * Math.PI * 36;
-  const hour = new Date().getHours();
+  const now = new Date();
+  const hour = now.getHours();
   const greet = hour < 12 ? 'صباح الخير' : 'مساء الخير';
-  const who = clinicInfo?.ownerName || clinicInfo?.name || 'نورا';
+  const who = clinicInfo?.ownerName || clinicInfo?.name || 'وَرَف';
+  const dateLabel = now.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' });
+  const branchName = branches.find((b) => b?.name)?.name;
   const todayYmd = toYmd(new Date());
   const todayApts = appointments.filter((a) => a.date === todayYmd);
   const pendingToday = todayApts.filter((a) => a.status === 'pending').length;
   const cancelledToday = todayApts.filter((a) => a.status === 'cancelled').length;
   const bookDelta = health.deltas?.book;
-  const calList = appointments
-    .filter((a) => a.date === calDay)
-    .sort((a, b) => String(a.time || '').localeCompare(String(b.time || '')));
   const visibleAlerts = alerts.filter((a) => {
     if (a.to === '/ops' && !hasCap('ops')) return false;
     if (a.to === '/winback' && !hasCap('winback')) return false;
     return true;
   });
 
+  const card = 'bg-white rounded-2xl shadow-[0_8px_30px_-12px_rgba(20,27,43,0.18)]';
+  const chartRows = range === 'today'
+    ? occupancy.byHour.map((h) => ({ label: String(h.hour), a: h.count }))
+    : range === 'days'
+      ? occupancy.byDay.map((d) => ({ label: d.name.replace('ال', '').slice(0, 4), a: d.count }))
+      : (occupancy.lookahead || []).map((d) => ({ label: d.name, a: d.booked, b: d.gaps }));
+  const chartMax = Math.max(1, ...chartRows.map((r) => Math.max(r.a || 0, r.b || 0)));
+  const branchMap = new Map();
+  appointments.forEach((a) => {
+    if (a.status === 'cancelled') return;
+    const key = a.branchName || 'العيادة';
+    const row = branchMap.get(key) || { name: key, total: 0, pending: 0, attended: 0 };
+    row.total += 1;
+    if (a.status === 'pending') row.pending += 1;
+    if (a.status === 'attended') row.attended += 1;
+    branchMap.set(key, row);
+  });
+  const branchRows = [...branchMap.values()].sort((x, y) => y.total - x.total).slice(0, 6);
+  const weekBooked = (occupancy.lookahead || []).reduce((n, d) => n + d.booked, 0);
+  const weekGaps = (occupancy.lookahead || []).reduce((n, d) => n + d.gaps, 0);
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-[1360px] mx-auto space-y-5 text-[#141b2b]">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-[26px] font-bold text-[#111827] tracking-tight">
-            {greet}، {who}
-          </h1>
+          <p className="text-xs text-[#6d7a77]">{dateLabel}{branchName ? ` · ${branchName}` : ''}</p>
+          <h1 className="text-[26px] font-extrabold tracking-tight mt-1">{greet}، {who}</h1>
         </div>
-        {userRole !== 'worker' && (
-          <Link to="/customers" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#111827] text-white text-sm font-bold">
-            + عميلة جديدة
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            ['today', 'اليوم'],
+            ['week', 'آخر 7 أيام'],
+            ['days', 'حسب اليوم'],
+          ].map(([id, label]) => (
+            <button key={id} type="button" onClick={() => setRange(id)} className={`px-3 py-1.5 rounded-full text-xs font-bold ${range === id ? 'bg-white text-[#059669] shadow-sm' : 'text-[#6d7a77]'}`}>
+              {label}
+            </button>
+          ))}
+          <Link to="/appointments" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#10b981] text-white text-sm font-bold hover:bg-[#059669]">
+            جدول اليوم
           </Link>
-        )}
+        </div>
       </div>
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-mint p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] text-[#047857]">العميلات</p>
-            <span className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><FaUsers /></span>
+        {[
+          { icon: <FaUsers />, tint: 'bg-emerald-50 text-[#059669]', label: 'العميلات', value: customers.length, note: 'مسجّلات في العيادة', bar: 'bg-[#10b981]' },
+          { icon: <FaCalendarDay />, tint: 'bg-violet-50 text-[#6b4eff]', label: 'مواعيد اليوم', value: todayApts.length, note: `${pendingToday} معلّق · ${cancelledToday} ملغى`, bar: 'bg-[#6b4eff]', width: todayApts.length ? `${Math.round((pendingToday / todayApts.length) * 100)}%` : '0%' },
+          { icon: <FaChartLine />, tint: 'bg-emerald-50 text-[#059669]', label: 'حجوزات هذا الشهر', value: health.curr?.total ?? 0, note: bookDelta == null ? 'بلا مقارنة للشهر السابق' : `${bookDelta >= 0 ? '+' : ''}${bookDelta}% عن الفترة المقابلة`, bar: 'bg-[#10b981]' },
+          { icon: <FaClipboardList />, tint: 'bg-violet-50 text-[#6b4eff]', label: 'مهام معلّقة', value: tasks.pending.length, note: 'تأكيد حجوزات من السجل', bar: 'bg-[#6b4eff]' },
+        ].map((item) => (
+          <div key={item.label} className={`${card} p-4`}>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[12px] font-bold text-[#3d4947]">{item.label}</p>
+              <span className={`w-9 h-9 rounded-xl flex items-center justify-center ${item.tint}`}>{item.icon}</span>
+            </div>
+            <p className="text-[34px] font-extrabold leading-none mt-3">{item.value}</p>
+            <p className="text-[11px] text-[#6d7a77] mt-2">{item.note}</p>
+            <div className="mt-3 h-1.5 rounded-full bg-[#eef0ff] overflow-hidden">
+              <div className={`h-full rounded-full ${item.bar}`} style={{ width: item.width || '100%' }} title={item.width ? 'نسبة المعلّق من مواعيد اليوم' : undefined} />
+            </div>
           </div>
-          <p className="stat-num text-[34px] leading-none mt-3">{customers.length}</p>
-          <p className="text-[12px] text-[#6b7280] mt-3">مسجّلات في العيادة</p>
-        </div>
-        <div className="saas-card stat-card-sky p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] text-[#0369a1]">مواعيد اليوم</p>
-            <span className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center"><FaCalendarDay /></span>
-          </div>
-          <p className="stat-num text-[34px] leading-none mt-3">{todayApts.length}</p>
-          <p className="text-[12px] mt-3">
-            <span className="text-orange-500">{pendingToday} معلّق</span>
-            <span className="text-rose-500 mr-2">{cancelledToday} ملغى</span>
-          </p>
-        </div>
-        <div className="saas-card stat-card-lilac p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] text-[#6d28d9]">حجوزات هذا الشهر</p>
-            <span className="w-9 h-9 rounded-xl bg-violet-100 text-violet-700 flex items-center justify-center"><FaChartLine /></span>
-          </div>
-          <p className="stat-num text-[34px] leading-none mt-3">{health.curr?.total ?? 0}</p>
-          <p className="text-[12px] mt-3">
-            {bookDelta == null ? 'مقارنة الشهر السابق غير متاحة' : (
-              <span className={bookDelta >= 0 ? 'text-emerald-600' : 'text-rose-500'}>
-                {bookDelta >= 0 ? '+' : ''}{bookDelta}% عن الفترة المقابلة
-              </span>
-            )}
-          </p>
-        </div>
-        <div className="saas-card stat-card-gold p-5">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] text-[#b45309]">مهام معلّقة</p>
-            <span className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center"><FaClipboardList /></span>
-          </div>
-          <p className="stat-num text-[34px] leading-none mt-3">{tasks.pending.length}</p>
-          <p className="text-[12px] text-[#6b7280] mt-3">تأكيد حجوزات من السجل</p>
-        </div>
+        ))}
       </div>
 
-      <div className="grid xl:grid-cols-[1.4fr_0.9fr] gap-4">
-        <section className="saas-card p-5">
+      <div className="grid xl:grid-cols-[1.15fr_0.85fr] gap-4">
+        <section className={`${card} p-5`}>
           <div className="flex items-center justify-between gap-3 mb-4">
-            <h2 className="font-bold text-[#111827]">مواعيد التقويم</h2>
-            <Link to="/appointments" className="text-xs font-bold text-[#6b7280]">الكل</Link>
+            <h2 className="font-extrabold">
+              {range === 'today' ? 'حجوزات اليوم حسب الساعة' : range === 'days' ? 'الحجوزات حسب اليوم · 60 يوماً' : 'الأيام السبعة القادمة'}
+            </h2>
+            {score != null && <span className="text-xs font-bold text-[#059669]">صحة {score}</span>}
           </div>
-          <div className="flex gap-1 overflow-x-auto no-scrollbar pb-3">
-            {(occupancy.lookahead || []).map((d) => (
-              <button
-                key={d.date}
-                type="button"
-                onClick={() => setCalDay(d.date)}
-                className={`shrink-0 min-w-11 h-11 rounded-2xl text-sm font-bold ${
-                  calDay === d.date ? 'bg-[#111827] text-white' : 'text-[#6b7280] hover:bg-[#f3f5f7]'
-                }`}
-              >
-                {d.date.slice(-2)}
-              </button>
+          <div className="flex items-end gap-2 h-52">
+            {chartRows.map((r) => (
+              <div key={r.label} className="flex-1 min-w-0 h-full flex flex-col items-center justify-end gap-2">
+                <div className="w-full flex-1 flex items-end justify-center gap-1">
+                  <div className="w-2.5 sm:w-3 rounded-t-md bg-[#10b981]" style={{ height: `${Math.max(r.a ? 6 : 0, (r.a / chartMax) * 100)}%` }} title={`${r.label}: ${r.a}`} />
+                  {r.b != null && <div className="w-2.5 sm:w-3 rounded-t-md bg-[#6b4eff]" style={{ height: `${Math.max(r.b ? 6 : 0, (r.b / chartMax) * 100)}%` }} title={`${r.label} شاغر: ${r.b}`} />}
+                </div>
+                <span className="text-[10px] text-[#6d7a77] truncate w-full text-center">{r.label}</span>
+              </div>
             ))}
           </div>
-          <div className="space-y-2">
-            {calList.length === 0 && <p className="text-sm text-[#8a9199] py-6 text-center">لا مواعيد في هذا اليوم.</p>}
-            {calList.slice(0, 6).map((a) => {
-              const st = APT_STATUS[a.status] || { label: a.status || '—', cls: 'bg-slate-50 text-slate-500' };
-              return (
-                <Link key={a.id} to="/appointments" className="flex items-center gap-3 rounded-2xl border border-[#ebeef2] px-3 py-3">
-                  <div className="w-9 h-9 rounded-full bg-[#ecfdf3] text-[#15803d] font-bold flex items-center justify-center text-sm shrink-0">
-                    {(a.customerName || 'ع').trim().charAt(0)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-sm truncate">{a.customerName || 'عميلة'}</p>
-                    <p className="text-[11px] text-[#8a9199] truncate">{a.service || a.serviceName || '—'} · {a.time || '—'}</p>
-                  </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${st.cls}`}>{st.label}</span>
-                </Link>
-              );
-            })}
+          <div className="grid grid-cols-3 gap-2 mt-4 text-center">
+            <div className="rounded-xl bg-[#ecfdf5] py-2">
+              <p className="text-[11px] text-[#059669]">محجوز 7 أيام</p>
+              <p className="font-extrabold text-[#059669]">{weekBooked}</p>
+            </div>
+            <div className="rounded-xl bg-[#f3f0ff] py-2">
+              <p className="text-[11px] text-[#6b4eff]">شاغر 7 أيام</p>
+              <p className="font-extrabold text-[#6b4eff]">{weekGaps}</p>
+            </div>
+            <div className="rounded-xl bg-[#f7f8ff] py-2">
+              <p className="text-[11px] text-[#6d7a77]">امتلاء اليوم</p>
+              <p className="font-extrabold">{occupancy.todayFill == null ? '—' : `${occupancy.todayFill}%`}</p>
+            </div>
           </div>
         </section>
 
-        <section className="saas-card p-5">
-          <h2 className="font-bold text-[#111827] mb-4">صندوق المتابعة</h2>
-          {visibleAlerts.length === 0 && <p className="text-sm text-emerald-700">لا بند يحتاج تدخلاً من القواعد الحالية.</p>}
+        <section className={`${card} p-5`}>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-extrabold">تنبيهات المتابعة</h2>
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-50 text-rose-600">{visibleAlerts.length}</span>
+          </div>
+          {visibleAlerts.length === 0 && <p className="text-sm text-[#059669] mb-3">لا بند يحتاج تدخلاً الآن.</p>}
           <div className="space-y-2">
-            {visibleAlerts.slice(0, 5).map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => a.to && navigate(a.to)}
-                className="w-full text-right rounded-2xl p-3 bg-rose-50/80 border border-rose-100"
-              >
-                <span className="block font-bold text-sm">{a.title}</span>
-                <span className="block text-xs text-[#8a9199] mt-0.5">{a.detail}</span>
-              </button>
+            {visibleAlerts.slice(0, 4).map((a) => (
+              <div key={a.id} className="rounded-xl border border-[#eceefe] p-3">
+                <p className="font-bold text-sm">{a.title}</p>
+                <p className="text-xs text-[#6d7a77] mt-1">{a.detail}</p>
+                {a.to && (
+                  <button type="button" onClick={() => navigate(a.to)} className="mt-2 px-3 py-1 rounded-lg bg-[#10b981] text-white text-xs font-bold">فتح</button>
+                )}
+              </div>
             ))}
           </div>
-        </section>
-      </div>
-
-      <section className="saas-card p-5 md:p-6">
-        <div className="flex flex-col md:flex-row gap-6 items-start">
-          <div className="relative w-[104px] h-[104px] shrink-0">
-            <svg viewBox="0 0 88 88" className="w-full h-full -rotate-90">
-              <circle cx="44" cy="44" r="36" fill="none" stroke="#E5E9EC" strokeWidth="8" />
-              <circle
-                cx="44"
-                cy="44"
-                r="36"
-                fill="none"
-                stroke={ring >= 70 ? TONES.mint : ring >= 45 ? TONES.gold : TONES.coral}
-                strokeWidth="8"
-                strokeDasharray={`${(ring / 100) * circ} ${circ}`}
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-product text-2xl leading-none">{score == null ? '—' : score}</span>
-              <span className="text-[10px] text-stone-400">صحة</span>
-            </div>
-          </div>
-          <div className="flex-1 w-full">
-            <h2 className="font-product text-xl">مؤشر صحة العيادة</h2>
-            <p className="text-xs text-stone-500 mt-1">
-              مقارنة {health.windows.thisStart} → {health.windows.thisEnd} مع {health.windows.prevStart} → {health.windows.prevEnd}
-            </p>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-              {health.pillars.map((p) => (
-                <div key={p.id} className="rounded-xl bg-emerald-50/70 dark:bg-[#1A2C38] p-3">
-                  <p className="text-[11px] text-stone-400">{p.label}</p>
-                  <p className="font-product text-2xl">
-                    {p.value == null ? '—' : `${p.value}${p.unit}`}
-                  </p>
-                  {p.prev != null && (
-                    <p className="text-[11px] text-stone-500">السابق {p.prev}{p.unit}</p>
-                  )}
-                  {p.note && <p className="text-[10px] text-stone-400 mt-1">{p.note}</p>}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="saas-card p-5 md:p-6">
-        <div className="flex flex-wrap justify-between gap-3 items-start">
-          <div>
-            <h2 className="font-product text-xl">الازدحام والأيام</h2>
-            <p className="text-xs text-stone-500 mt-1">آخر 60 يوماً من الحجوزات غير الملغاة · امتلاء اليوم من الجدول إن وُجد</p>
-          </div>
-          <p className="text-sm font-bold" style={{ color: occupancy.todayFill == null ? TONES.gold : occupancy.todayFill >= 80 ? TONES.coral : TONES.mint }}>
-            اليوم {occupancy.todayFill == null ? 'بلا سعة جدول' : `${occupancy.todayFill}% ممتلئ`}
-          </p>
-        </div>
-        <div className="grid lg:grid-cols-2 gap-6 mt-4">
-          <div>
-            <p className="text-[11px] text-stone-400 mb-2">حسب اليوم</p>
-            <div className="space-y-1.5">
-              {occupancy.byDay.map((d) => (
-                <div key={d.i} className="flex items-center gap-2 text-sm">
-                  <span className="w-16 text-xs shrink-0">{d.name}</span>
-                  <div className="flex-1 h-2 rounded-full bg-[#E5E9EC] dark:bg-white/10 overflow-hidden">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${occupancy.sample ? Math.max(4, (d.count / Math.max(...occupancy.byDay.map((x) => x.count), 1)) * 100) : 0}%`,
-                        background: d.i === occupancy.peakDay?.i ? TONES.coral : TONES.azure,
-                      }}
-                    />
-                  </div>
-                  <span className="w-6 text-left text-xs font-bold">{d.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <p className="text-[11px] text-stone-400 mb-2">حسب الساعة</p>
-            <div className="flex items-end gap-1 h-28">
-              {occupancy.byHour.map((h) => {
-                const max = Math.max(...occupancy.byHour.map((x) => x.count), 1);
-                const hot = occupancy.peakHour?.hour === h.hour;
+          {occupancy.agenda.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-bold text-[#6d7a77]">وردية اليوم</p>
+              {occupancy.agenda.slice(0, 4).map((a) => {
+                const st = APT_STATUS[a.status] || { label: a.status || '—', cls: 'bg-slate-50 text-slate-500' };
                 return (
-                  <div key={h.hour} className="flex-1 min-w-0 flex flex-col items-center justify-end h-full gap-1">
-                    <div
-                      className="w-full rounded-t-md"
-                      style={{ height: `${Math.max(6, (h.count / max) * 100)}%`, background: hot ? TONES.coral : TONES.azure, opacity: h.count ? 1 : 0.25 }}
-                      title={`${h.label}: ${h.count}`}
-                    />
-                    <span className="text-[9px] text-stone-400 leading-none">{h.hour}</span>
-                  </div>
+                  <Link key={a.id} to="/appointments" className="flex items-center justify-between gap-2 text-sm">
+                    <span className="truncate">{a.time} · {a.customerName}</span>
+                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${st.cls}`}>{st.label}</span>
+                  </Link>
                 );
               })}
             </div>
+          )}
+        </section>
+      </div>
+
+      <section className={`${card} p-5`}>
+        <h2 className="font-extrabold mb-3">الحجوزات حسب الفرع</h2>
+        {branchRows.length === 0 && <p className="text-sm text-[#6d7a77]">لا حجوزات غير ملغاة بعد.</p>}
+        {branchRows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>{['الفرع', 'الحجوزات', 'معلّق', 'حضرت', 'نسبة الحضور'].map((h) => <th key={h}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {branchRows.map((b) => {
+                  const rate = b.total ? Math.round((b.attended / b.total) * 100) : 0;
+                  return (
+                    <tr key={b.name}>
+                      <td className="font-bold">{b.name}</td>
+                      <td>{b.total}</td>
+                      <td>{b.pending}</td>
+                      <td>{b.attended}</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <div className="w-24 h-1.5 rounded-full bg-[#eef0ff] overflow-hidden">
+                            <div className="h-full bg-[#10b981]" style={{ width: `${rate}%` }} />
+                          </div>
+                          <span className="text-xs font-bold">{rate}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
-        </div>
-        <div className="mt-4 overflow-x-auto no-scrollbar">
-          <div className="flex gap-2 min-w-max">
-            {occupancy.lookahead.map((d) => (
-              <div key={d.date} className="w-[4.6rem] rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-2 text-center">
-                <p className="text-[10px] text-stone-400">{d.name}</p>
-                <p className="font-product text-lg leading-none mt-1">{d.fill == null ? '—' : `${d.fill}%`}</p>
-                <p className="text-[10px] text-stone-500 mt-1">{d.booked}/{d.cap || '—'}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-        {occupancy.tips.length > 0 && (
-          <ul className="mt-4 space-y-1.5 text-xs text-stone-600 dark:text-stone-400">
-            {occupancy.tips.map((t) => (
-              <li key={t}>• {t}</li>
-            ))}
-          </ul>
         )}
       </section>
 
-      <div className="grid lg:grid-cols-2 gap-4">
-        <section className="saas-card p-5">
-          <h2 className="font-product text-xl mb-3">وردية اليوم</h2>
-          {occupancy.agenda.length === 0 && <p className="text-sm text-stone-500">لا مواعيد مؤكدة أو معلّقة اليوم.</p>}
-          <div className="space-y-2">
-            {occupancy.agenda.slice(0, 6).map((a) => (
-              <Link key={a.id} to="/appointments" className="flex justify-between gap-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3 text-sm">
-                <span>
-                  <span className="font-bold block">{a.customerName}</span>
-                  <span className="text-xs text-stone-500">{a.service}{a.branchName ? ` · ${a.branchName}` : ''}</span>
-                </span>
-                <span className="text-xs font-bold shrink-0">{a.time}</span>
-              </Link>
-            ))}
+      <div className="grid lg:grid-cols-[0.7fr_1.3fr] gap-4">
+        <section className={`${card} p-5`}>
+          <h2 className="font-extrabold mb-3">إجراءات سريعة</h2>
+          <div className="grid grid-cols-2 gap-2">
+            <Link to="/appointments" className="rounded-2xl bg-[#ecfdf5] text-[#059669] p-3 text-sm font-bold">جدول اليوم</Link>
+            {userRole !== 'worker' && <Link to="/customers" className="rounded-2xl bg-[#f3f0ff] text-[#6b4eff] p-3 text-sm font-bold">عميلة جديدة</Link>}
+            {hasCap('ops') && <Link to="/appointments/gaps" className="rounded-2xl bg-[#f7f8ff] p-3 text-sm font-bold">الفراغات</Link>}
+            {userRole !== 'worker' && <Link to="/website" className="rounded-2xl bg-[#f7f8ff] p-3 text-sm font-bold">الموقع</Link>}
           </div>
         </section>
-        <section className="saas-card p-5">
-          <h2 className="font-product text-xl mb-3">الخدمات الأكثر حجزاً</h2>
-          {occupancy.services.length === 0 && <p className="text-sm text-stone-500">لا توزيع خدمات بعد.</p>}
-          <div className="space-y-2">
-            {occupancy.services.map((s) => (
-              <div key={s.name} className="flex justify-between text-sm rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] px-3 py-2">
-                <span>{s.name}</span>
-                <span className="font-product">{s.count}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      <div className="grid lg:grid-cols-2 gap-4">
-        <section className="saas-card p-5">
-          <h2 className="font-product text-xl mb-3">مركز التنبيهات</h2>
-          {alerts.length === 0 && (
-            <p className="text-sm text-[#3F5E57]">لا بند يحتاج تدخلاً من القواعد الحالية.</p>
-          )}
-          <div className="space-y-2">
-            {alerts.filter((a) => {
-              if (a.to === '/ops' && !hasCap('ops')) return false;
-              if (a.to === '/winback' && !hasCap('winback')) return false;
-              return true;
-            }).map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                onClick={() => a.to && navigate(a.to)}
-                className="w-full text-right rounded-xl p-3 flex gap-3 items-start bg-[#F7F8F6] dark:bg-[#1A2C38]"
-              >
-                <span className="w-1.5 self-stretch rounded-full shrink-0" style={{ background: TONES[a.tone] || TONES.azure }} />
-                <span>
-                  <span className="block font-bold text-sm">{a.title}</span>
-                  <span className="block text-xs text-stone-500 mt-0.5">{a.detail}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        <section className="saas-card p-5">
-          <h2 className="font-product text-xl mb-3">مركز المهام اليومية</h2>
+        <section className={`${card} p-5`}>
+          <h2 className="font-extrabold mb-3">مهام اليوم</h2>
           <ul className="space-y-2 text-sm">
-            <TaskRow to="/appointments" label="حجوزات تحتاج تأكيد العميلة" count={tasks.pending.length} tone={tasks.pending.length ? TONES.gold : TONES.mint} />
-            <TaskRow to="/appointments/attendance" label="غياب اليوم بلا متابعة" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? TONES.coral : TONES.mint} />
-            {hasCap('ops') && (
-              <>
-                <TaskRow to="/appointments/gaps" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone={TONES.mint} />
-                <TaskRow to="/appointments/reminders" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? TONES.azure : TONES.mint} />
-              </>
-            )}
-            {hasCap('winback') && (
-              <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} tone={tasks.failed.length ? TONES.coral : TONES.mint} />
-            )}
+            <TaskRow to="/appointments" label="حجوزات تحتاج تأكيد" count={tasks.pending.length} tone={tasks.pending.length ? '#f59e0b' : '#10b981'} />
+            <TaskRow to="/appointments/attendance" label="غياب اليوم" count={tasks.noshowToday.length} tone={tasks.noshowToday.length ? '#f43f5e' : '#10b981'} />
+            {hasCap('ops') && <TaskRow to="/appointments/gaps" label="مواعيد متاحة اليوم" count={tasks.gaps.length} tone="#10b981" />}
+            {hasCap('ops') && <TaskRow to="/appointments/reminders" label="تذكيرات مستحقة" count={tasks.followups.length} tone={tasks.followups.length ? '#6b4eff' : '#10b981'} />}
+            {hasCap('winback') && <TaskRow to="/winback" label="رسائل فشل إرسالها" count={tasks.failed.length} tone={tasks.failed.length ? '#f43f5e' : '#10b981'} />}
           </ul>
         </section>
       </div>
 
-      <section className="saas-card p-5">
-        <h2 className="font-product text-xl">مساعد الأرقام</h2>
-        <p className="text-xs text-stone-500 mt-1">يقرأ الحجوزات والحضور والمواعيد المتاحة المخزّنة. لا يخترع سبباً خارج السجل.</p>
-        <div className="flex flex-wrap gap-2 mt-3">
-          {PROMPTS.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => runAsk(p)}
-              className={`text-xs px-3 py-1.5 rounded-full ${ask === p.text ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}
-            >
-              {p.text}
-            </button>
-          ))}
-        </div>
-        <div className="flex flex-col sm:flex-row gap-2 mt-3">
-          <input
-            value={ask}
-            onChange={(e) => setAsk(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); runAsk(ask); } }}
-            className="flex-1 min-w-0 p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none"
-            placeholder="اسألي عن الحجوزات أو الحضور..."
-          />
-          <button type="button" onClick={() => runAsk(ask)} className="px-4 py-3 rounded-xl bg-[#10b981] text-white text-sm font-bold shrink-0">اسألي</button>
-        </div>
-        <div ref={replyRef} className="mt-4 rounded-2xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-4 space-y-2 min-h-[5.5rem]">
-          {reply ? (
-            <>
-              <p className="text-sm leading-relaxed text-[#172B3A] dark:text-white">{reply.answer}</p>
-              {reply.facts?.map((f) => (
-                <p key={f} className="text-[11px] text-stone-500">{f}</p>
-              ))}
-              {reply.missing?.length > 0 && (
-                <p className="text-[11px] text-[#9A3F32]">{reply.missing.join(' ')}</p>
-              )}
-            </>
-          ) : (
-            <p className="text-sm text-stone-400">اضغطي سؤالاً جاهزاً أو اكتبي واضغطي اسألي — الجواب يظهر هنا من سجل العيادة.</p>
-          )}
-        </div>
-      </section>
-
       {userRole !== 'worker' && (
-        <section className="saas-card p-5">
-          <div className="flex justify-between items-start gap-3">
+        <section className={`${card} p-5`}>
+          <div className="flex flex-wrap justify-between gap-3">
             <div>
-              <h2 className="font-product text-xl">مركز إدارة الموقع</h2>
-              <p className="text-xs text-stone-500 mt-1">ثيم {site.theme} · جاهزية {site.ready}/{site.total} · خدمات ناقصة {site.thinServices.length}</p>
+              <h2 className="font-extrabold">الموقع</h2>
+              <p className="text-xs text-[#6d7a77] mt-1">جاهزية {site.ready}/{site.total} · خدمات ناقصة {site.thinServices.length}</p>
             </div>
-            <div className="flex gap-3 shrink-0">
-              <Link to="/products" className="text-xs font-bold text-emerald-700">المنتجات</Link>
-              <Link to="/website" className="text-xs font-bold text-emerald-700">الموقع والمدونة</Link>
-              <a href={site.url || `/book/${clinicId}`} target="_blank" rel="noreferrer" className="text-xs font-bold text-sky-700">فتح الموقع العام</a>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-4 text-xs">
-            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">المنتجات من قسم المنتجات · المدونة من موقع العيادة</div>
-            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">النشر: {site.published ? 'اسم العيادة موجود' : 'ناقص الاسم'}</div>
-            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3 break-all" dir="ltr">{site.url || '—'}</div>
-            <div className="rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-3">
-              SEO: {clinicInfo?.seoTitle ? 'عنوان موجود' : 'بدون عنوان'}
+            <div className="flex gap-3 text-xs font-bold">
+              <Link to="/products" className="text-[#059669]">المنتجات</Link>
+              <Link to="/website" className="text-[#059669]">الموقع</Link>
+              <a href={site.url || `/book/${clinicId}`} target="_blank" rel="noreferrer" className="text-[#6b4eff]">فتح الحجز</a>
             </div>
           </div>
         </section>
@@ -521,7 +328,7 @@ const Dashboard = () => {
 function TaskRow({ to, label, count, tone }) {
   return (
     <li>
-      <Link to={to} className="flex justify-between items-center rounded-xl px-3 py-2 bg-[#F7F8F6] dark:bg-[#1A2C38]">
+      <Link to={to} className="flex justify-between items-center rounded-xl px-3 py-2 bg-[#FDFBF7] border border-[#E8E4DC]">
         <span>{label}</span>
         <span className="font-product text-lg" style={{ color: tone || TONES.azure }}>{count}</span>
       </Link>

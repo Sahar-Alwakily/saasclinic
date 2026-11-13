@@ -1,19 +1,22 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { FaComments, FaTimes, FaPaperPlane, FaKey } from 'react-icons/fa';
+import { useClinic } from '../../context/ClinicContext';
 import { useClinicSnapshot } from '../../hooks/useClinicSnapshot';
 import { spokenLocal } from '../../utils/consoleBrief';
+import { planConsoleCommand } from '../../utils/consoleCommands';
+import { runConsoleAction } from '../../utils/consoleActions';
 import { askGemini } from '../../utils/geminiChat';
 import { getGeminiKey, setGeminiKey } from '../../utils/geminiKey';
 
 const ConsoleChat = () => {
   const { pathname } = useLocation();
+  const { clinicPath, clinicId, isAdmin } = useClinic();
   const brief = useClinicSnapshot(pathname);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [keyDraft, setKeyDraft] = useState('');
-  const [hasKey, setHasKey] = useState(false);
   const [showKey, setShowKey] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -26,10 +29,6 @@ const ConsoleChat = () => {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    setHasKey(!!getGeminiKey());
-  }, [open]);
-
-  useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open]);
 
@@ -39,7 +38,6 @@ const ConsoleChat = () => {
 
   const saveKey = () => {
     setGeminiKey(keyDraft);
-    setHasKey(!!getGeminiKey());
     setShowKey(false);
     setKeyDraft('');
   };
@@ -52,18 +50,34 @@ const ConsoleChat = () => {
     setMessages((m) => [...m, { role: 'user', text: q }]);
     setBusy(true);
     try {
-      const key = getGeminiKey();
+      const planned = planConsoleCommand(brief, q, prior);
       let reply;
-      if (key) {
-        reply = await askGemini({
-          key,
-          briefText: brief.text,
-          history: prior,
-          question: q,
-          pathname,
-        });
+      if (planned?.action) {
+        if (!isAdmin) reply = { answer: 'التعديل لمالكة العيادة.', links: planned.links || [] };
+        else {
+          try {
+            const done = await runConsoleAction(planned.action, { clinicPath, clinicId });
+            reply = { answer: done.answer, links: planned.links || [] };
+          } catch {
+            reply = { answer: 'تعذّر الحفظ. جرّبي من الصفحة نفسها.', links: planned.links || [] };
+          }
+        }
+      } else if (planned) {
+        reply = planned;
       } else {
-        reply = spokenLocal(brief, q, prior);
+        const local = spokenLocal(brief, q, prior);
+        const key = getGeminiKey();
+        if (local.understood === false && key) {
+          reply = await askGemini({
+            key,
+            briefText: brief.text,
+            history: prior,
+            question: q,
+            pathname,
+          });
+        } else {
+          reply = local;
+        }
       }
       setMessages((m) => [...m, { role: 'assistant', text: reply.answer, links: reply.links || [] }]);
     } catch {
@@ -95,7 +109,7 @@ const ConsoleChat = () => {
           <header className="px-4 py-3 bg-[#111827] text-white flex items-center justify-between gap-2">
             <div className="min-w-0">
               <p className="font-product text-lg leading-none">المساعد</p>
-              <p className="text-[11px] text-white/50 mt-1">{hasKey ? 'يحكي معك من سجل العيادة' : 'فعّلي المفتاح حتى يساير الحكي'}</p>
+              <p className="text-[11px] text-white/50 mt-1">من سجل العيادة، بجملة عادية</p>
             </div>
             <div className="flex items-center gap-1">
               <button type="button" className="p-2 rounded-lg hover:bg-white/10" aria-label="مفتاح" onClick={() => setShowKey((v) => !v)}>

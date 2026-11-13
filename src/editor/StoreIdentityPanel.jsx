@@ -5,6 +5,7 @@ import { fontStack } from '../components/themes/themeUtils';
 import { FONT_OPTIONS, THEME_PRESETS, THEMES, safeHex } from './storeIdentity';
 import { templatesForPlan } from '../utils/platformTemplates';
 import { useClinic } from '../context/ClinicContext';
+import ImageUpload from '../components/ImageUpload';
 
 const fieldClass = 'w-full p-3 rounded-xl bg-[#F7F8F6] dark:bg-[#1A2C38] outline-none text-sm';
 
@@ -112,14 +113,8 @@ export default function StoreIdentityPanel({ store, setStore, clinicId, websiteP
       </label>
       {storeUrl && <p className="text-[11px] text-stone-500">الرابط العام يعمل فقط إذا الموقع منشور والعيادة غير موقوفة.</p>}
 
-      <div className="space-y-1">
-        <span className="text-xs font-bold">اللوجو</span>
-        <input type="url" dir="ltr" value={store.logoUrl} onChange={(e) => patch({ logoUrl: e.target.value })} className={fieldClass} placeholder="https://" />
-      </div>
-      <div className="space-y-1">
-        <span className="text-xs font-bold">صورة الغلاف</span>
-        <input type="url" dir="ltr" value={store.heroImage || ''} onChange={(e) => patch({ heroImage: e.target.value })} className={fieldClass} placeholder="https://" />
-      </div>
+      <ImageUpload label="الشعار" value={store.logoUrl} onChange={(logoUrl) => patch({ logoUrl })} round />
+      <ImageUpload label="صورة الغلاف" value={store.heroImage || ''} onChange={(heroImage) => patch({ heroImage })} />
       <div className="space-y-1">
         <span className="text-xs font-bold">اسم الأخصائية</span>
         <input value={store.doctorName} onChange={(e) => patch({ doctorName: e.target.value })} className={fieldClass} />

@@ -1,0 +1,245 @@
+{
+  "name": "projects/16371522047083640699",
+  "projectId": "16371522047083640699",
+  "title": "SaharClinic",
+  "visibility": "PRIVATE",
+  "createTime": "2026-11-13T15:20:39.042108Z",
+  "updateTime": "2026-11-13T15:20:39.042108Z",
+  "projectType": "PROJECT_DESIGN",
+  "origin": "MCP",
+  "designTheme": {},
+  "metadata": {
+    "userRole": "OWNER"
+  },
+  "screens": {
+    "/": {
+      "localFile": ".stitch/home.html",
+      "title": "/",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/2729161644886546111",
+      "screenInstanceId": "2729161644886546111"
+    },
+    "/login": {
+      "localFile": ".stitch/login.html",
+      "title": "/login",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/10977791599408038851",
+      "screenInstanceId": "10977791599408038851"
+    },
+    "/register": {
+      "localFile": ".stitch/register.html",
+      "title": "/register",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/15462556339554011849",
+      "screenInstanceId": "15462556339554011849"
+    },
+    "/dashboard": {
+      "localFile": ".stitch/dashboard.html",
+      "title": "/dashboard",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/18427967725271253459",
+      "screenInstanceId": "18427967725271253459"
+    },
+    "/appointments": {
+      "localFile": ".stitch/appointments.html",
+      "title": "/appointments",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/8047886431521579876",
+      "screenInstanceId": "8047886431521579876"
+    },
+    "/appointments/waitlist": {
+      "localFile": ".stitch/appointments-waitlist.html",
+      "title": "/appointments/waitlist",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/17239841333636530309",
+      "screenInstanceId": "17239841333636530309"
+    },
+    "/appointments/gaps": {
+      "localFile": ".stitch/appointments-gaps.html",
+      "title": "/appointments/gaps",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/2143773760428793049",
+      "screenInstanceId": "2143773760428793049"
+    },
+    "/appointments/reminders": {
+      "localFile": ".stitch/appointments-reminders.html",
+      "title": "/appointments/reminders",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/9025063616090256008",
+      "screenInstanceId": "9025063616090256008"
+    },
+    "/appointments/attendance": {
+      "localFile": ".stitch/appointments-attendance.html",
+      "title": "/appointments/attendance",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/10291399178090672703",
+      "screenInstanceId": "10291399178090672703"
+    },
+    "/appointments/schedule": {
+      "localFile": ".stitch/appointments-schedule.html",
+      "title": "/appointments/schedule",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/9587703467254755868",
+      "screenInstanceId": "9587703467254755868"
+    },
+    "/ops": {
+      "localFile": ".stitch/ops.html",
+      "title": "/ops",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/3976557351997596056",
+      "screenInstanceId": "3976557351997596056"
+    },
+    "/customers": {
+      "localFile": ".stitch/customers.html",
+      "title": "/customers",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/17616002933189644947",
+      "screenInstanceId": "17616002933189644947"
+    },
+    "/customers/:id": {
+      "localFile": ".stitch/customer-profile.html",
+      "title": "/customers/:id",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/13294218768571469108",
+      "screenInstanceId": "13294218768571469108"
+    },
+    "/services": {
+      "localFile": ".stitch/services.html",
+      "title": "/services",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/15946339332982200302",
+      "screenInstanceId": "15946339332982200302"
+    },
+    "/products": {
+      "localFile": ".stitch/products.html",
+      "title": "/products",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/17585578875109430766",
+      "screenInstanceId": "17585578875109430766"
+    },
+    "/products?tab=orders": {
+      "localFile": ".stitch/orders.html",
+      "title": "/products?tab=orders",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/2327994828801613690",
+      "screenInstanceId": "2327994828801613690"
+    },
+    "/website": {
+      "localFile": ".stitch/website.html",
+      "title": "/website",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/10352557964614236443",
+      "screenInstanceId": "10352557964614236443"
+    },
+    "/website?tab=policies": {
+      "localFile": ".stitch/website-policies.html",
+      "title": "/website?tab=policies",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/15901770609205673714",
+      "screenInstanceId": "15901770609205673714"
+    },
+    "/website?tab=blog": {
+      "localFile": ".stitch/blog.html",
+      "title": "/website?tab=blog",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/6464546229860502621",
+      "screenInstanceId": "6464546229860502621"
+    },
+    "/assistant": {
+      "localFile": ".stitch/assistant.html",
+      "title": "/assistant",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/5148879446610416349",
+      "screenInstanceId": "5148879446610416349"
+    },
+    "/winback": {
+      "localFile": ".stitch/winback.html",
+      "title": "/winback",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/6609084885019060232",
+      "screenInstanceId": "6609084885019060232"
+    },
+    "/marketing": {
+      "localFile": ".stitch/marketing.html",
+      "title": "/marketing",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/1276928254813057191",
+      "screenInstanceId": "1276928254813057191"
+    },
+    "/reports": {
+      "localFile": ".stitch/reports.html",
+      "title": "/reports",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/12652249457602019252",
+      "screenInstanceId": "12652249457602019252"
+    },
+    "/team": {
+      "localFile": ".stitch/team.html",
+      "title": "/team",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/15646166525959933788",
+      "screenInstanceId": "15646166525959933788"
+    },
+    "/staff": {
+      "localFile": ".stitch/staff.html",
+      "title": "/staff",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/14336712951176919980",
+      "screenInstanceId": "14336712951176919980"
+    },
+    "/branches": {
+      "localFile": ".stitch/branches.html",
+      "title": "/branches",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/13625073467252564926",
+      "screenInstanceId": "13625073467252564926"
+    },
+    "/billing": {
+      "localFile": ".stitch/billing.html",
+      "title": "/billing",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/8829759765402213304",
+      "screenInstanceId": "8829759765402213304"
+    },
+    "/support": {
+      "localFile": ".stitch/support.html",
+      "title": "/support",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/1571373924786931284",
+      "screenInstanceId": "1571373924786931284"
+    },
+    "/treatments": {
+      "localFile": ".stitch/treatments.html",
+      "title": "/treatments",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/3114225260134911644",
+      "screenInstanceId": "3114225260134911644"
+    },
+    "/settings": {
+      "localFile": ".stitch/settings.html",
+      "title": "/settings",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/9462368726386055610",
+      "screenInstanceId": "9462368726386055610"
+    },
+    "/settings?tab=whatsapp": {
+      "localFile": ".stitch/settings-whatsapp.html",
+      "title": "/settings?tab=whatsapp",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/15770887314536248846",
+      "screenInstanceId": "15770887314536248846"
+    },
+    "/book/:clinicId": {
+      "localFile": ".stitch/book.html",
+      "title": "/book/:clinicId",
+      "uploaded": true,
+      "screen": "projects/16371522047083640699/screens/16286331529854045591",
+      "screenInstanceId": "16286331529854045591"
+    }
+  },
+  "designSystem": {
+    "name": "assets/8441137a3ec94b9ba232e6ae4531a8f6",
+    "displayName": "WARAFA Clinic",
+    "sourceScreen": "projects/16371522047083640699/screens/15157974653424065772"
+  }
+}

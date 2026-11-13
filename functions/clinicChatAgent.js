@@ -12,12 +12,13 @@ const CATEGORIES = [
   { id: 'general', words: ['عام', 'general'] },
 ];
 
-const SYSTEM = `أنت "مساعد نورا الذكي"، مساعد إداري خبير لعيادات التجميل. مهمتك مساعدة صاحب العيادة في إدارة كل شيء بذكاء وسلاسة.
+const SYSTEM = `أنت "مساعد وَرَفَ الذكي"، مساعد إداري خبير لعيادات التجميل. مهمتك مساعدة صاحب العيادة في إدارة كل شيء بذكاء وسلاسة.
 تحدث دائماً بنفس لهجة المستخدم. إذا كتب بالشامي، رد بالشامي. إذا كتب بالفصحى، رد بالفصحى. إذا كتب بلهجة بدوية، رد بنفس اللهجة.
 
 قواعد الفهم (Intent Recognition):
 - إذا سأل المستخدم عن "حجوزات اليوم" أو "اليوم فيه حجوزات؟" أو "شو عندنا اليوم؟" -> استخدم أداة \`getDailySummary\` للتاريخ الحالي.
 - إذا سأل عن "بكرا" أو "غدا" -> احسب تاريخ الغد واستخدم \`getDailySummary\`.
+- إذا سأل عن "بعد بكرا" أو "بعد غد" -> احسب بعد الغد، لا تعيدي جواب بكرا.
 - إذا سأل عن "الفراغات" أو "أوقات فاضية" -> استخدم \`checkAvailability\`.
 - إذا قال "الغي موعد الساعة 10" أو "كنسل حجز" -> استخدم \`cancelAppointment\`.
 - إذا سأل "شو إيراد اليوم؟" -> استخدم أداة مالية (إذا كانت موجودة).
@@ -113,10 +114,15 @@ export function resolveClinicDate(value, today = clinicToday()) {
   if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
   const word = fold(raw);
   if (!word || word === 'اليوم' || word === 'يوم' || word === 'هلق' || word === 'هلقيت') return today;
-  if (/^(بكرا|بكره|غدا|غد|باكر)$/.test(word)) {
+  const shift = /بعد\s*(بكرا|بكره|غدا|غد|باكر)/.test(word)
+    ? 2
+    : /^(بكرا|بكره|غدا|غد|باكر)$/.test(word)
+      ? 1
+      : 0;
+  if (shift) {
     const [year, month, day] = today.split('-').map(Number);
     const next = new Date(Date.UTC(year, month - 1, day));
-    next.setUTCDate(next.getUTCDate() + 1);
+    next.setUTCDate(next.getUTCDate() + shift);
     return next.toISOString().slice(0, 10);
   }
   return raw || today;
@@ -186,9 +192,9 @@ async function cancelAppointment(clinicId, args, history, message) {
   const historyLog = Array.isArray(apt.history) ? apt.history : [];
   await db().ref(`clinics/${clinicId}/appointments/${apt.id}`).update({
     status: 'cancelled',
-    cancelReason: 'نورا الذكية',
+    cancelReason: 'وَرَفَ الذكية',
     cancelledAt: Date.now(),
-    history: [...historyLog, { at: Date.now(), action: 'cancelled', by: 'nura', reason: 'نورا الذكية' }].slice(-40),
+    history: [...historyLog, { at: Date.now(), action: 'cancelled', by: 'nura', reason: 'وَرَفَ الذكية' }].slice(-40),
   });
   const key = apt.slotKey || slotKey(apt.branchId, apt.specialistId, apt.date, apt.time);
   await db().ref(`clinics/${clinicId}/slotLocks/${key}`).transaction((cur) => {

@@ -20,7 +20,7 @@ const TITLES = [
   ['/treatments', 'متابعة العلاجات'],
   ['/products', 'المنتجات'],
   ['/website', 'موقع العيادة'],
-  ['/assistant', 'نورا الذكية'],
+  ['/assistant', 'وَرَفَ الذكية'],
   ['/winback', 'استرجاع العميلات'],
   ['/marketing', 'التسويق'],
   ['/blog', 'المحتوى'],
@@ -39,8 +39,8 @@ const TITLES = [
 function pageTitle(pathname, search) {
   if (pathname.startsWith('/customers/')) return 'ملف العميلة';
   const tab = new URLSearchParams(search).get('tab');
-  if (pathname === '/settings' && tab === 'privacy') return 'الخصوصية';
   if (pathname === '/settings' && tab === 'integrations') return 'التكاملات';
+  if (pathname === '/website' && tab === 'policies') return 'سياسات الموقع';
   if (pathname === '/products' && tab === 'orders') return 'طلبيات المنتجات';
   if (pathname === '/website' && tab === 'blog') return 'مدونة الموقع';
   const hit = TITLES.find(([path]) => pathname === path || pathname.startsWith(`${path}/`));
@@ -91,7 +91,7 @@ const Topbar = () => {
         <ThemeToggle />
         <NotificationBell />
         <div className="hidden sm:flex items-center gap-2 ps-1">
-          <div className="w-9 h-9 rounded-full bg-[#ecfdf3] text-[#15803d] font-bold flex items-center justify-center text-sm">{initial}</div>
+          <div className="w-9 h-9 rounded-full bg-[#EDF5F2] text-[#1F5C4D] font-bold flex items-center justify-center text-sm">{initial}</div>
           <div className="leading-tight min-w-0">
             <p className="text-[13px] font-bold text-[#111827] truncate max-w-[9rem]">{clinicInfo?.ownerName || clinicInfo?.name || 'العيادة'}</p>
             <p className="text-[11px] text-[#9ca3af]">{userRole === 'admin' ? 'مالكة' : 'تشغيل'}</p>

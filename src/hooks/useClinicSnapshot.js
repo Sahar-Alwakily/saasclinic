@@ -20,6 +20,8 @@ export function useClinicSnapshot(pathname) {
   const [messages, setMessages] = useState([]);
   const [blog, setBlog] = useState([]);
   const [settings, setSettings] = useState(null);
+  const [orders, setOrders] = useState([]);
+  const [products, setProducts] = useState([]);
 
   useEffect(() => {
     if (loadingClinic || !clinicId || !clinicPath) return undefined;
@@ -40,6 +42,8 @@ export function useClinicSnapshot(pathname) {
       onValue(ref(database, clinicPath('winbackMessages')), (s) => setMessages(listFrom(s)), fail),
       onValue(ref(database, clinicPath('blog')), (s) => setBlog(listFrom(s)), fail),
       onValue(ref(database, clinicPath('appointmentSettings')), (s) => setSettings(s.val()), fail),
+      onValue(ref(database, clinicPath('orders')), (s) => setOrders(listFrom(s)), fail),
+      onValue(ref(database, clinicPath('products')), (s) => setProducts(listFrom(s)), fail),
     ];
     return () => unsubs.forEach((u) => u());
   }, [clinicPath, clinicId, loadingClinic, userRole, userCategory]);
@@ -60,8 +64,10 @@ export function useClinicSnapshot(pathname) {
       messages,
       blog,
       settings,
+      orders,
+      products,
     }),
-    [pathname, clinicInfo, clinicId, plan, hasCap, appointments, customers, services, schedules, branches, waitlist, messages, blog, settings],
+    [pathname, clinicInfo, clinicId, plan, hasCap, appointments, customers, services, schedules, branches, waitlist, messages, blog, settings, orders, products],
   );
 
   return brief;

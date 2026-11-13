@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ref, onValue, update, remove, push } from 'firebase/database';
+import { ref, onValue, update, remove, push, set } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
@@ -31,6 +31,8 @@ const CustomerProfile = () => {
   const [waModal, setWaModal] = useState({ show: false, client: null, treatment: null });
   const [showMedicalForm, setShowMedicalForm] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
   const migrationDoneRef = useRef(false);
 
   useEffect(() => {
@@ -225,14 +227,48 @@ const CustomerProfile = () => {
     return rows;
   }, [customer]);
 
+  const ownerNotes = useMemo(() => {
+    const obj = customer?.ownerNotes || {};
+    return Object.entries(obj)
+      .map(([nid, note]) => ({ id: nid, ...(note || {}) }))
+      .filter((note) => String(note.text || '').trim())
+      .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  }, [customer]);
+
+  const handleAddNote = async () => {
+    const text = noteDraft.trim();
+    if (!text || savingNote) return;
+    setSavingNote(true);
+    try {
+      const noteRef = push(ref(database, clinicPath(`customers/${id}/ownerNotes`)));
+      await set(noteRef, { text, createdAt: Date.now() });
+      setNoteDraft('');
+      toast.success('حُفظت الملاحظة');
+    } catch {
+      toast.error('تعذّر حفظ الملاحظة');
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
+  const handleDeleteNote = async (noteId) => {
+    if (!window.confirm('حذف هذه الملاحظة؟')) return;
+    try {
+      await remove(ref(database, clinicPath(`customers/${id}/ownerNotes/${noteId}`)));
+      toast.success('حُذفت الملاحظة');
+    } catch {
+      toast.error('تعذّر الحذف');
+    }
+  };
+
   const afterCount = treatmentsList.filter((t) => t.currentPhase === 'after').length;
 
   if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
   if (!customer) return <div className="text-center py-20 text-[#8a9199]">العميلة غير موجودة</div>;
 
   const tabs = careEnabled
-    ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية']]
-    : [['medical', 'المعلومات الطبية']];
+    ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية'], ['notes', 'ملاحظات']]
+    : [['medical', 'المعلومات الطبية'], ['notes', 'ملاحظات']];
 
   return (
     <div dir="rtl" className="space-y-5 max-w-4xl mx-auto">
@@ -384,6 +420,46 @@ const CustomerProfile = () => {
                 </article>
               );
             })}
+          </div>
+        )}
+
+        {activeTab === 'notes' && (
+          <div>
+            <textarea
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              rows={3}
+              placeholder="ملاحظة عن العميلة…"
+              className="w-full p-3 rounded-xl bg-[#f8faf9] border border-[#e4eee8] outline-none focus:ring-2 focus:ring-emerald-200 text-sm"
+            />
+            <button
+              type="button"
+              disabled={savingNote || !noteDraft.trim()}
+              onClick={handleAddNote}
+              className="w-full mt-3 mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold disabled:opacity-40"
+            >
+              <FaPlus /> حفظ الملاحظة
+            </button>
+            {ownerNotes.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="font-bold text-[#111827]">لا ملاحظات بعد</p>
+                <p className="text-sm text-[#8a9199] mt-1">كل حفظ بيسجّل ملاحظة جديدة مع وقتها، من غير ما يمس الجلسات أو الملف الطبي.</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {ownerNotes.map((note) => (
+                  <div key={note.id} className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e4eee8] flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-[#8a9199]">{moment(note.createdAt).format('dddd، D MMMM YYYY — HH:mm')}</p>
+                      <p className="text-sm text-[#111827] mt-2 whitespace-pre-wrap">{note.text}</p>
+                    </div>
+                    <button type="button" onClick={() => handleDeleteNote(note.id)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-rose-500 flex items-center justify-center shrink-0" aria-label="حذف الملاحظة">
+                      <FaTrash />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

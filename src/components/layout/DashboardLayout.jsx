@@ -134,7 +134,7 @@ const DashboardLayout = () => {
           {plan?.id && plan.id !== 'trial' && (
             <p className="mx-4 sm:mx-6 mt-2 text-[11px] text-[#8a9199]">باقة {plan.name}</p>
           )}
-          <main className="p-4 sm:p-6 lg:px-8 lg:py-6 max-w-[1360px] mx-auto w-full pb-[max(1.5rem,env(safe-area-inset-bottom))]">
+          <main className={`p-4 sm:p-6 lg:px-8 lg:py-6 w-full pb-[max(1.5rem,env(safe-area-inset-bottom))] ${pathname.startsWith('/treatments') || pathname.startsWith('/customers') ? 'bg-[#f8fafc]' : pathname === '/dashboard' || pathname.startsWith('/appointments') ? 'bg-[#eef0ff]' : 'max-w-[1360px] mx-auto'}`}>
             <Outlet />
           </main>
           <ConsoleChat />

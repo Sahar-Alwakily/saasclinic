@@ -4,12 +4,12 @@ import {
 } from '../../utils/scheduleSlots';
 
 export const STATUS_COLORS = {
-  pending: { bg: '#fdecef', border: '#f9c5ce', text: '#9f1239', chip: 'bg-rose-100 text-rose-600', label: 'معلّق' },
-  confirmed: { bg: '#e8f1fb', border: '#c5daf5', text: '#1e3a5f', chip: 'bg-sky-100 text-sky-700', label: 'مؤكد' },
-  rescheduled: { bg: '#fbf3d5', border: '#f0d98a', text: '#854d0e', chip: 'bg-amber-100 text-amber-700', label: 'إعادة جدولة' },
-  cancelled: { bg: '#f3f4f6', border: '#e5e7eb', text: '#6b7280', chip: 'bg-gray-100 text-gray-500', label: 'ملغي' },
-  attended: { bg: '#e7f6ee', border: '#b8e3c9', text: '#166534', chip: 'bg-emerald-100 text-emerald-700', label: 'حضرت' },
-  noshow: { bg: '#fff1e8', border: '#fdba8c', text: '#9a3412', chip: 'bg-orange-100 text-orange-700', label: 'غياب' },
+  pending: { bg: '#fff1f2', border: '#fb7185', text: '#9f1239', chip: 'bg-rose-500 text-white', label: 'معلّق' },
+  confirmed: { bg: '#e0f2fe', border: '#38bdf8', text: '#075985', chip: 'bg-sky-500 text-white', label: 'مؤكد' },
+  rescheduled: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', chip: 'bg-amber-500 text-white', label: 'إعادة جدولة' },
+  cancelled: { bg: '#f3f4f6', border: '#9ca3af', text: '#4b5563', chip: 'bg-gray-500 text-white', label: 'ملغي' },
+  attended: { bg: '#d1fae5', border: '#10b981', text: '#065f46', chip: 'bg-emerald-600 text-white', label: 'حضرت' },
+  noshow: { bg: '#ffedd5', border: '#f97316', text: '#9a3412', chip: 'bg-orange-500 text-white', label: 'غياب' },
 };
 
 const ROW_H = 64;
@@ -49,7 +49,7 @@ function AptCard({ apt, selected, onSelect, compact }) {
       className="w-full text-right rounded-2xl px-3 py-2 overflow-hidden shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
       style={{
         background: c.bg,
-        border: `1px solid ${selected ? '#111827' : c.border}`,
+        border: `1px solid ${selected ? '#1F5C4D' : c.border}`,
         color: c.text,
       }}
     >
@@ -97,20 +97,20 @@ export function ResourceDayBoard({
   });
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-[20px] border border-[#ebeef2] bg-white" dir="rtl">
+    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-2xl border border-[#E8E4DC] bg-white" dir="rtl">
       <div className="min-w-[720px]">
         <div className="grid sticky top-0 z-20 bg-white" style={{ gridTemplateColumns: `4.25rem repeat(${cols.length}, minmax(13.5rem, 1fr))` }}>
-          <div className="p-3 text-[11px] text-[#9ca3af] border-b border-[#ebeef2]">الوقت</div>
+          <div className="p-3 text-[11px] text-[#8C93A0] border-b border-[#E8E4DC]">الوقت</div>
           {cols.map((s) => {
             const count = (byStaff[s.id || 'none'] || []).filter((a) => !['cancelled'].includes(a.status)).length;
             return (
-              <div key={s.id || 'none'} className="p-3 border-b border-s border-[#ebeef2] flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-[#ecfdf3] text-[#15803d] font-bold flex items-center justify-center text-sm shrink-0">
+              <div key={s.id || 'none'} className="p-3 border-b border-s border-[#E8E4DC] flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#EDF5F2] text-[#1F5C4D] font-bold flex items-center justify-center text-sm shrink-0">
                   {(s.name || 'ع').trim().charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold truncate text-[#111827]">{s.name}</p>
-                  <p className="text-[11px] text-[#8a9199]">مواعيد اليوم: <span className="text-[#16a34a] font-bold">{count}</span></p>
+                  <p className="text-sm font-bold truncate text-[#1E2229]">{s.name}</p>
+                  <p className="text-[11px] text-[#8C93A0]">مواعيد اليوم: <span className="text-[#1F5C4D] font-bold">{count}</span></p>
                 </div>
               </div>
             );
@@ -163,7 +163,7 @@ export function ResourceDayBoard({
               style={{ top: (nowFrac - hourStart) * ROW_H, right: '4.25rem', left: 0 }}
             >
               <div className="h-px bg-rose-500" />
-              <span className="absolute right-1/2 translate-x-1/2 -top-3 bg-[#111827] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <span className="absolute right-1/2 translate-x-1/2 -top-3 bg-[#1E2229] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {formatClock(now)}
               </span>
             </div>
@@ -201,17 +201,17 @@ export default function WeeklyBoard({
   });
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-[20px] border border-[#ebeef2] bg-white" dir="rtl">
+    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-2xl border border-[#E8E4DC] bg-white" dir="rtl">
       <div className="min-w-[720px]">
         <div className="grid sticky top-0 z-20 bg-white" style={{ gridTemplateColumns: `4.5rem repeat(7, minmax(0, 1fr))` }}>
-          <div className="p-2 text-[11px] text-[#9ca3af] border-b border-[#ebeef2]">ساعة</div>
+          <div className="p-2 text-[11px] text-[#8C93A0] border-b border-[#E8E4DC]">ساعة</div>
           {days.map((day) => (
             <div
               key={day.ymd}
-              className={`p-2 text-center border-b border-s border-[#ebeef2] ${day.ymd === today ? 'bg-[#111827]/5' : ''}`}
+              className={`p-2 text-center border-b border-s border-[#E8E4DC] ${day.ymd === today ? 'bg-[#EDF5F2]' : ''}`}
             >
-              <p className="text-xs font-bold text-[#111827]">{day.name}</p>
-              <p className="text-[11px] text-[#8a9199]">{day.date.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</p>
+              <p className="text-xs font-bold text-[#1E2229]">{day.name}</p>
+              <p className="text-[11px] text-[#8C93A0]">{day.date.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</p>
             </div>
           ))}
         </div>
@@ -225,7 +225,7 @@ export default function WeeklyBoard({
             ))}
           </div>
           {days.map((day) => (
-            <div key={day.ymd} className={`relative border-s border-[#f3f5f7] ${day.ymd === today ? 'bg-[#111827]/[0.02]' : ''}`} style={{ height }}>
+            <div key={day.ymd} className={`relative border-s border-[#F4F1EA] ${day.ymd === today ? 'bg-[#FDFBF7]' : ''}`} style={{ height }}>
               {hours.map((h) => (
                 <div key={h} className="border-b border-[#f3f5f7]" style={{ height: 56 }} />
               ))}
@@ -251,8 +251,7 @@ export function StatusLegend() {
   return (
     <div className="flex flex-wrap gap-2 text-[11px]">
       {Object.entries(STATUS_COLORS).map(([id, c]) => (
-        <span key={id} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-[#ebeef2] bg-white" style={{ color: c.text }}>
-          <span className="w-2 h-2 rounded-full" style={{ background: c.border }} />
+        <span key={id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${c.chip}`}>
           {c.label}
         </span>
       ))}

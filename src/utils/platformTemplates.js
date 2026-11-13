@@ -38,7 +38,7 @@ export function templatesForPlan(templatesMap, planId, websitePro) {
   const list = Object.values(map);
   if (!list.length) {
     const all = [
-      { id: 'beauty', renderer: 'beauty', name: 'تجميلي وردي', active: true, plans: ['trial', 'starter', 'pro', 'business'] },
+      { id: 'beauty', renderer: 'beauty', name: 'بيوتي', active: true, plans: ['trial', 'starter', 'pro', 'business'] },
       { id: 'elegant', renderer: 'elegant', name: 'أتيليه ذهبي', active: true, plans: ['trial', 'pro', 'business'] },
       { id: 'minimal', renderer: 'minimal', name: 'عيادة هادئة', active: true, plans: ['trial', 'pro', 'business'] },
     ];
