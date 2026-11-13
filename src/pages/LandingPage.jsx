@@ -147,7 +147,7 @@ const LandingPage = () => {
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#006948] via-emerald-600 to-teal-700"> من الحجز الأول حتى الإجراء الطبي الموثق.</span>
           </h1>
           <p className="mt-6 text-base sm:text-lg text-slate-500 leading-relaxed max-w-2xl mx-auto">
-            «وَرَف» يجمع إدارة المواعيد الدقيقة، قائمة الانتظار الذكية لملء الفراغات اللحظية، السجلات السيرية الرقمية (EMR)، وتأكيدات الواتساب الآلية في شاشة موحدة وسلسة.
+            وَرَف – منصتك المتكاملة لإدارة وتطوير عملك بكل سهولة واحترافية! تجمع لك جميع أدوات الإدارة والتسويق والتواصل مع العملاء في مكان واحد، لتسهيل أعمالك، تحسين تجربة عملائك، وتوفير وقتك وجهدك، لتتمكن من التركيز على نجاحك ونموّ عملك.
           </p>
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link to="/register" className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#006948] text-white px-7 py-3 rounded-xl font-semibold text-sm hover:bg-[#00553a]">
@@ -242,8 +242,8 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center mb-14">
             <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">الأثر التشغيلي الحقيقي</span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">أداء  محسوب بالأرقام، لا بمجرد شاشات إدخال.</h2>
-            <p className="mt-3 text-slate-500 text-sm sm:text-base">حوّلنا التحديات اليومية التي ترهق الطبيبة وطاقم الاستقبال إلى نظم ذكية تعمل بهدوء في الخلفية.</p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">وَرَف – منصتك المتكاملة لإدارة وتطوير عملك بكل سهولة واحترافية!</h2>
+            <p className="mt-3 text-slate-500 text-sm sm:text-base">حوّلنا التحديات اليومية التي ترهق الطبيبة وطاقم الاستقبال إلى نظم ذكية   في .</p>
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
             {OUTCOMES.map((item) => (
@@ -325,7 +325,7 @@ const LandingPage = () => {
                 <h3 className="text-2xl sm:text-3xl font-bold mt-2 tracking-tight">صُمم حصراً للمجال التجميلي </h3>
                 <p className="text-xs sm:text-sm text-slate-300 mt-3 leading-relaxed">ابتعدنا تماماً عن تعقيدات البرامج الطبية العامة القديمة وبرامج المستشفيات التقليدية لنبني بيئة عمل خفيفة تليق بفخامة عيادتك التجميلية وسرعة إيقاع يومك .</p>
                 <div className="mt-6 flex flex-wrap gap-2 text-xs">
-                  {['عيادات الحقن والتجميل', 'أطباء الجلدية والتناسلية', 'مراكز إزالة الشعر بالليزر', 'عيادات العناية بالبشرة المتقدمة'].map((tag) => (
+                  {['عيادات الحقن والتجميل', 'مراكز إزالة الشعر بالليزر', 'عيادات العناية بالبشرة المتقدمة'].map((tag) => (
                     <span key={tag} className="bg-white/10 text-slate-200 px-3 py-1 rounded-md border border-white/10">{tag}</span>
                   ))}
                 </div>
