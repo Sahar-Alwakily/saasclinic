@@ -31,7 +31,7 @@ const WeeklyAppointments = ({ appointments = [], services = [] }) => {
         if (!apt.date) return false;
         if (apt.status === 'cancelled') return false;
         if (!['pending', 'confirmed'].includes(apt.status)) return false;
-        const aptDate = new Date(apt.date);
+        const aptDate = new Date(`${apt.date}T00:00:00`);
         aptDate.setHours(0, 0, 0, 0);
         return aptDate.getTime() === date.getTime();
       });

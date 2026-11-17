@@ -7,12 +7,7 @@ const TopCustomers = ({ customers = [] }) => {
 
   const topCustomers = useMemo(() => {
     return customers
-      .map((c) => {
-        const sessions = c.sessions || [];
-        const adsStamp = c.adsStamp ? 1 : 0;
-        const totalStamps = sessions.length + adsStamp;
-        return { ...c, sessionsCount: sessions.length, totalStamps };
-      })
+      .map((c) => ({ ...c, sessionsCount: (c.sessions || []).length }))
       .sort((a, b) => b.sessionsCount - a.sessionsCount)
       .slice(0, 5);
   }, [customers]);

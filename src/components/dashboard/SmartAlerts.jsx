@@ -33,7 +33,7 @@ const SmartAlerts = ({ appointments = [], customers = [] }) => {
     const pendingOld = appointments.filter((apt) => {
       if (apt.status !== 'pending') return false;
       if (!apt.createdAt || !apt.date || !apt.time) return false;
-      const aptDate = new Date(apt.date);
+      const aptDate = new Date(`${apt.date}T00:00:00`);
       const [h, m] = parseTime(apt.time);
       aptDate.setHours(h, m, 0, 0);
       if (aptDate <= now) return false;
@@ -53,13 +53,21 @@ const SmartAlerts = ({ appointments = [], customers = [] }) => {
     const soonAppointments = appointments.filter((apt) => {
       if (!apt.date || !apt.time) return false;
       if (!['pending', 'confirmed'].includes(apt.status)) return false;
-      const aptDate = new Date(apt.date);
+      const aptDate = new Date(`${apt.date}T00:00:00`);
       const [h, m] = parseTime(apt.time);
       aptDate.setHours(h, m, 0, 0);
       return aptDate > now && aptDate <= nextHour;
     });
     if (soonAppointments.length > 0) {
-      const next = soonAppointments[0];
+      // نرتب حسب التاريخ والوقت لالتقاط الموعد القادم فعلاً وليس أول عنصر بالقائمة
+      const next = [...soonAppointments].sort((a, b) => {
+        const da = new Date(`${a.date}T00:00:00`);
+        const db = new Date(`${b.date}T00:00:00`);
+        if (da.getTime() !== db.getTime()) return da - db;
+        const [ha, ma] = parseTime(a.time);
+        const [hb, mb] = parseTime(b.time);
+        return (ha * 60 + ma) - (hb * 60 + mb);
+      })[0];
       list.push({
         id: 'soon', icon: FaClock, color: 'rose', bg: 'bg-rose-50', border: 'border-rose-200', text: 'text-rose-700', iconBg: 'bg-rose-400',
         title: `الموعد القادم بعد قليل`, description: `${next.customerName} — ${next.time} (${next.service})`,
@@ -71,7 +79,7 @@ const SmartAlerts = ({ appointments = [], customers = [] }) => {
     const next7Days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
     const birthdays = customers.filter((c) => {
       if (!c.birthDate) return false;
-      const bd = new Date(c.birthDate);
+      const bd = new Date(`${c.birthDate}T00:00:00`);
       const thisYearBd = new Date(now.getFullYear(), bd.getMonth(), bd.getDate());
       if (thisYearBd < today) thisYearBd.setFullYear(now.getFullYear() + 1);
       return thisYearBd >= today && thisYearBd <= next7Days;

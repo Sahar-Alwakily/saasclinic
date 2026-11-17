@@ -106,7 +106,7 @@ export function noShowRisk(appointments, apt, now = new Date()) {
   if (apt.status === 'pending') score += 8;
   score = Math.min(95, Math.round(score));
   const confidence = hist.n >= 12 ? 'مرتفعة' : hist.n >= 8 ? 'متوسطة' : 'منخفضة';
-  const earlyConfirm = score >= 35 && ['pending', 'confirmed'].includes(apt.status);
+  const earlyConfirm = score >= 35 && ['pending', 'confirmed', 'rescheduled'].includes(apt.status);
   const hoursBefore = (new Date(`${apt.date}T12:00:00`) - now) / 3600000;
   const extraAt = hoursBefore > 6 ? 6 : Math.max(2, Math.round(hoursBefore / 2));
   return { score, confidence, label: `احتمال عدم حضور تقريبي ${score}%`, earlyConfirm, extraReminderHours: extraAt, n: hist.n };
@@ -155,7 +155,7 @@ export function upcomingGaps({ schedules, appointments, branches, dateStr, now =
 }
 
 export function reminderDue(apt, settings, now = new Date()) {
-  if (!['pending', 'confirmed'].includes(apt.status)) return [];
+  if (!['pending', 'confirmed', 'rescheduled'].includes(apt.status)) return [];
   const hours = (settings.reminderHours || [24, 3]).map(Number);
   const sent = apt.remindersSent || {};
   const start = new Date(`${apt.date}T12:00:00`);
