@@ -1,4 +1,5 @@
 import { slotsForBooking } from './scheduleSlots';
+import { GONE_STATUSES } from './statuses';
 
 export const DEFAULT_WINBACK_SETTINGS = {
   defaultLapseDays: 60,

@@ -1,6 +1,7 @@
 import { ref, runTransaction } from 'firebase/database';
 import { normalizePhone, waDigits } from './winback';
 import { slotsForBooking, isFutureSlot, toYmd } from './scheduleSlots';
+import { BOOKABLE_STATUSES, GONE_STATUSES } from './statuses';
 
 export const APT_STATUSES = [
   { id: 'pending', label: 'تحتاج تأكيد العميلة' },
@@ -10,6 +11,9 @@ export const APT_STATUSES = [
   { id: 'attended', label: 'حضر' },
   { id: 'noshow', label: 'لم يحضر' },
 ];
+
+// حالات المواعيد المشتركة (single source of truth) — معرّفة في ./statuses
+export { BOOKABLE_STATUSES, GONE_STATUSES };
 
 export const DEFAULT_APT_SETTINGS = {
   autoConfirm: true,
@@ -58,7 +62,7 @@ export function isHoliday(dateStr, settings, schedules) {
 export function occupiedKeys(appointments) {
   const set = new Set();
   (appointments || []).forEach((a) => {
-    if (['cancelled', 'noshow'].includes(a.status)) return;
+    if (GONE_STATUSES.includes(a.status)) return;
     set.add(slotKey(a.branchId, a.specialistId, a.date, a.time));
   });
   return set;
@@ -106,7 +110,7 @@ export function noShowRisk(appointments, apt, now = new Date()) {
   if (apt.status === 'pending') score += 8;
   score = Math.min(95, Math.round(score));
   const confidence = hist.n >= 12 ? 'مرتفعة' : hist.n >= 8 ? 'متوسطة' : 'منخفضة';
-  const earlyConfirm = score >= 35 && ['pending', 'confirmed', 'rescheduled'].includes(apt.status);
+  const earlyConfirm = score >= 35 && BOOKABLE_STATUSES.includes(apt.status);
   const hoursBefore = (new Date(`${apt.date}T12:00:00`) - now) / 3600000;
   const extraAt = hoursBefore > 6 ? 6 : Math.max(2, Math.round(hoursBefore / 2));
   return { score, confidence, label: `احتمال عدم حضور تقريبي ${score}%`, earlyConfirm, extraReminderHours: extraAt, n: hist.n };
@@ -155,7 +159,7 @@ export function upcomingGaps({ schedules, appointments, branches, dateStr, now =
 }
 
 export function reminderDue(apt, settings, now = new Date()) {
-  if (!['pending', 'confirmed', 'rescheduled'].includes(apt.status)) return [];
+  if (!BOOKABLE_STATUSES.includes(apt.status)) return [];
   const hours = (settings.reminderHours || [24, 3]).map(Number);
   const sent = apt.remindersSent || {};
   const start = new Date(`${apt.date}T12:00:00`);

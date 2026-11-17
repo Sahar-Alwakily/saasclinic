@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   mergeAptSettings, DEFAULT_APT_SETTINGS, rankWaitlist, upcomingGaps, reminderDue,
-  noshowFollowupBody, waDigits, makeToken, appendHistory,
+  noshowFollowupBody, waDigits, makeToken, appendHistory, BOOKABLE_STATUSES,
 } from '../../utils/appointmentOps';
 import { addDays, toYmd, parseTimeOffset, isFutureSlot } from '../../utils/scheduleSlots';
 import { deliverAppointmentReminder, deliverUtilityNotice } from '../../utils/sendClinicWaReminder';
@@ -686,7 +686,7 @@ export function AttendanceView() {
   const [tab, setTab] = useState('clients');
   const todayApts = d.appointments.filter((a) => a.date === d.todayStr);
   const expected = todayApts
-    .filter((a) => ['pending', 'confirmed', 'rescheduled'].includes(a.status))
+    .filter((a) => BOOKABLE_STATUSES.includes(a.status))
     .slice()
     .sort((a, b) => (parseTimeOffset(a.time) ?? 99) - (parseTimeOffset(b.time) ?? 99));
   const arrived = todayApts.filter((a) => a.status === 'attended');

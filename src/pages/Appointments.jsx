@@ -10,7 +10,7 @@ import ScheduleSettingsModal from '../components/settings/ScheduleSettingsModal'
 import WeeklyBoard, { StatusLegend, STATUS_COLORS } from '../components/appointments/WeeklyBoard';
 import { runConsoleAction } from '../utils/consoleActions';
 import {
-  APT_STATUSES, appendHistory, releaseSlot, slotKey, manageUrl, waDigits,
+  APT_STATUSES, appendHistory, releaseSlot, slotKey, manageUrl, waDigits, BOOKABLE_STATUSES,
 } from '../utils/appointmentOps';
 import { deliverAppointmentReminder } from '../utils/sendClinicWaReminder';
 import {
@@ -412,7 +412,7 @@ const AppointmentsCalendar = () => {
                 {selected.status === 'rescheduled' && (
                   <button type="button" onClick={() => handleStatus(selected, 'confirmed')} className="px-3 py-2 bg-[#10b981] text-white rounded-xl text-sm font-bold">تأكيد الموعد الجديد</button>
                 )}
-                {['pending', 'confirmed', 'rescheduled'].includes(selected.status) && (
+                {BOOKABLE_STATUSES.includes(selected.status) && (
                   <>
                     <button type="button" onClick={() => handleStatus(selected, 'attended')} className="px-3 py-2 bg-emerald-50 text-emerald-700 rounded-xl text-sm font-bold">حضر</button>
                     <button type="button" onClick={() => handleStatus(selected, 'noshow')} className="px-3 py-2 bg-orange-50 text-orange-700 rounded-xl text-sm font-bold">لم يحضر</button>
@@ -427,7 +427,7 @@ const AppointmentsCalendar = () => {
                   <FaWhatsapp />
                 </button>
               </div>
-              {['pending', 'confirmed', 'rescheduled'].includes(selected.status) && (
+              {BOOKABLE_STATUSES.includes(selected.status) && (
                 <div className="border-t border-[#E8E4DC] pt-3 space-y-2">
                   <p className="text-xs font-bold">إعادة جدولة</p>
                   <input type="date" value={reschedule.date} onChange={(e) => setReschedule({ ...reschedule, date: e.target.value })} className="w-full p-2 rounded-xl bg-[#FDFBF7] border border-[#E8E4DC] text-sm" />

@@ -1,4 +1,6 @@
-import { upcomingGaps, reminderDue, mergeAptSettings, noShowRisk } from './appointmentOps';
+import {
+  upcomingGaps, reminderDue, mergeAptSettings, noShowRisk, BOOKABLE_STATUSES,
+} from './appointmentOps';
 
 export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -210,7 +212,7 @@ export function interventionAlerts({
     });
   }
   const highRisk = (appointments || [])
-    .filter((a) => ['pending', 'confirmed', 'rescheduled'].includes(a.status) && a.date >= today)
+    .filter((a) => BOOKABLE_STATUSES.includes(a.status) && a.date >= today)
     .map((a) => ({ ...a, risk: noShowRisk(appointments, a, at) }))
     .filter((a) => a.risk.earlyConfirm);
   if (highRisk.length) {
@@ -308,7 +310,7 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
     const d = new Date(now);
     d.setDate(d.getDate() + i);
     const dateStr = toYmd(d);
-    const booked = (appointments || []).filter((a) => a.date === dateStr && ['pending', 'confirmed', 'rescheduled'].includes(a.status)).length;
+    const booked = (appointments || []).filter((a) => a.date === dateStr && BOOKABLE_STATUSES.includes(a.status)).length;
     const gaps = upcomingGaps({ schedules, appointments, branches, dateStr, now });
     const cap = booked + gaps.length;
     lookahead.push({
@@ -329,7 +331,7 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
   const services = Object.entries(mix).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
   const agenda = (appointments || [])
-    .filter((a) => a.date === today && ['pending', 'confirmed', 'rescheduled'].includes(a.status))
+    .filter((a) => a.date === today && BOOKABLE_STATUSES.includes(a.status))
     .map((a) => ({ ...a, hour: hourFromTime(a.time) }))
     .sort((a, b) => (a.hour ?? 99) - (b.hour ?? 99) || String(a.time).localeCompare(String(b.time)));
 
