@@ -4,12 +4,12 @@ import { slotsForBooking, isFutureSlot, toYmd } from './scheduleSlots';
 import { BOOKABLE_STATUSES, GONE_STATUSES } from './statuses';
 
 export const APT_STATUSES = [
-  { id: 'pending', label: 'تحتاج تأكيد العميلة' },
-  { id: 'confirmed', label: 'مؤكد' },
-  { id: 'rescheduled', label: 'أُعيدت جدولته' },
-  { id: 'cancelled', label: 'ملغي' },
-  { id: 'attended', label: 'حضر' },
-  { id: 'noshow', label: 'لم يحضر' },
+  { id: 'pending', label: 'تحتاج تأكيد العميلة', short: 'معلّق' },
+  { id: 'confirmed', label: 'مؤكد', short: 'مؤكد' },
+  { id: 'rescheduled', label: 'أُعيدت جدولته', short: 'مُجدولة' },
+  { id: 'cancelled', label: 'ملغي', short: 'ملغى' },
+  { id: 'attended', label: 'حضر', short: 'حضرت' },
+  { id: 'noshow', label: 'لم يحضر', short: 'غياب' },
 ];
 
 // حالات المواعيد المشتركة (single source of truth) — معرّفة في ./statuses

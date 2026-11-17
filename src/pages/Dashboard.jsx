@@ -6,6 +6,7 @@ import { useClinic } from '../context/ClinicContext';
 import {
   clinicHealth, dailyTasks, interventionAlerts, siteStatus, occupancyInsights, toYmd,
 } from '../utils/clinicInsights';
+import { APT_STATUSES } from '../utils/appointmentOps';
 import { FaUsers, FaCalendarDay, FaChartLine, FaClipboardList } from 'react-icons/fa';
 
 const TONES = {
@@ -16,13 +17,17 @@ const TONES = {
   lilac: '#8b5cf6',
 };
 
-const APT_STATUS = {
-  pending: { label: 'معلّق', cls: 'bg-orange-50 text-orange-600' },
-  confirmed: { label: 'مؤكد', cls: 'bg-emerald-50 text-emerald-600' },
-  cancelled: { label: 'ملغى', cls: 'bg-rose-50 text-rose-500' },
-  attended: { label: 'حضرت', cls: 'bg-emerald-50 text-emerald-600' },
-  noshow: { label: 'غياب', cls: 'bg-rose-50 text-rose-500' },
+// تسميات الحالات من المصدر الواحد (APT_STATUSES) + ألوان الشرائح محلية
+const APT_CLS = {
+  pending: 'bg-orange-50 text-orange-600',
+  confirmed: 'bg-emerald-50 text-emerald-600',
+  cancelled: 'bg-rose-50 text-rose-500',
+  attended: 'bg-emerald-50 text-emerald-600',
+  noshow: 'bg-rose-50 text-rose-500',
 };
+const APT_STATUS = Object.fromEntries(
+  APT_STATUSES.map((s) => [s.id, { label: s.short, cls: APT_CLS[s.id] || 'bg-slate-50 text-slate-500' }]),
+);
 
 const Dashboard = () => {
   const { clinicInfo, clinicPath, clinicId, loadingClinic, userRole, userCategory, hasCap } = useClinic();
