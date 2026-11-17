@@ -1,13 +1,11 @@
 import {
   upcomingGaps, reminderDue, mergeAptSettings, noShowRisk, BOOKABLE_STATUSES,
 } from './appointmentOps';
-import { toYmd } from './scheduleSlots';
+import { toYmd, DAYS as DAY_NAMES } from './scheduleSlots';
 import { hourFromTime } from './timeParse';
 
-// مصدر toYmd هو ./scheduleSlots و hourFromTime من ./timeParse — إعادة تصدير للمستوردين القدامى
-export { toYmd, hourFromTime };
-
-export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+// مصدر toYmd و DAY_NAMES هو ./scheduleSlots — إعادة تصدير للمستوردين القدامى
+export { toYmd, DAY_NAMES, hourFromTime };
 
 export function inDateRange(dateStr, startYmd, endYmd) {
   if (!dateStr) return false;
