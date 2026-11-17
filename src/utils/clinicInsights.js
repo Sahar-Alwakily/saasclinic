@@ -1,14 +1,12 @@
 import {
   upcomingGaps, reminderDue, mergeAptSettings, noShowRisk, BOOKABLE_STATUSES,
 } from './appointmentOps';
+import { toYmd } from './scheduleSlots';
+
+// مصدر toYmd هو ./scheduleSlots — إعادة تصدير للمستوردين القدامى
+export { toYmd };
 
 export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-
-export function toYmd(d) {
-  const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return '';
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-}
 
 export function inDateRange(dateStr, startYmd, endYmd) {
   if (!dateStr) return false;
