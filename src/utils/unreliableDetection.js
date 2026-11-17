@@ -2,6 +2,9 @@ import { normalizePhone } from './winback';
 
 export const NEGATIVE_STREAK_LIMIT = 3; // عدد المرات اللي بتخلي الرقم "غير موثوق"
 
+// تحليل الوقت انتقل إلى ./timeParse — إعادة تصدير للمستوردين القدامى
+export { parseTime } from './timeParse';
+
 // دالة لتحويل الوقت من نص (مثال: 10:30 صباحًا / 10:30 م) إلى [ساعة، دقيقة]
 export const parseTime = (timeStr) => {
   if (!timeStr) return [0, 0];

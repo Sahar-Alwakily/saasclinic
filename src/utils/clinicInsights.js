@@ -2,9 +2,10 @@ import {
   upcomingGaps, reminderDue, mergeAptSettings, noShowRisk, BOOKABLE_STATUSES,
 } from './appointmentOps';
 import { toYmd } from './scheduleSlots';
+import { hourFromTime } from './timeParse';
 
-// مصدر toYmd هو ./scheduleSlots — إعادة تصدير للمستوردين القدامى
-export { toYmd };
+// مصدر toYmd هو ./scheduleSlots و hourFromTime من ./timeParse — إعادة تصدير للمستوردين القدامى
+export { toYmd, hourFromTime };
 
 export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
 
@@ -252,18 +253,7 @@ export function interventionAlerts({
   return list;
 }
 
-export function hourFromTime(t) {
-  const s = String(t || '');
-  const m = s.match(/(\d{1,2})/);
-  if (!m) return null;
-  let h = parseInt(m[1], 10);
-  const pm = /م|pm/i.test(s);
-  const am = /ص|am/i.test(s);
-  if (pm && h < 12) h += 12;
-  if (am && h === 12) h = 0;
-  if (h < 0 || h > 23) return null;
-  return h;
-}
+// hourFromTime مُصدَّرة أعلى الملف من ./timeParse
 
 function occupiesSlot(apt) {
   return apt && !['cancelled'].includes(apt.status);
