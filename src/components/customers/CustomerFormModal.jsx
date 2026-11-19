@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import SignatureCanvas from './SignatureCanvas';
 
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const pillActive = 'flex-1 rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-2 py-2 text-[11.5px] font-bold text-[#0E7490]';
+const pillIdle = 'flex-1 rounded-full border border-[#E4EAEE] bg-white px-2 py-2 text-[11.5px] font-bold text-[#334155]';
+const primary = 'w-full rounded-lg bg-[#059669] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#047857]';
+const labelCls = 'mb-1 block text-[11px] font-bold text-[#64748B]';
+
 const emptyMedical = {
   allergies: '',
   chronicDiseases: '',
@@ -46,66 +52,119 @@ const CustomerFormModal = ({
       medicalInfo: { ...emptyMedical, ...(initial?.medicalInfo || {}) },
       adsStamp: initial?.adsStamp || null,
     });
-  }, [show, initial]);
+  }, [show, initial, medicalOnly, startTab]);
 
   if (!show) return null;
 
   const med = form.medicalInfo || emptyMedical;
 
   return (
-    <div className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4" dir="rtl">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4" dir="rtl" role="dialog" aria-modal="true" onClick={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
           onSubmit(form);
         }}
-        className="bg-white rounded-3xl w-full max-w-lg max-h-[92vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[min(92vh,720px)] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[#E4EAEE] bg-white shadow-xl"
       >
-        <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
-          <h3 className="font-bold text-lg">{title}</h3>
-          <button type="button" onClick={onClose} className="w-8 h-8 rounded-full bg-white/20"><FaTimes className="mx-auto" /></button>
+        <div className="flex items-center justify-between border-b border-[#E4EAEE] px-5 py-4">
+          <div>
+            <p className="text-[11px] font-bold text-[#94A3B8]">سجل العميلات</p>
+            <h3 className="text-[16px] font-extrabold text-[#0F172A]">{title}</h3>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] text-[#64748B] hover:border-[#0FA3A3]"
+            aria-label="إغلاق"
+          >
+            <FaTimes className="text-[11px]" />
+          </button>
         </div>
+
         {!medicalOnly && (
-          <div className="flex gap-1.5 p-3 bg-[#f8faf9]">
-            {[['profile', 'البيانات'], ['medical', 'المعلومات الطبية'], ['ads', 'ختم الإعلانات']].map(([id, label]) => (
-              <button key={id} type="button" onClick={() => setTab(id)} className={`flex-1 py-2 text-xs font-bold rounded-full ${tab === id ? 'bg-[#10b981] text-white' : 'bg-white text-emerald-800 border border-[#e4eee8]'}`}>{label}</button>
+          <div className="flex gap-1.5 border-b border-[#E4EAEE] bg-[#F8FBFC] px-4 py-2">
+            {[['profile', 'البيانات'], ['medical', 'المعلومات الطبية'], ['ads', 'ختم الإعلانات']].map(([id, tabLabel]) => (
+              <button key={id} type="button" onClick={() => setTab(id)} className={tab === id ? pillActive : pillIdle}>
+                {tabLabel}
+              </button>
             ))}
           </div>
         )}
-        <div className="p-5 space-y-3">
+
+        <div className="space-y-3 overflow-y-auto p-5">
           {tab === 'profile' && (
             <>
               <div className="grid grid-cols-2 gap-3">
-                <input required placeholder="الاسم الأول *" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className="p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
-                <input placeholder="اسم العائلة" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className="p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
+                <label className={labelCls}>
+                  الاسم الأول *
+                  <input required value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })} className={field} placeholder="الاسم" />
+                </label>
+                <label className={labelCls}>
+                  اسم العائلة
+                  <input value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })} className={field} placeholder="العائلة" />
+                </label>
               </div>
-              <input required placeholder="الهاتف *" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
-              <input placeholder="رقم الهوية" value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
-              <input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
-              <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200">
-                <option value="female">أنثى</option>
-                <option value="male">ذكر</option>
-              </select>
+              <label className={labelCls}>
+                الهاتف *
+                <input required value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={field} placeholder="05..." dir="ltr" />
+              </label>
+              <label className={labelCls}>
+                رقم الهوية
+                <input value={form.idNumber} onChange={(e) => setForm({ ...form, idNumber: e.target.value })} className={field} dir="ltr" />
+              </label>
+              <label className={labelCls}>
+                تاريخ الميلاد
+                <input type="date" value={form.birthDate} onChange={(e) => setForm({ ...form, birthDate: e.target.value })} className={field} />
+              </label>
+              <label className={labelCls}>
+                الجنس
+                <select value={form.gender} onChange={(e) => setForm({ ...form, gender: e.target.value })} className={field}>
+                  <option value="female">أنثى</option>
+                  <option value="male">ذكر</option>
+                </select>
+              </label>
             </>
           )}
+
           {tab === 'medical' && (
             <>
-              <textarea placeholder="الحساسية" value={med.allergies} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, allergies: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
-              <textarea placeholder="الأمراض المزمنة" value={med.chronicDiseases} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, chronicDiseases: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
-              <textarea placeholder="الأدوية الحالية" value={med.currentMedications} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, currentMedications: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
-              <textarea placeholder="عمليات سابقة" value={med.previousSurgeries} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, previousSurgeries: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
-              <textarea placeholder="ملاحظات طبية" value={med.notes} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, notes: e.target.value } })} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" rows={2} />
+              {[
+                ['allergies', 'الحساسية'],
+                ['chronicDiseases', 'الأمراض المزمنة'],
+                ['currentMedications', 'الأدوية الحالية'],
+                ['previousSurgeries', 'عمليات سابقة'],
+                ['notes', 'ملاحظات طبية'],
+              ].map(([key, lab]) => (
+                <label key={key} className={labelCls}>
+                  {lab}
+                  <textarea
+                    value={med[key]}
+                    onChange={(e) => setForm({ ...form, medicalInfo: { ...med, [key]: e.target.value } })}
+                    className={`${field} min-h-[72px] resize-y`}
+                    rows={2}
+                  />
+                </label>
+              ))}
               {form.gender === 'female' && (
-                <div className="space-y-2 text-sm">
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={!!med.isPregnant} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, isPregnant: e.target.checked } })} /> حامل</label>
-                  <label className="flex items-center gap-2"><input type="checkbox" checked={!!med.isBreastfeeding} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, isBreastfeeding: e.target.checked } })} /> مرضعة</label>
+                <div className="space-y-2 rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] p-3 text-[13px]">
+                  <label className="flex items-center gap-2 font-bold text-[#334155]">
+                    <input type="checkbox" checked={!!med.isPregnant} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, isPregnant: e.target.checked } })} />
+                    حامل
+                  </label>
+                  <label className="flex items-center gap-2 font-bold text-[#334155]">
+                    <input type="checkbox" checked={!!med.isBreastfeeding} onChange={(e) => setForm({ ...form, medicalInfo: { ...med, isBreastfeeding: e.target.checked } })} />
+                    مرضعة
+                  </label>
                 </div>
               )}
             </>
           )}
+
           {tab === 'ads' && (
             <div>
-              <p className="text-sm text-stone-500 mb-2">توقيع الموافقة على الإعلانات (اختياري)</p>
+              <p className="mb-2 text-[12px] text-[#64748B]">توقيع الموافقة على الإعلانات (اختياري)</p>
               <SignatureCanvas
                 height={180}
                 initialValue={form.adsStamp?.signature || null}
@@ -116,7 +175,8 @@ const CustomerFormModal = ({
               />
             </div>
           )}
-          <button type="submit" className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold">حفظ</button>
+
+          <button type="submit" className={primary}>حفظ الملف</button>
         </div>
       </form>
     </div>

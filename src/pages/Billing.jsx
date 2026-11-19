@@ -7,6 +7,12 @@ import { useClinic } from '../context/ClinicContext';
 import { mergeAptSettings } from '../utils/appointmentOps';
 import { paidPlans, PLANS, hasCap } from '../config/plans';
 
+const card = 'rounded-lg border border-[#E4EAEE] bg-white';
+const primary = 'inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#059669] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#047857] disabled:opacity-40';
+const ghost = 'inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]';
+const chipMint = 'rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]';
+const chipGold = 'rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-bold text-[#B45309]';
+
 const Billing = () => {
   const { clinicPath, clinicId, clinicInfo, plan, isAdmin } = useClinic();
   const [orders, setOrders] = useState([]);
@@ -57,62 +63,81 @@ const Billing = () => {
     }
   };
 
+  const kpis = [
+    { label: 'الباقة', value: plan?.name || '—', note: plan?.id === 'trial' ? `تجربة ${PLANS.trial.durationDays} يوماً` : 'الاشتراك الحالي', accent: '#059669' },
+    { label: 'مبيعات المنتجات', value: `${productSales.toLocaleString('ar')} ₪`, note: 'من طلبات غير ملغاة', accent: '#B45309' },
+    { label: 'طلبات المنتجات', value: String(orders.length), note: 'في كتالوج العيادة', accent: '#0FA3A3' },
+    { label: 'العربون', value: settings.depositPolicyEnabled ? 'مفعّل' : 'غير مفعّل', note: settings.depositNote || 'سياسة الحجز', accent: '#64748B' },
+  ];
+
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div>
-        <h1 className="text-[22px] font-bold text-[#111827]">المدفوعات والاشتراكات</h1>
-        <p className="text-sm text-[#8a9199] mt-1">الباقة الحالية تقفل وتفتح أقسام الكونسول. بوابة الدفع غير مربوطة بعد.</p>
-      </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">الإعدادات</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">المدفوعات والاشتراكات</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">الباقة تقفل وتفتح أقسام الكونسول. بوابة الدفع غير مربوطة بعد.</p>
+        </div>
+        <Link to="/support" className={ghost}>طلبات المنصة</Link>
+      </header>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-xs text-[#047857]">الباقة</p>
-          <p className="stat-num text-[22px] leading-none mt-2">{plan?.name || '—'}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-xs text-[#b45309]">مبيعات المنتجات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{productSales.toLocaleString('ar')} ₪</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-xs text-[#0369a1]">طلبات المنتجات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{orders.length}</p>
-          {hasCap(clinicInfo, 'marketing')
-            ? <Link to="/products?tab=orders" className="text-xs font-bold text-emerald-700 mt-2 inline-block">سجل الطلبات</Link>
-            : <p className="text-xs text-[#8a9199] mt-2">من باقة عيادة</p>}
-        </div>
-        <div className="saas-card stat-card-lilac p-4">
-          <p className="text-xs text-[#6d28d9]">العربون</p>
-          <p className="stat-num text-[18px] leading-none mt-2">{settings.depositPolicyEnabled ? 'مفعّل' : 'غير مفعّل'}</p>
-        </div>
-      </div>
-
-      <section className="saas-card p-5 space-y-2">
-        <h2 className="font-bold text-[#111827]">سياسة العربون</h2>
-        <p className="text-sm text-[#6b7280]">{settings.depositPolicyEnabled ? 'مفعّلة' : 'غير مفعّلة'} — {settings.depositNote}</p>
-        {hasCap(clinicInfo, 'ops')
-          ? <Link to="/appointments/reminders" className="text-xs font-bold text-emerald-700">تعديل القواعد</Link>
-          : <p className="text-xs text-[#8a9199]">قواعد العربون من باقة عيادة</p>}
+      <section aria-label="مؤشرات المدفوعات" className="grid grid-cols-2 border-y border-[#E4EAEE] lg:grid-cols-4">
+        {kpis.map((k, i) => (
+          <div
+            key={k.label}
+            className={['px-5 py-4', i % 2 === 1 ? 'border-s border-[#E4EAEE]' : '', i > 1 ? 'border-t border-[#E4EAEE] lg:border-t-0' : '', i > 0 ? 'lg:border-s lg:border-[#E4EAEE]' : ''].join(' ')}
+          >
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />
+              {k.label}
+            </p>
+            <p className="mt-2 text-[28px] font-light leading-none tracking-tight sm:text-[32px]">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
       </section>
 
-      <section className="saas-card p-5 space-y-4">
+      <section className={`${card} p-4`}>
+        <h2 className="text-[15px] font-bold">سياسة العربون</h2>
+        <p className="mt-1 text-[13px] text-[#64748B]">
+          {settings.depositPolicyEnabled ? 'مفعّلة' : 'غير مفعّلة'} — {settings.depositNote}
+        </p>
+        {hasCap(clinicInfo, 'ops') ? (
+          <Link to="/appointments/reminders" className="mt-2 inline-block text-[12px] font-bold text-[#0E7490] hover:underline">تعديل القواعد</Link>
+        ) : (
+          <p className="mt-2 text-[12px] text-[#94A3B8]">قواعد العربون من باقة عيادة</p>
+        )}
+        {hasCap(clinicInfo, 'marketing') && (
+          <Link to="/products?tab=orders" className="mt-2 ms-4 inline-block text-[12px] font-bold text-[#0E7490] hover:underline">سجل طلبات المنتجات</Link>
+        )}
+      </section>
+
+      <section className={`${card} space-y-4 p-4`}>
         <div>
-          <h2 className="font-bold text-[#111827]">اشتراك وَرَفَ | WARAFA</h2>
-          <p className="text-sm text-[#8a9199] mt-1">الآن: <b className="text-[#111827]">{plan?.name}</b>. التجربة {PLANS.trial.durationDays} يوماً. الترقية تُرسل كطلب ولا تُعلَّم مدفوعة تلقائياً.</p>
+          <h2 className="text-[15px] font-bold">اشتراك وَرَفَ | WARAFA</h2>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">
+            الآن: <span className="font-bold text-[#0F172A]">{plan?.name}</span>. الترقية تُرسل كطلب ولا تُعلَّم مدفوعة تلقائياً.
+          </p>
         </div>
-        <div className="grid md:grid-cols-3 gap-3">
+        <div className="grid gap-3 md:grid-cols-3">
           {paidPlans().map((p) => {
             const active = plan?.id === p.id;
             const pending = clinicInfo?.pendingPlanRequest === p.id;
+            const accent = active ? '#059669' : '#0FA3A3';
             return (
-              <article key={p.id} className={`saas-card p-4 ${active ? 'stat-card-mint' : ''}`}>
-                <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-[#111827]">{p.name}</p>
-                  {active && <span className="nura-chip nura-chip-mint">الحالية</span>}
-                  {pending && !active && <span className="nura-chip nura-chip-gold">طلب مُرسَل</span>}
+              <article key={p.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white p-4">
+                <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: accent }} />
+                <div className="flex items-center justify-between gap-2 ps-1">
+                  <p className="font-bold text-[#0F172A]">{p.name}</p>
+                  {active && <span className={chipMint}>الحالية</span>}
+                  {pending && !active && <span className={chipGold}>طلب مُرسَل</span>}
                 </div>
-                <p className="text-lg font-bold text-emerald-700 mt-2">{p.price.toLocaleString('ar')} {p.currency}/شهر</p>
-                <ul className="text-xs text-[#8a9199] mt-3 space-y-1">
+                <p className="mt-2 text-[22px] font-light tabular-nums text-[#047857]">
+                  {p.price.toLocaleString('ar')} <span className="text-[13px] font-bold">{p.currency}/شهر</span>
+                </p>
+                <ul className="mt-3 space-y-1 text-[12px] text-[#64748B]">
                   {p.features.slice(0, 4).map((f) => <li key={f}>• {f}</li>)}
                 </ul>
                 {isAdmin && (
@@ -120,7 +145,7 @@ const Billing = () => {
                     type="button"
                     disabled={saving || active}
                     onClick={() => requestUpgrade(p.id)}
-                    className="mt-3 w-full py-2.5 rounded-xl text-sm font-bold bg-[#10b981] text-white disabled:opacity-40"
+                    className={`${primary} mt-4`}
                   >
                     {active ? 'الباقة الحالية' : pending ? 'طلب مُرسَل' : 'طلب ترقية'}
                   </button>
@@ -129,7 +154,9 @@ const Billing = () => {
             );
           })}
         </div>
-        <Link to="/#pricing" className="text-xs font-bold text-emerald-700">تفاصيل الباقات على صفحة وَرَفَ | WARAFA</Link>
+        <Link to="/#pricing" className="inline-block text-[12px] font-bold text-[#0E7490] hover:underline">
+          تفاصيل الباقات على صفحة وَرَفَ | WARAFA
+        </Link>
       </section>
     </div>
   );

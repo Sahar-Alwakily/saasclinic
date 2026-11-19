@@ -10,7 +10,10 @@ const MOCK_BLOGGERS = [
   { id: 'b5', name: 'هدى عودة', code: 'HUDA_CLINIC_12', visits: 637, purchases: 22, status: 'active' },
 ];
 
-const field = 'p-2.5 border border-[#e4eee8] rounded-2xl text-sm bg-[#f8faf9]';
+const field = 'rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const primary = 'inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[12.5px] font-bold text-white hover:bg-[#047857]';
+const chipMint = 'rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]';
+const chipRose = 'rounded-full border border-[#FECACA] bg-[#FEF2F2] px-2.5 py-1 text-[11px] font-bold text-[#B91C1C]';
 
 function couponCode(name) {
   const first = (name.trim().split(/\s+/)[0] || 'BLOG').replace(/\s+/g, '');
@@ -34,27 +37,23 @@ const BloggerTracking = () => {
   };
 
   return (
-    <section className="saas-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
+    <section className="rounded-lg border border-[#E4EAEE] bg-white p-4">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-bold text-[#111827] dark:text-white flex items-center gap-2">
-            <Users size={18} className="text-emerald-600" />
+          <h2 className="flex items-center gap-2 text-[15px] font-bold">
+            <Users size={18} className="text-[#059669]" />
             تتبع المدونين والشركاء
           </h2>
-          <p className="text-sm text-[#8a9199] mt-1">الزيارات هي نقرات الرابط، والمشتريات هي من أكمل الشراء. الأرقام هنا عينة للعرض.</p>
+          <p className="mt-1 text-[12px] text-[#64748B]">الزيارات نقرات الرابط؛ المشتريات من أكمل الشراء. أرقام عينة للعرض.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#10b981] text-white text-sm font-bold"
-        >
+        <button type="button" onClick={() => setOpen((v) => !v)} className={primary}>
           <Ticket size={16} />
           إنشاء كوبون لمدون
         </button>
       </div>
 
       {open && (
-        <form onSubmit={addBlogger} className="grid sm:grid-cols-[1fr_1fr_auto] gap-2 mb-4">
+        <form onSubmit={addBlogger} className="mb-4 grid gap-2 sm:grid-cols-[1fr_1fr_auto]">
           <input
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -68,34 +67,34 @@ const BloggerTracking = () => {
             dir="ltr"
             className={field}
           />
-          <button type="submit" className="px-4 py-2.5 rounded-2xl bg-[#111827] text-white text-sm font-bold">إضافة</button>
+          <button type="submit" className="rounded-lg bg-[#0F172A] px-4 py-2 text-[12.5px] font-bold text-white">إضافة</button>
         </form>
       )}
 
-      <div className="overflow-x-auto">
-        <table className="min-w-[640px]">
-          <thead>
+      <div className="overflow-x-auto rounded-lg border border-[#E4EAEE]">
+        <table className="min-w-[640px] w-full text-[13px]">
+          <thead className="bg-[#F8FBFC] text-[11px] font-bold text-[#64748B]">
             <tr>
-              <th>اسم المدون</th>
-              <th>كود الخصم</th>
-              <th>
+              <th className="p-3 text-right">اسم المدون</th>
+              <th className="p-3 text-right">كود الخصم</th>
+              <th className="p-3 text-right">
                 <span className="inline-flex items-center gap-1"><MousePointerClick size={14} /> عدد الزيارات</span>
               </th>
-              <th>
+              <th className="p-3 text-right">
                 <span className="inline-flex items-center gap-1"><ShoppingCart size={14} /> عدد المشتريات</span>
               </th>
-              <th>الحالة</th>
+              <th className="p-3 text-right">الحالة</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-[#E4EAEE]">
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="font-bold text-[#111827] dark:text-white">{row.name}</td>
-                <td><span className="font-mono text-xs" dir="ltr">{row.code}</span></td>
-                <td>{row.visits.toLocaleString('en')}</td>
-                <td>{row.purchases.toLocaleString('en')}</td>
-                <td>
-                  <span className={`nura-chip ${row.status === 'active' ? 'nura-chip-mint' : 'nura-chip-rose'}`}>
+                <td className="p-3 font-bold">{row.name}</td>
+                <td className="p-3"><span className="font-mono text-[11px]" dir="ltr">{row.code}</span></td>
+                <td className="p-3 tabular-nums">{row.visits.toLocaleString('en')}</td>
+                <td className="p-3 tabular-nums">{row.purchases.toLocaleString('en')}</td>
+                <td className="p-3">
+                  <span className={row.status === 'active' ? chipMint : chipRose}>
                     {row.status === 'active' ? 'نشط' : 'منتهي'}
                   </span>
                 </td>

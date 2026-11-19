@@ -4,12 +4,30 @@ import {
 } from '../../utils/scheduleSlots';
 
 export const STATUS_COLORS = {
-  pending: { bg: '#fff1f2', border: '#fb7185', text: '#9f1239', chip: 'bg-rose-500 text-white', label: 'معلّق' },
-  confirmed: { bg: '#e0f2fe', border: '#38bdf8', text: '#075985', chip: 'bg-sky-500 text-white', label: 'مؤكد' },
-  rescheduled: { bg: '#fef3c7', border: '#f59e0b', text: '#92400e', chip: 'bg-amber-500 text-white', label: 'إعادة جدولة' },
-  cancelled: { bg: '#f3f4f6', border: '#9ca3af', text: '#4b5563', chip: 'bg-gray-500 text-white', label: 'ملغي' },
-  attended: { bg: '#d1fae5', border: '#10b981', text: '#065f46', chip: 'bg-emerald-600 text-white', label: 'حضرت' },
-  noshow: { bg: '#ffedd5', border: '#f97316', text: '#9a3412', chip: 'bg-orange-500 text-white', label: 'غياب' },
+  pending: {
+    accent: '#B45309', soft: '#FFFBEB', softBorder: '#F3E2C2', ink: '#B45309',
+    bg: '#FFFBEB', border: '#F3E2C2', text: '#92400E', chip: 'bg-[#FFFBEB] text-[#B45309] border border-[#F3E2C2]', label: 'معلّق',
+  },
+  confirmed: {
+    accent: '#0FA3A3', soft: '#ECFEFF', softBorder: '#C6EEEE', ink: '#0E7490',
+    bg: '#ECFEFF', border: '#C6EEEE', text: '#0E7490', chip: 'bg-[#ECFEFF] text-[#0E7490] border border-[#C6EEEE]', label: 'مؤكد',
+  },
+  rescheduled: {
+    accent: '#0284C7', soft: '#F0F9FF', softBorder: '#CDE7F7', ink: '#0369A1',
+    bg: '#F0F9FF', border: '#CDE7F7', text: '#0369A1', chip: 'bg-[#F0F9FF] text-[#0369A1] border border-[#CDE7F7]', label: 'إعادة جدولة',
+  },
+  cancelled: {
+    accent: '#94A3B8', soft: '#F8FAFC', softBorder: '#E2E8F0', ink: '#64748B',
+    bg: '#F8FAFC', border: '#E2E8F0', text: '#64748B', chip: 'bg-[#F8FAFC] text-[#64748B] border border-[#E2E8F0]', label: 'ملغي',
+  },
+  attended: {
+    accent: '#059669', soft: '#ECFDF5', softBorder: '#C9EEE0', ink: '#047857',
+    bg: '#ECFDF5', border: '#C9EEE0', text: '#047857', chip: 'bg-[#ECFDF5] text-[#047857] border border-[#C9EEE0]', label: 'حضرت',
+  },
+  noshow: {
+    accent: '#DC2626', soft: '#FEF2F2', softBorder: '#F7D3D3', ink: '#DC2626',
+    bg: '#FEF2F2', border: '#F7D3D3', text: '#B91C1C', chip: 'bg-[#FEF2F2] text-[#DC2626] border border-[#F7D3D3]', label: 'غياب',
+  },
 };
 
 const ROW_H = 64;
@@ -46,21 +64,21 @@ function AptCard({ apt, selected, onSelect, compact }) {
     <button
       type="button"
       onClick={() => onSelect(apt)}
-      className="w-full text-right rounded-2xl px-3 py-2 overflow-hidden shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
+      className="relative w-full overflow-hidden rounded-lg border bg-white px-2.5 py-1.5 text-start transition-colors hover:border-[#CBD5E1]"
       style={{
-        background: c.bg,
-        border: `1px solid ${selected ? '#1F5C4D' : c.border}`,
-        color: c.text,
+        borderColor: selected ? c.accent : '#E4EAEE',
+        boxShadow: selected ? `0 0 0 1px ${c.accent}` : 'none',
       }}
     >
-      <div className={`flex gap-1 ${compact ? 'flex-col items-start' : 'items-start justify-between'}`}>
-        <p className="text-[13px] font-bold truncate w-full">{apt.customerName || 'عميلة'}</p>
-        <span className={`shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full ${c.chip}`}>{c.label}</span>
+      <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: c.accent }} />
+      <div className={`flex gap-1 ps-1.5 ${compact ? 'flex-col items-start' : 'items-start justify-between'}`}>
+        <p className="text-[12px] font-bold truncate w-full text-[#0F172A]">{apt.customerName || 'عميلة'}</p>
+        <span className="shrink-0 rounded-full border px-1.5 py-0.5 text-[9px] font-bold" style={{ background: c.soft, color: c.ink, borderColor: c.softBorder }}>{c.label}</span>
       </div>
       {!compact && (
         <>
-          <p className="text-[11px] mt-1 opacity-80">{timeRange(apt)}</p>
-          <p className="text-[11px] mt-0.5 truncate opacity-70">{apt.service || apt.serviceName || '—'}</p>
+          <p className="ps-1.5 mt-0.5 text-[10px] tabular-nums text-[#64748B]">{timeRange(apt)}</p>
+          <p className="ps-1.5 text-[10px] truncate text-[#94A3B8]">{apt.service || apt.serviceName || '—'}</p>
         </>
       )}
     </button>
@@ -97,20 +115,20 @@ export function ResourceDayBoard({
   });
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-2xl border border-[#E8E4DC] bg-white" dir="rtl">
+    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-xl border border-[#E4EAEE] bg-white" dir="rtl">
       <div className="min-w-[720px]">
         <div className="grid sticky top-0 z-20 bg-white" style={{ gridTemplateColumns: `4.25rem repeat(${cols.length}, minmax(13.5rem, 1fr))` }}>
-          <div className="p-3 text-[11px] text-[#8C93A0] border-b border-[#E8E4DC]">الوقت</div>
+          <div className="p-3 text-[11px] text-[#94A3B8] border-b border-[#E4EAEE]">الوقت</div>
           {cols.map((s) => {
             const count = (byStaff[s.id || 'none'] || []).filter((a) => !['cancelled'].includes(a.status)).length;
             return (
-              <div key={s.id || 'none'} className="p-3 border-b border-s border-[#E8E4DC] flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-full bg-[#EDF5F2] text-[#1F5C4D] font-bold flex items-center justify-center text-sm shrink-0">
+              <div key={s.id || 'none'} className="p-3 border-b border-s border-[#E4EAEE] flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-full bg-[#ECFEFF] text-[#0E7490] font-bold flex items-center justify-center text-sm shrink-0">
                   {(s.name || 'ع').trim().charAt(0)}
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-bold truncate text-[#1E2229]">{s.name}</p>
-                  <p className="text-[11px] text-[#8C93A0]">مواعيد اليوم: <span className="text-[#1F5C4D] font-bold">{count}</span></p>
+                  <p className="text-sm font-bold truncate text-[#0F172A]">{s.name}</p>
+                  <p className="text-[11px] text-[#94A3B8]">مواعيد اليوم: <span className="text-[#0E7490] font-bold">{count}</span></p>
                 </div>
               </div>
             );
@@ -120,7 +138,7 @@ export function ResourceDayBoard({
         <div className="grid relative" style={{ gridTemplateColumns: `4.25rem repeat(${cols.length}, minmax(13.5rem, 1fr))` }}>
           <div>
             {hours.map((h) => (
-              <div key={h} className="text-[11px] text-[#9ca3af] px-1 border-b border-[#f3f5f7] flex items-start pt-1.5" style={{ height: ROW_H }}>
+              <div key={h} className="text-[11px] text-[#94A3B8] px-1 border-b border-[#EDF1F4] flex items-start pt-1.5" style={{ height: ROW_H }}>
                 {formatHourLabel(h)}
               </div>
             ))}
@@ -128,20 +146,20 @@ export function ResourceDayBoard({
           {cols.map((s) => {
             const hoursOn = s.id ? staffHoursOnDate(schedules, s.id, dateStr, s.branch || s.branchId) : null;
             return (
-              <div key={s.id || 'none'} className="relative border-s border-[#f3f5f7]" style={{ height }}>
+              <div key={s.id || 'none'} className="relative border-s border-[#EDF1F4]" style={{ height }}>
                 {hours.map((h) => {
                   const off = hoursOn?.closed || (hoursOn && (h < hoursOn.start || h >= hoursOn.end));
                   return (
                     <div
                       key={h}
-                      className={`border-b border-[#f3f5f7] ${off ? 'cal-hatch' : ''}`}
+                      className={`border-b border-[#EDF1F4] ${off ? 'cal-hatch' : ''}`}
                       style={{ height: ROW_H }}
                     />
                   );
                 })}
                 {hoursOn?.closed && (
                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                    <span className="text-[11px] text-[#9ca3af] tracking-wide">غير متاح</span>
+                    <span className="text-[11px] text-[#94A3B8] tracking-wide">غير متاح</span>
                   </div>
                 )}
                 {(byStaff[s.id || 'none'] || []).map((apt) => {
@@ -162,8 +180,8 @@ export function ResourceDayBoard({
               className="absolute z-10 pointer-events-none"
               style={{ top: (nowFrac - hourStart) * ROW_H, right: '4.25rem', left: 0 }}
             >
-              <div className="h-px bg-rose-500" />
-              <span className="absolute right-1/2 translate-x-1/2 -top-3 bg-[#1E2229] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+              <div className="h-px bg-[#DC2626]" />
+              <span className="absolute right-1/2 translate-x-1/2 -top-3 bg-[#0F172A] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
                 {formatClock(now)}
               </span>
             </div>
@@ -201,17 +219,17 @@ export default function WeeklyBoard({
   });
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-2xl border border-[#E8E4DC] bg-white" dir="rtl">
+    <div className="overflow-auto max-h-[calc(100vh-15rem)] no-scrollbar rounded-xl border border-[#E4EAEE] bg-white" dir="rtl">
       <div className="min-w-[720px]">
         <div className="grid sticky top-0 z-20 bg-white" style={{ gridTemplateColumns: `4.5rem repeat(7, minmax(0, 1fr))` }}>
-          <div className="p-2 text-[11px] text-[#8C93A0] border-b border-[#E8E4DC]">ساعة</div>
+          <div className="p-2 text-[11px] text-[#94A3B8] border-b border-[#E4EAEE]">ساعة</div>
           {days.map((day) => (
             <div
               key={day.ymd}
-              className={`p-2 text-center border-b border-s border-[#E8E4DC] ${day.ymd === today ? 'bg-[#EDF5F2]' : ''}`}
+              className={`p-2 text-center border-b border-s border-[#E4EAEE] ${day.ymd === today ? 'bg-[#F4F7F8]' : ''}`}
             >
-              <p className="text-xs font-bold text-[#1E2229]">{day.name}</p>
-              <p className="text-[11px] text-[#8C93A0]">{day.date.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</p>
+              <p className="text-xs font-bold text-[#0F172A]">{day.name}</p>
+              <p className="text-[11px] text-[#94A3B8]">{day.date.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</p>
             </div>
           ))}
         </div>
@@ -219,15 +237,15 @@ export default function WeeklyBoard({
         <div className="grid" style={{ gridTemplateColumns: `4.5rem repeat(7, minmax(0, 1fr))` }}>
           <div>
             {hours.map((h) => (
-              <div key={h} className="text-[11px] text-[#9ca3af] px-1 border-b border-[#f3f5f7] flex items-start pt-1" style={{ height: 56 }}>
+              <div key={h} className="text-[11px] text-[#94A3B8] px-1 border-b border-[#EDF1F4] flex items-start pt-1" style={{ height: 56 }}>
                 {formatHourLabel(h)}
               </div>
             ))}
           </div>
           {days.map((day) => (
-            <div key={day.ymd} className={`relative border-s border-[#F4F1EA] ${day.ymd === today ? 'bg-[#FDFBF7]' : ''}`} style={{ height }}>
+            <div key={day.ymd} className={`relative border-s border-[#E4EAEE] ${day.ymd === today ? 'bg-[#F8FAFC]' : ''}`} style={{ height }}>
               {hours.map((h) => (
-                <div key={h} className="border-b border-[#f3f5f7]" style={{ height: 56 }} />
+                <div key={h} className="border-b border-[#EDF1F4]" style={{ height: 56 }} />
               ))}
               {(byDay[day.ymd] || []).map((apt) => {
                 if (apt._offset < hourStart || apt._offset >= hourEnd) return null;
@@ -249,10 +267,12 @@ export default function WeeklyBoard({
 
 export function StatusLegend() {
   return (
-    <div className="flex flex-wrap gap-2 text-[11px]">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[11px]">
+      <span className="text-[10.5px] font-bold uppercase tracking-wide text-[#94A3B8]">الحالات</span>
       {Object.entries(STATUS_COLORS).map(([id, c]) => (
-        <span key={id} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${c.chip}`}>
-          {c.label}
+        <span key={id} className="inline-flex items-center gap-1.5">
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: c.accent }} />
+          <span className="font-bold text-[#64748B]">{c.label}</span>
         </span>
       ))}
     </div>

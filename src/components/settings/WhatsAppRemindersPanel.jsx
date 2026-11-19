@@ -11,7 +11,7 @@ import {
   parseReminderHours,
 } from '../../utils/waReminderTemplates';
 
-const field = 'w-full p-3 rounded-xl border border-gray-200 dark:border-slate-600 dark:bg-slate-700 outline-none dark:text-white';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-white px-2.5 py-2 text-[12.5px] outline-none focus:border-[#0FA3A3]';
 
 const VAR_HINT = {
   waitlist: '{{1}} الاسم · {{2}} العيادة · {{3}} التاريخ والساعة · {{4}} رابط القبول',
@@ -24,11 +24,11 @@ const SAMPLE_BY_EVENT = {
 };
 
 const statusTone = {
-  draft: 'bg-stone-100 text-stone-600',
-  pending: 'bg-amber-50 text-amber-800',
-  approved: 'bg-emerald-50 text-emerald-800',
-  rejected: 'bg-rose-50 text-rose-700',
-  unavailable: 'bg-gray-100 text-gray-500',
+  draft: 'bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]',
+  pending: 'bg-[#FFFBEB] text-[#B45309] border-[#F3E2C2]',
+  approved: 'bg-[#ECFDF5] text-[#047857] border-[#C9EEE0]',
+  rejected: 'bg-[#FEF2F2] text-[#DC2626] border-[#F7D3D3]',
+  unavailable: 'bg-[#F8FAFC] text-[#94A3B8] border-[#E2E8F0]',
 };
 
 const WhatsAppRemindersPanel = ({ policy = {} }) => {
@@ -96,18 +96,18 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
 
   return (
     <div className="space-y-5" dir="rtl">
-      <div className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700">
-        <h3 className="font-product text-2xl">قوالب تذكير واتساب</h3>
-        <p className="text-sm text-stone-500 mt-1">
+      <div className="rounded-xl border border-[#E4EAEE] bg-white p-5">
+        <h3 className="text-[14px] font-extrabold">قوالب تذكير واتساب</h3>
+        <p className="mt-1 text-[11px] text-[#64748B]">
           هذه القوالب مربوطة بقواعد العيادة أعلاه: ساعات التذكير ({parseReminderHours(policy).join('، ') || '—'}) · سقف {policy.reminderCap ?? 3} رسائل لكل موعد.
         </p>
-        <div className="mt-4 rounded-2xl bg-[#F7F8F6] dark:bg-[#1A2C38] p-4 text-sm">
+        <div className="mt-3 rounded-lg border border-[#EDF1F4] bg-[#FAFCFC] p-3 text-[11.5px] text-[#334155]">
           {connected ? (
-            <p>واتساب مربوط · المرسل <span dir="ltr" className="font-mono">{sender}</span></p>
+            <p className="flex flex-wrap items-center gap-1.5"><span className="h-1.5 w-1.5 rounded-full bg-[#059669]" /> واتساب مربوط · المرسل <span dir="ltr" className="font-mono text-[#0E7490]">{sender}</span></p>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <p>واتساب غير مربوط — القالب ما بينرسل قبل تفعيل الربط.</p>
-              <Link to="/settings?tab=whatsapp" className="text-xs font-bold text-emerald-700">الإعدادات ← واتساب</Link>
+              <Link to="/settings?tab=whatsapp" className="text-[11px] font-bold text-[#0E7490] hover:text-[#059669]">الإعدادات ← واتساب</Link>
             </div>
           )}
         </div>
@@ -121,23 +121,24 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
         });
         const status = rec.approvalStatus || 'draft';
         return (
-          <article key={ev.id} className="bg-white dark:bg-slate-800 rounded-3xl p-6 shadow-sm border border-gray-100 dark:border-slate-700 space-y-3">
+          <article key={ev.id} className="space-y-3 rounded-xl border border-[#E4EAEE] bg-white p-4">
             <div className="flex flex-wrap items-start gap-3">
               <div className="flex-1 min-w-0">
-                <h4 className="font-bold">{ev.label}</h4>
+                <h4 className="text-[13px] font-extrabold text-[#0F172A]">{ev.label}</h4>
                 {(() => {
                   const bind = policyBindingForEvent(ev.id, policy);
                   return (
-                    <p className={`text-xs mt-1 ${bind.bound ? 'text-[#3F5E57]' : 'text-amber-700'}`}>{bind.rule}</p>
+                    <p className={`mt-1 text-[10.5px] ${bind.bound ? 'text-[#047857]' : 'text-[#B45309]'}`}>{bind.rule}</p>
                   );
                 })()}
               </div>
-              <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${statusTone[status] || statusTone.draft}`}>
+              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold ${statusTone[status] || statusTone.draft}`}>
                 {STATUS_LABELS_AR[status] || status}
               </span>
-              <label className="text-xs flex items-center gap-1">
+              <label className="flex items-center gap-1 text-[10.5px] text-[#64748B]">
                 <input
                   type="checkbox"
+                  className="accent-[#059669]"
                   checked={rec.enabled !== false}
                   onChange={(e) => saveLocal(ev.id, { enabled: e.target.checked, body: rec.body })}
                 />
@@ -152,20 +153,20 @@ const WhatsAppRemindersPanel = ({ policy = {} }) => {
               onChange={(e) => setDrafts((d) => ({ ...d, [ev.id]: e.target.value }))}
               onBlur={() => saveLocal(ev.id, { body: rec.body, enabled: rec.enabled !== false })}
             />
-            <p className="text-[11px] text-stone-400">المتغيرات: {VAR_HINT[ev.id] || '{{1}} الاسم · {{2}} العيادة · {{3}} التاريخ · {{4}} الساعة'}</p>
-            <div className="rounded-2xl bg-[#042f24] text-[#5eead4] p-4 text-sm leading-relaxed" dir="rtl">
-              <p className="text-[10px] tracking-widest uppercase text-white/40 mb-1">معاينة</p>
+            <p className="text-[10px] text-[#94A3B8]">المتغيرات: {VAR_HINT[ev.id] || '{{1}} الاسم · {{2}} العيادة · {{3}} التاريخ · {{4}} الساعة'}</p>
+            <div className="rounded-lg bg-[#0F172A] p-3 text-[12px] leading-relaxed text-[#5EEAD4]" dir="rtl">
+              <p className="mb-1 text-[9.5px] uppercase tracking-widest text-white/40">معاينة</p>
               {preview}
             </div>
-            {status === 'pending' && <p className="text-xs text-amber-700">بانتظار اعتماد واتساب — لن يُرسل هذا القالب حتى يؤكد Twilio الحالة «معتمد».</p>}
-            {status === 'rejected' && <p className="text-xs text-rose-700">مرفوض{rec.rejectionReason ? `: ${rec.rejectionReason}` : ''}. عدّلي النص وأعيدي الإرسال.</p>}
-            {status === 'unavailable' && <p className="text-xs text-stone-500">غير متاح لهذا المرسل. اربطي واتساب أو زامني الحالة من Twilio.</p>}
-            {rec.contentSid && <p className="text-[11px] font-mono text-stone-400" dir="ltr">ContentSid {rec.contentSid}</p>}
+            {status === 'pending' && <p className="text-[10.5px] text-[#B45309]">بانتظار اعتماد واتساب — لن يُرسل هذا القالب حتى يؤكد Twilio الحالة «معتمد».</p>}
+            {status === 'rejected' && <p className="text-[10.5px] text-[#DC2626]">مرفوض{rec.rejectionReason ? `: ${rec.rejectionReason}` : ''}. عدّلي النص وأعيدي الإرسال.</p>}
+            {status === 'unavailable' && <p className="text-[10.5px] text-[#94A3B8]">غير متاح لهذا المرسل. اربطي واتساب أو زامني الحالة من Twilio.</p>}
+            {rec.contentSid && <p className="font-mono text-[10px] text-[#94A3B8]" dir="ltr">ContentSid {rec.contentSid}</p>}
             <div className="flex flex-wrap gap-2">
-              <button type="button" disabled={!!busy || !connected} onClick={() => submit(ev.id, rec.body)} className="px-4 py-2 rounded-xl bg-[#172B3A] text-white text-sm font-bold disabled:opacity-40">
+              <button type="button" disabled={!!busy || !connected} onClick={() => submit(ev.id, rec.body)} className="rounded-lg bg-[#059669] px-3 py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-40">
                 {busy === ev.id ? 'جاري الإرسال…' : rec.contentSid ? 'إعادة الإرسال للاعتماد' : 'إنشاء وإرسال للاعتماد'}
               </button>
-              <button type="button" disabled={!!busy || !rec.contentSid} onClick={() => sync(ev.id)} className="px-4 py-2 rounded-xl bg-[#F7F8F6] text-sm font-bold disabled:opacity-40">
+              <button type="button" disabled={!!busy || !rec.contentSid} onClick={() => sync(ev.id)} className="rounded-lg border border-[#E4EAEE] bg-white px-3 py-1.5 text-[11.5px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490] disabled:opacity-40">
                 مزامنة الحالة
               </button>
             </div>

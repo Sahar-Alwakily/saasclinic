@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Navigate, useSearchParams } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, Navigate, useSearchParams } from 'react-router-dom';
 import { ref, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
@@ -8,7 +8,14 @@ import { FaBuilding, FaSave, FaPlug, FaWhatsapp, FaPen, FaTimes } from 'react-ic
 import WhatsAppConnectPanel from '../components/settings/WhatsAppConnectPanel';
 import { getGeminiKey, setGeminiKey } from '../utils/geminiKey';
 
-const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const card = 'rounded-lg border border-[#E4EAEE] bg-white';
+const primary = 'inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[#059669] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#047857] disabled:opacity-60';
+const ghost = 'inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]';
+const pillActive = 'shrink-0 rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-3 py-1.5 text-[11.5px] font-bold text-[#0E7490]';
+const pillIdle = 'shrink-0 rounded-full border border-[#E4EAEE] bg-white px-3 py-1.5 text-[11.5px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3]';
+
+const SOCIAL_LABELS = { whatsapp: 'واتساب', facebook: 'فيسبوك', instagram: 'إنستغرام', tiktok: 'تيك توك' };
 
 const Settings = () => {
   const { clinicInfo, clinicPath } = useClinic();
@@ -59,6 +66,34 @@ const Settings = () => {
     ownerEmail: clinicInfo?.ownerEmail || '',
   };
 
+  const filledSocial = useMemo(
+    () => ['whatsapp', 'facebook', 'instagram', 'tiktok'].filter((k) => String(social[k] || '').trim()).length,
+    [social],
+  );
+
+  const profileComplete = Boolean(savedProfile.name?.trim() && savedProfile.phone?.trim());
+
+  const kpis = [
+    {
+      label: 'ملف العيادة',
+      value: profileComplete ? 'مكتمل' : 'ناقص',
+      note: savedProfile.name || 'اسم العيادة',
+      accent: profileComplete ? '#059669' : '#B45309',
+    },
+    {
+      label: 'واتساب',
+      value: (social.whatsapp || clinicInfo?.whatsapp)?.trim() ? 'مربوط' : '—',
+      note: 'رقم أو ربط رسمي',
+      accent: '#0FA3A3',
+    },
+    {
+      label: 'قنوات التواصل',
+      value: `${filledSocial}/4`,
+      note: 'محفوظة في ملف العيادة',
+      accent: '#64748B',
+    },
+  ];
+
   const startProfileEdit = () => {
     setProfileData(savedProfile);
     setEditingProfile(true);
@@ -81,7 +116,7 @@ const Settings = () => {
       });
       setEditingProfile(false);
       toast.success('تم حفظ بيانات العيادة بنجاح!');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحفظ');
     } finally {
       setLoading(false);
@@ -101,130 +136,151 @@ const Settings = () => {
     }
   };
 
-  const tabCls = (id) => `shrink-0 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 ${activeTab === id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`;
-
   if (searchParams.get('tab') === 'privacy') return <Navigate to="/website?tab=policies" replace />;
 
   return (
-    <div className="space-y-5 pb-10" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 pb-10 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div>
-        <h1 className="text-[22px] font-bold text-[#111827]">إعدادات العيادة</h1>
-        <p className="text-sm text-[#8a9199] mt-1">بيانات العيادة وواتساب والتكاملات. السياسات من صفحة موقع العيادة.</p>
-      </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">الإعدادات</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">إعدادات العيادة</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">
+            بيانات العيادة وواتساب والتكاملات. السياسات من{' '}
+            <Link to="/website?tab=policies" className="font-bold text-[#0E7490] hover:underline">موقع العيادة</Link>.
+          </p>
+        </div>
+      </header>
+
+      <section aria-label="ملخص الإعدادات" className="grid grid-cols-3 border-y border-[#E4EAEE]">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={`px-5 py-4 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />
+              {k.label}
+            </p>
+            <p className="mt-2 text-[28px] font-light leading-none tracking-tight sm:text-[32px]">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
+      </section>
 
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-        <button type="button" onClick={() => goTab('profile')} className={tabCls('profile')}>
-          <FaBuilding /> بيانات العيادة
+        <button type="button" onClick={() => goTab('profile')} className={`${activeTab === 'profile' ? pillActive : pillIdle} flex items-center gap-1.5`}>
+          <FaBuilding className="text-[11px]" /> بيانات العيادة
         </button>
-        <button type="button" onClick={() => goTab('whatsapp')} className={tabCls('whatsapp')}>
-          <FaWhatsapp /> واتساب
+        <button type="button" onClick={() => goTab('whatsapp')} className={`${activeTab === 'whatsapp' ? pillActive : pillIdle} flex items-center gap-1.5`}>
+          <FaWhatsapp className="text-[11px]" /> واتساب
         </button>
-        <button type="button" onClick={() => goTab('integrations')} className={tabCls('integrations')}>
-          <FaPlug /> التكاملات
+        <button type="button" onClick={() => goTab('integrations')} className={`${activeTab === 'integrations' ? pillActive : pillIdle} flex items-center gap-1.5`}>
+          <FaPlug className="text-[11px]" /> التكاملات
         </button>
       </div>
 
-      <div className="max-w-3xl">
-        <div className="space-y-5">
-          {activeTab === 'whatsapp' && <WhatsAppConnectPanel />}
+      <div className="max-w-3xl space-y-5">
+        {activeTab === 'whatsapp' && <WhatsAppConnectPanel />}
 
-          {activeTab === 'integrations' && (
-            <section className="saas-card p-5 space-y-4">
-              <p className="text-sm text-[#8a9199]">أرقام وروابط القنوات المحفوظة في ملف العيادة — لا بوابة واتساب رسمية مربوطة بعد.</p>
-              {['whatsapp', 'facebook', 'instagram', 'tiktok'].map((key) => (
-                <div key={key}>
-                  <label className="block text-sm font-bold text-[#111827] mb-1">{key}</label>
-                  <input
-                    value={social[key] || ''}
-                    onChange={(e) => setSocial({ ...social, [key]: e.target.value })}
-                    className={field}
-                    dir="ltr"
-                  />
+        {activeTab === 'integrations' && (
+          <section className={`${card} space-y-4 p-4`}>
+            <h2 className="text-[15px] font-bold">التكاملات والقنوات</h2>
+            <p className="text-[12px] text-[#64748B]">أرقام وروابط القنوات المحفوظة في ملف العيادة.</p>
+            {['whatsapp', 'facebook', 'instagram', 'tiktok'].map((key) => (
+              <label key={key} className="block text-[12px] font-bold text-[#64748B]">
+                {SOCIAL_LABELS[key]}
+                <input
+                  value={social[key] || ''}
+                  onChange={(e) => setSocial({ ...social, [key]: e.target.value })}
+                  className={`${field} mt-1`}
+                  dir="ltr"
+                />
+              </label>
+            ))}
+            <div className="space-y-2 border-t border-[#E4EAEE] pt-4">
+              <label className="block text-[12px] font-bold text-[#64748B]">مفتاح Gemini (مساعد الكونسول)</label>
+              <p className="text-[11px] text-[#94A3B8]">
+                من{' '}
+                <a className="font-bold text-[#0E7490] hover:underline" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">
+                  Google AI Studio
+                </a>
+                . يُحفظ في هذا المتصفح فقط.
+              </p>
+              <input
+                type="password"
+                value={geminiKey}
+                onChange={(e) => setGeminiKeyField(e.target.value)}
+                className={field}
+                dir="ltr"
+                placeholder="AIza..."
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setGeminiKey(geminiKey);
+                  toast.success('حُفظ مفتاح المساعد على هذا الجهاز');
+                }}
+                className="w-full rounded-lg bg-[#0F172A] px-4 py-2.5 text-[13px] font-bold text-white hover:bg-[#1E293B]"
+              >
+                حفظ مفتاح المساعد
+              </button>
+            </div>
+            <button type="button" onClick={handleSaveSocial} disabled={loading} className={primary}>
+              حفظ التكاملات
+            </button>
+          </section>
+        )}
+
+        {activeTab === 'profile' && !editingProfile && (
+          <section className={`${card} p-4`}>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <h2 className="text-[15px] font-bold">بيانات العيادة</h2>
+              <button type="button" onClick={startProfileEdit} className={ghost}>
+                <FaPen className="text-[10px]" /> تعديل البيانات
+              </button>
+            </div>
+            <dl className="mt-4 space-y-4">
+              {[
+                ['اسم العيادة', savedProfile.name],
+                ['رقم الهاتف', savedProfile.phone, true],
+                ['البريد الإلكتروني', savedProfile.ownerEmail, true],
+              ].map(([label, val, ltr]) => (
+                <div key={label} className="border-b border-[#EDF1F4] pb-3 last:border-0">
+                  <dt className="text-[11px] font-bold text-[#64748B]">{label}</dt>
+                  <dd className="mt-1 text-[15px] font-bold text-[#0F172A]">
+                    {ltr ? <span dir="ltr">{val || '—'}</span> : (val || '—')}
+                  </dd>
                 </div>
               ))}
-              <div className="pt-4 border-t border-[#e4eee8] space-y-2">
-                <label className="block text-sm font-bold text-[#111827]">مفتاح Gemini (مجاني — مساعد الكونسول)</label>
-                <p className="text-xs text-[#8a9199]">
-                  من <a className="text-emerald-700 font-bold" href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. يُحفظ في هذا المتصفح فقط، لا يُرفع لقاعدة البيانات.
-                </p>
-                <input
-                  type="password"
-                  value={geminiKey}
-                  onChange={(e) => setGeminiKeyField(e.target.value)}
-                  className={field}
-                  dir="ltr"
-                  placeholder="AIza..."
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGeminiKey(geminiKey);
-                    toast.success('حُفظ مفتاح المساعد على هذا الجهاز');
-                  }}
-                  className="w-full bg-[#111827] text-white py-3 rounded-xl font-bold"
-                >
-                  حفظ مفتاح المساعد
-                </button>
-              </div>
-              <button type="button" onClick={handleSaveSocial} disabled={loading} className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold">
-                حفظ التكاملات
-              </button>
-            </section>
-          )}
+            </dl>
+          </section>
+        )}
 
-          {activeTab === 'profile' && !editingProfile && (
-            <section className="saas-card p-5">
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <h2 className="font-bold text-[#111827]">بيانات العيادة</h2>
-                <button type="button" onClick={startProfileEdit} className="nura-chip nura-chip-lilac">
-                  <FaPen className="text-[11px]" /> تعديل البيانات
-                </button>
-              </div>
-              <dl className="mt-4 space-y-3">
-                <div>
-                  <dt className="text-xs text-[#8a9199]">اسم العيادة</dt>
-                  <dd className="font-bold text-[#111827] mt-0.5">{savedProfile.name || '—'}</dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-[#8a9199]">رقم الهاتف</dt>
-                  <dd className="font-bold text-[#111827] mt-0.5 text-right"><span dir="ltr">{savedProfile.phone || '—'}</span></dd>
-                </div>
-                <div>
-                  <dt className="text-xs text-[#8a9199]">البريد الإلكتروني</dt>
-                  <dd className="font-bold text-[#111827] mt-0.5 text-right"><span dir="ltr">{savedProfile.ownerEmail || '—'}</span></dd>
-                </div>
-              </dl>
-            </section>
-          )}
-
-          {activeTab === 'profile' && editingProfile && (
-            <section className="saas-card p-5 space-y-5">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="font-bold text-[#111827]">تعديل بيانات العيادة</h2>
-                <button type="button" onClick={cancelProfileEdit} className="nura-chip nura-chip-rose">
-                  <FaTimes className="text-[11px]" /> إلغاء
-                </button>
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-[#111827] mb-2">اسم العيادة</label>
-                <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className={field} />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-[#111827] mb-2">رقم الهاتف</label>
-                <input type="tel" value={profileData.phone} onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })} className={field} dir="ltr" />
-              </div>
-              <div>
-                <label className="block text-sm font-bold text-[#111827] mb-2">البريد الإلكتروني</label>
-                <input type="email" value={profileData.ownerEmail} onChange={(e) => setProfileData({ ...profileData, ownerEmail: e.target.value })} className={field} dir="ltr" />
-              </div>
-              <button type="button" onClick={handleSaveProfile} disabled={loading} className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold disabled:opacity-60 flex items-center justify-center gap-2">
-                <FaSave /> {loading ? 'جاري الحفظ...' : 'حفظ بيانات العيادة'}
+        {activeTab === 'profile' && editingProfile && (
+          <section className={`${card} space-y-4 p-4`}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="text-[15px] font-bold">تعديل بيانات العيادة</h2>
+              <button type="button" onClick={cancelProfileEdit} className="inline-flex items-center gap-1 text-[12px] font-bold text-[#B91C1C]">
+                <FaTimes className="text-[10px]" /> إلغاء
               </button>
-            </section>
-          )}
-        </div>
+            </div>
+            <label className="block text-[12px] font-bold text-[#64748B]">
+              اسم العيادة
+              <input type="text" value={profileData.name} onChange={(e) => setProfileData({ ...profileData, name: e.target.value })} className={`${field} mt-1`} />
+            </label>
+            <label className="block text-[12px] font-bold text-[#64748B]">
+              رقم الهاتف
+              <input type="tel" value={profileData.phone} onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })} className={`${field} mt-1`} dir="ltr" />
+            </label>
+            <label className="block text-[12px] font-bold text-[#64748B]">
+              البريد الإلكتروني
+              <input type="email" value={profileData.ownerEmail} onChange={(e) => setProfileData({ ...profileData, ownerEmail: e.target.value })} className={`${field} mt-1`} dir="ltr" />
+            </label>
+            <button type="button" onClick={handleSaveProfile} disabled={loading} className={primary}>
+              <FaSave /> {loading ? 'جاري الحفظ...' : 'حفظ بيانات العيادة'}
+            </button>
+          </section>
+        )}
       </div>
     </div>
   );

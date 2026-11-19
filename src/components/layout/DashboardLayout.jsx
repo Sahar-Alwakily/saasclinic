@@ -126,15 +126,15 @@ const DashboardLayout = () => {
             </div>
           )}
           {trialExpired && (
-            <div className="mx-4 sm:mx-6 mt-3 rounded-2xl bg-[#fff7ed] text-[#c2410c] text-sm px-4 py-2.5 flex flex-wrap justify-between gap-2 border border-[#ffedd5]">
+            <div className="mx-4 sm:mx-6 mt-3 rounded-2xl bg-[#fff7ed] text-[#c2410c] text-sm px-4 py-2.5 flex flex-wrap justify-between gap-2 border border-[#ffedd5] dark:bg-[#422006] dark:text-[#fdba74] dark:border-[#78350f]">
               <span>انتهت الفترة التجريبية. الكونسول مفتوح حتى ربط الدفع.</span>
-              <Link to="/billing" className="font-semibold text-[#111827]">الباقات</Link>
+              <Link to="/billing" className="font-semibold text-[#111827] dark:text-[#E8EEEA]">الباقات</Link>
             </div>
           )}
           {plan?.id && plan.id !== 'trial' && (
-            <p className="mx-4 sm:mx-6 mt-2 text-[11px] text-[#8a9199]">باقة {plan.name}</p>
+            <p className="mx-4 sm:mx-6 mt-2 text-[11px] text-[#8a9199] dark:text-[#9aa7b0]">باقة {plan.name}</p>
           )}
-          <main className={`p-4 sm:p-6 lg:px-8 lg:py-6 w-full pb-[max(1.5rem,env(safe-area-inset-bottom))] ${pathname.startsWith('/treatments') || pathname.startsWith('/customers') ? 'bg-[#f8fafc]' : pathname === '/dashboard' || pathname.startsWith('/appointments') ? 'bg-[#eef0ff]' : 'max-w-[1360px] mx-auto'}`}>
+          <main className={`saas-canvas p-4 sm:p-6 lg:px-8 lg:py-6 w-full pb-[max(1.5rem,env(safe-area-inset-bottom))] ${pathname === '/dashboard' || pathname.startsWith('/appointments') || pathname.startsWith('/treatments') || pathname.startsWith('/customers') || pathname.startsWith('/services') || pathname.startsWith('/products') || pathname.startsWith('/orders') || pathname.startsWith('/website') || pathname.startsWith('/assistant') || pathname.startsWith('/winback') || pathname.startsWith('/marketing') || pathname.startsWith('/reports') || pathname.startsWith('/billing') || pathname.startsWith('/support') || pathname.startsWith('/settings') || ['/team', '/staff', '/branches'].some((p) => pathname === p || pathname.startsWith(`${p}/`)) ? '' : 'max-w-[1360px] mx-auto'}`}>
             <Outlet />
           </main>
           <ConsoleChat />

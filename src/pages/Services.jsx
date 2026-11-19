@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { ref, onValue, push, set, update, remove } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
-import { FaPlus, FaTrash, FaTimes, FaSpa, FaPen } from 'react-icons/fa';
+import { FaTrash, FaTimes, FaPen } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import { SERVICE_CATEGORIES } from '../constants/clinicCare';
 
@@ -16,12 +16,24 @@ const emptyServiceForm = {
   faqs: [{ q: '', a: '' }],
 };
 
-const field = 'w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+
+function durationLabel(value) {
+  const text = String(value || '').trim();
+  if (!text) return 'غير محددة';
+  if (/دقيقة|ساعة/.test(text)) return text;
+  if (/^\d+$/.test(text)) return `${text} دقيقة`;
+  return text;
+}
+
+function categoryName(id) {
+  return SERVICE_CATEGORIES.find((c) => c.id === id)?.name || 'عام';
+}
 
 const Services = () => {
   const { clinicPath } = useClinic();
   const [services, setServices] = useState([]);
-  const [staff, setStaff] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState(null);
@@ -50,7 +62,7 @@ const Services = () => {
       ? onValue(ref(database, usersPath), (snap) => {
           const val = snap.val();
           const list = val ? Object.entries(val).map(([id, item]) => ({ id, ...item })) : [];
-          setStaff(list.filter((u) => u.role !== 'admin'));
+          setUsers(list);
         })
       : () => {};
 
@@ -131,93 +143,100 @@ const Services = () => {
     [services, cat],
   );
 
+  const staff = users.filter((u) => u.role !== 'admin');
   const withSpecialist = services.filter((s) => s.specialistId).length;
   const withDuration = services.filter((s) => s.duration).length;
 
+  const kpis = [
+    { label: 'الخدمات', value: String(services.length), note: 'تظهر في الحجز', accent: '#059669' },
+    { label: 'بمختصة', value: String(withSpecialist), note: withSpecialist === services.length ? 'كلها مربوطة بمختصة' : `${services.length - withSpecialist} بدون مختصة`, accent: '#0FA3A3' },
+    { label: 'بمدة محددة', value: String(withDuration), note: withDuration === services.length ? 'المدة مكتوبة على كل خدمة' : `${services.length - withDuration} بدون مدة`, accent: '#B45309' },
+  ];
+  const primary = 'inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#047857]';
+
   if (loading) {
-    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
+    return <div className="flex h-64 items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E4EAEE] border-t-[#059669]" /></div>;
   }
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">الخدمات</h1>
-          <p className="text-sm text-[#8a9199] mt-1">جلسات العيادة: الاسم، المدة، والمختصة. المنتجات في قسم المنتجات.</p>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">جلسات العيادة</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">الخدمات</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">كل كارد يوضح القسم، المدة، والمختصة. المنتجات في قسم المنتجات.</p>
         </div>
-        <button type="button" onClick={openAdd} className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold">
-          <FaPlus /> خدمة جديدة
-        </button>
-      </div>
+        <button type="button" onClick={openAdd} className={primary}>+ خدمة جديدة</button>
+      </header>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-xs text-[#047857]">الخدمات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{services.length}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-xs text-[#0369a1]">بمختصة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{withSpecialist}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-xs text-[#b45309]">بمدة محددة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{withDuration}</p>
-        </div>
-      </div>
+      <section aria-label="مؤشرات الخدمات" className="grid grid-cols-3 border-y border-[#E4EAEE]">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={`px-5 py-4 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />{k.label}</p>
+            <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
+      </section>
 
-      <div className="flex gap-2 overflow-x-auto no-scrollbar">
-        <button type="button" onClick={() => setCat('all')} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === 'all' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>الكل</button>
+      <div className="flex gap-1.5 overflow-x-auto">
+        <button type="button" onClick={() => setCat('all')} className={`shrink-0 rounded-full border px-3 py-1.5 text-[11.5px] font-bold ${cat === 'all' ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155]'}`}>الكل {services.length}</button>
         {SERVICE_CATEGORIES.map((c) => (
-          <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${cat === c.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>{c.name}</button>
+          <button key={c.id} type="button" onClick={() => setCat(c.id)} className={`shrink-0 rounded-full border px-3 py-1.5 text-[11.5px] font-bold ${cat === c.id ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155]'}`}>{c.name} {services.filter((s) => s.category === c.id).length}</button>
         ))}
       </div>
 
       {filtered.length === 0 ? (
-        <div className="saas-card text-center py-16">
-          <h3 className="text-lg font-bold text-[#111827] mb-2">لا خدمات بعد</h3>
-          <p className="text-sm text-[#8a9199]">أضيفي جلسة لتظهر في الحجز وملف العميلة.</p>
+        <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-16 text-center">
+          <h3 className="text-[15px] font-bold">لا خدمات في هذا القسم</h3>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">أضيفي جلسة لتظهر في الحجز وملف العميلة.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <article key={item.id} className="saas-card p-4 flex flex-col">
-              <div className="w-full h-36 bg-[#f8faf9] rounded-2xl mb-4 flex items-center justify-center overflow-hidden border border-[#e4eee8]">
-                {item.imageUrl ? (
-                  <img src={item.imageUrl} alt={item.title} className="w-full h-full object-cover" />
-                ) : (
-                  <FaSpa className="text-3xl text-emerald-300" />
-                )}
-              </div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="font-bold text-[#111827]">{item.title}</h3>
-                <div className="flex gap-1 shrink-0">
-                  <button type="button" onClick={() => openEditService(item)} className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center">
-                    <FaPen className="text-xs" />
-                  </button>
-                  <button type="button" onClick={() => handleDelete(item.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center">
-                    <FaTrash className="text-xs" />
-                  </button>
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {filtered.map((item) => {
+            const linked = users.find((s) => s.id === item.specialistId);
+            const specialist = item.specialistName || linked?.name || '';
+            const facts = [
+              ['القسم', categoryName(item.category)],
+              ['المدة', durationLabel(item.duration)],
+              ['المختصة', specialist || (item.specialistId ? 'مربوطة بدون اسم' : 'غير معيّنة')],
+            ];
+            return (
+              <article key={item.id} className="flex flex-col rounded-lg border border-[#E4EAEE] bg-white p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="text-[15px] font-extrabold">{item.title || 'خدمة بلا اسم'}</h3>
+                    <p className="mt-1 text-[11.5px] text-[#64748B]">{item.description || 'بدون وصف'}</p>
+                  </div>
+                  <div className="flex shrink-0 gap-1.5">
+                    <button type="button" onClick={() => openEditService(item)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] bg-white text-[#0E7490]" aria-label="تعديل الخدمة"><FaPen className="text-[11px]" /></button>
+                    <button type="button" onClick={() => handleDelete(item.id)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626]" aria-label="حذف الخدمة"><FaTrash className="text-[11px]" /></button>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-wrap gap-1.5 mt-auto">
-                <span className="nura-chip nura-chip-mint">{SERVICE_CATEGORIES.find((c) => c.id === item.category)?.name || item.category || 'عام'}</span>
-                {item.duration && <span className="nura-chip nura-chip-sky">{item.duration}</span>}
-                {item.specialistName && <span className="nura-chip nura-chip-gold">{item.specialistName}</span>}
-              </div>
-              {item.description && <p className="text-xs text-[#8a9199] mt-3 line-clamp-2">{item.description}</p>}
-            </article>
-          ))}
+                {item.imageUrl && <img src={item.imageUrl} alt={item.title || ''} className="mt-3 h-28 w-full rounded-lg border border-[#E4EAEE] object-cover" />}
+                <dl className="mt-3 space-y-1.5 border-t border-[#EDF1F4] pt-3">
+                  {facts.map(([label, value]) => (
+                    <div key={label} className="flex items-center justify-between gap-3 text-[12.5px]">
+                      <dt className="text-[#94A3B8]">{label}</dt>
+                      <dd className={`font-bold ${value === 'غير محددة' || value === 'غير معيّنة' || value === 'مربوطة بدون اسم' ? 'text-[#B45309]' : 'text-[#0F172A]'}`}>{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+            );
+          })}
         </div>
       )}
 
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-xl w-full max-w-lg overflow-hidden max-h-[90vh] flex flex-col" dir="rtl">
-            <div className="bg-[#10b981] p-5 text-white flex justify-between items-center shrink-0">
-              <h3 className="font-bold text-lg">{editingId ? 'تعديل خدمة' : 'خدمة جديدة'}</h3>
-              <button type="button" onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><FaTimes /></button>
+          <div className="flex max-h-[90vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-[#E4EAEE] bg-white" dir="rtl">
+            <div className="flex shrink-0 items-center justify-between border-b border-[#E4EAEE] px-5 py-4">
+              <h3 className="text-[16px] font-extrabold">{editingId ? 'تعديل خدمة' : 'خدمة جديدة'}</h3>
+              <button type="button" onClick={() => setShowModal(false)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] text-[#64748B]" aria-label="إغلاق"><FaTimes className="text-[11px]" /></button>
             </div>
 
             <form onSubmit={handleSave} className="p-5 space-y-4 overflow-y-auto">
@@ -239,7 +258,7 @@ const Services = () => {
                 <label className="block text-sm font-medium text-[#111827] mb-1">المختصة</label>
                 <select value={form.specialistId} onChange={(e) => setForm({ ...form, specialistId: e.target.value })} className={field}>
                   <option value="">بدون تعيين</option>
-                  {staff.map((s) => (
+                  {[...staff, ...users.filter((u) => u.id === form.specialistId && !staff.some((s) => s.id === u.id))].map((s) => (
                     <option key={s.id} value={s.id}>{s.name}{s.category ? ` · ${SERVICE_CATEGORIES.find((c) => c.id === s.category)?.name || s.category}` : ''}</option>
                   ))}
                 </select>
@@ -286,7 +305,7 @@ const Services = () => {
                 <label className="block text-sm font-medium text-[#111827] mb-1">رابط صورة</label>
                 <input type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} placeholder="https://..." className={field} dir="ltr" />
               </div>
-              <button type="submit" className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold">حفظ</button>
+              <button type="submit" className={primary}>حفظ</button>
             </form>
           </div>
         </div>

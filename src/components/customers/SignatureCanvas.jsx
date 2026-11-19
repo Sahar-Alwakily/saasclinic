@@ -23,7 +23,7 @@ const SignatureCanvas = ({ onChange, height = 280, initialValue }) => {
     ctx.lineWidth = 3;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#8b5cf6';
+    ctx.strokeStyle = '#059669';
     if (initialValue) {
       const img = new Image();
       img.onload = () => ctx.drawImage(img, 0, 0, w, h);
@@ -81,9 +81,9 @@ const SignatureCanvas = ({ onChange, height = 280, initialValue }) => {
 
   return (
     <div className="space-y-2" dir="rtl">
-      <div ref={containerRef} className="relative w-full rounded-2xl border-2 border-dashed border-violet-200 bg-white overflow-hidden">
+      <div ref={containerRef} className="relative w-full overflow-hidden rounded-lg border border-dashed border-[#C6EEEE] bg-[#F8FBFC]">
         {!hasInk && (
-          <p className="absolute inset-0 flex items-center justify-center text-stone-400 pointer-events-none text-sm">✍️ وقّعي هنا</p>
+          <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-[13px] text-[#94A3B8]">وقّعي هنا</p>
         )}
         <canvas
           ref={canvasRef}
@@ -98,11 +98,11 @@ const SignatureCanvas = ({ onChange, height = 280, initialValue }) => {
           onTouchEnd={end}
         />
       </div>
-      <div className="flex items-center justify-between text-xs">
-        <span className={hasInk ? 'text-emerald-600 font-bold' : 'text-stone-400'}>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className={hasInk ? 'font-bold text-[#047857]' : 'text-[#94A3B8]'}>
           {hasInk ? 'تم التوقيع' : 'لا توقيع بعد'}
         </span>
-        <button type="button" onClick={clear} className="text-rose-500 font-bold">مسح التوقيع</button>
+        <button type="button" onClick={clear} className="font-bold text-[#B91C1C]">مسح التوقيع</button>
       </div>
     </div>
   );

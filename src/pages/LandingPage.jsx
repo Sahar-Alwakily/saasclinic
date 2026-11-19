@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { CalendarDays, LineChart, MessageCircle, TrendingUp, Users } from 'lucide-react';
 import { paidPlans, PLANS } from '../config/plans';
 import { useLocale } from '../context/LocaleContext';
 
@@ -48,39 +49,29 @@ const PLAN_COPY = {
 
 const OUTCOMES = [
   {
-    icon: 'calendar_month',
-    tone: 'primary',
-    value: 'إدارة المواعيد والحجوزات',
-    title: '',
-    body: 'تنظيم المواعيد، إدارة الحجوزات، وقائمة انتظار ذكية لاستغلال الأوقات الشاغرة وتعويض الإلغاءات بسهولة.'
+    icon: CalendarDays,
+    title: 'إدارة المواعيد والحجوزات',
+    body: 'تنظيم المواعيد، إدارة الحجوزات، وقائمة انتظار ذكية لاستغلال الأوقات الشاغرة وتعويض الإلغاءات بسهولة.',
   },
   {
-    icon: 'chat',
-    tone: 'emerald',
-    value: 'التواصل الذكي والآلي',
-    title: '',
-    body: 'ردود آلية على استفسارات العملاء عبر WhatsApp، مع تأكيد الحجوزات، التذكير بالمواعيد ومتابعة الجلسات.'
+    icon: MessageCircle,
+    title: 'التواصل الذكي والآلي',
+    body: 'ردود آلية على استفسارات العملاء عبر WhatsApp، مع تأكيد الحجوزات، التذكير بالمواعيد ومتابعة الجلسات.',
   },
   {
-    icon: 'groups',
-    tone: 'primary',
-    value: 'إدارة العملاء والسجلات',
-    title: '',
-    body: 'ملفات رقمية منظمة للعملاء، حفظ بياناتهم، توثيق العلاجات والجلسات، ومتابعة تاريخ الزيارات.'
+    icon: Users,
+    title: 'إدارة العملاء والسجلات',
+    body: 'ملفات رقمية منظمة للعملاء، حفظ بياناتهم، توثيق العلاجات والجلسات، ومتابعة تاريخ الزيارات.',
   },
   {
-    icon: 'trending_up',
-    tone: 'emerald',
-    value: 'التسويق والنمو',
-    title: '',
-    body: 'تسويق المنتجات والعلاجات والخدمات، وعرضها عبر موقعك الخاص، مع موقع مخصص للعملاء لاستعراض الخدمات وحجز المواعيد.'
+    icon: TrendingUp,
+    title: 'التسويق والنمو',
+    body: 'تسويق المنتجات والعلاجات والخدمات، وعرضها عبر موقعك الخاص، مع موقع مخصص للعملاء لاستعراض الخدمات وحجز المواعيد.',
   },
-    {
-    icon: 'monitoring',
-    tone: 'emerald',
-    value: ' التقارير وتحليل الأداء',
-    title: '',
-    body: 'متابعة الحجوزات والإيرادات وتقارير أداء العيادة ومتابعة نشاط العملاء وتحليل أداء الخدمات والعلاجات '
+  {
+    icon: LineChart,
+    title: 'التقارير وتحليل الأداء',
+    body: 'متابعة الحجوزات والإيرادات وتقارير أداء العيادة ومتابعة نشاط العملاء وتحليل أداء الخدمات والعلاجات.',
   },
 ];
 
@@ -272,20 +263,25 @@ const LandingPage = () => {
       <section id="outcomes" className="py-20 bg-slate-50 border-y border-slate-200/80">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-2xl mx-auto text-center mb-14">
-            <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200"> المميزات والخدمات</span>
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight"> أدر عيادتك بذكاء، وامنح عملاءك تجربة استثنائية!</h2>
+            <span className="mono text-xs font-semibold tracking-wider text-emerald-700 uppercase bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">المميزات والخدمات</span>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-900 mt-3 tracking-tight">أدر عيادتك بذكاء، وامنح عملاءك تجربة استثنائية!</h2>
           </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
-            {OUTCOMES.map((item) => (
-              <article key={item.title} className="bg-white rounded-2xl p-6 border border-slate-200 hover:border-slate-300 hover:shadow-[0_1px_3px_0_rgba(15,23,42,0.03),0_10px_30px_-10px_rgba(15,23,42,0.05)] transition-all group">
-                <div className={`w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center mb-4 transition-colors ${item.tone === 'emerald' ? 'text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white' : 'text-[#006948] group-hover:bg-[#006948] group-hover:text-white'}`}>
-                  <Icon name={item.icon} className="!text-xl" />
-                </div>
-                <div className="mono text-3xl font-bold text-slate-900 mb-1 tracking-tight">{item.value}</div>
-                <h3 className="text-base font-bold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-xs text-slate-500 leading-relaxed">{item.body}</p>
-              </article>
-            ))}
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-5">
+            {OUTCOMES.map((item, index) => {
+              const Glyph = item.icon;
+              return (
+                <article
+                  key={item.title}
+                  className={`bg-white rounded-2xl p-6 border border-slate-200 hover:border-[#006948]/25 hover:shadow-[0_8px_30px_-12px_rgba(0,105,72,0.16)] transition-all flex flex-col xl:col-span-2 ${index === 3 ? 'xl:col-start-2' : ''} ${index === 4 ? 'sm:col-span-2 sm:max-w-[calc(50%-0.625rem)] sm:mx-auto sm:w-full xl:max-w-none xl:mx-0' : ''}`}
+                >
+                  <div className="w-11 h-11 rounded-xl bg-[#E7F6F0] text-[#006948] flex items-center justify-center mb-4">
+                    <Glyph size={20} strokeWidth={1.75} aria-hidden="true" />
+                  </div>
+                  <h3 className="text-base font-bold text-slate-900 mb-2 leading-snug">{item.title}</h3>
+                  <p className="text-sm text-slate-500 leading-relaxed">{item.body}</p>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>

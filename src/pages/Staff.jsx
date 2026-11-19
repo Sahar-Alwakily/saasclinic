@@ -3,8 +3,10 @@ import { ref, onValue, set, remove } from 'firebase/database';
 import { database, createStaffAuthUser } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { withinUserLimit } from '../config/plans';
-import { FaPlus, FaUserTie, FaTrash, FaTimes, FaEnvelope } from 'react-icons/fa';
+import { FaPlus, FaUserTie, FaTrash, FaTimes, FaEnvelope, FaTimesCircle } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
+import TeamNav from '../components/team/TeamNav';
+import TeamStatStrip from '../components/team/TeamStatStrip';
 
 const CATEGORIES = [
   { id: 'laser', name: 'ليزر' },
@@ -13,6 +15,8 @@ const CATEGORIES = [
   { id: 'beauty', name: 'تجميل' },
   { id: 'all', name: 'كل الأقسام (سكرتيرة/مديرة)' },
 ];
+
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-white px-2.5 py-2 text-[12.5px] outline-none focus:border-[#0FA3A3]';
 
 const Staff = () => {
   const { clinicPath, clinicId, clinicInfo, plan, planConfig, isSupport } = useClinic();
@@ -114,78 +118,102 @@ const Staff = () => {
       await remove(ref(database, `${clinicPath('users')}/${id}`));
       await remove(ref(database, `meta/users/${id}`));
       toast.success('تم حذف الموظفة');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحذف');
     }
   };
 
-  if (loading) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E4EAEE] border-t-[#0FA3A3]" />
+      </div>
+    );
+  }
+
+  const categoriesUsed = new Set(staff.map((member) => member.category).filter(Boolean)).size;
+  const maxUsers = Number.isFinite(plan?.maxUsers) ? plan.maxUsers : null;
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">إدارة الموظفين</h1>
-          <p className="text-sm text-[#8a9199] mt-1">أضيفي فريق العمل وحددي أقسامهم وفروعهم.</p>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">الفريق</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">الموظفات</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">أضيفي فريق العمل وحددي أقسامهم وفروعهم.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isSupport && !withinUserLimit(clinicInfo, userCount, planConfig)) {
-              return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات — من المدفوعات ترقّي الباقة`);
-            }
-            setShowModal(true);
-          }}
-          className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold"
-        >
-          <FaPlus /> موظفة جديدة
-        </button>
-      </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <TeamNav />
+          <button
+            type="button"
+            onClick={() => {
+              if (!isSupport && !withinUserLimit(clinicInfo, userCount, planConfig)) {
+                return toast.error(`باقة ${plan?.name} تسمح حتى ${plan?.maxUsers} حسابات`);
+              }
+              setShowModal(true);
+            }}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[#047857]"
+          >
+            <FaPlus className="text-[11px]" /> موظفة جديدة
+          </button>
+        </div>
+      </header>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-xs text-[#047857]">الموظفات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{staff.length}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-xs text-[#0369a1]">الفروع</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{branches.length}</p>
-        </div>
-      </div>
+      <TeamStatStrip
+        items={[
+          { label: 'الموظفات', value: staff.length, note: 'حسابات فريق نشطة', accent: '#059669' },
+          { label: 'الفروع', value: branches.length, note: 'موزعة على الفروع', accent: '#0FA3A3' },
+          { label: 'الأقسام', value: categoriesUsed, note: 'أقسام مسؤوليات', accent: '#0E7490' },
+          {
+            label: 'حد الحسابات',
+            value: maxUsers ? `${userCount} / ${maxUsers}` : userCount,
+            note: maxUsers ? `باقة ${plan?.name || 'الحالية'}` : 'بلا حد',
+            accent: '#B45309',
+          },
+        ]}
+      />
 
       {staff.length === 0 ? (
-        <div className="saas-card text-center py-16">
-          <h3 className="text-lg font-bold text-[#111827] mb-2">لا موظفات بعد</h3>
-          <p className="text-sm text-[#8a9199]">أضيفي موظفات ليتمكنّ من إدارة الحجوزات.</p>
-        </div>
+        <section className="rounded-xl border border-[#E4EAEE] bg-white px-5 py-12 text-center">
+          <h3 className="text-[13.5px] font-bold text-[#334155]">لا موظفات بعد</h3>
+          <p className="mt-1 text-[11.5px] text-[#94A3B8]">أضيفي موظفات ليتمكنّ من إدارة الحجوزات.</p>
+        </section>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           {staff.map((member) => {
             const branchName = branches.find((b) => b.id === member.branch)?.name || 'غير محدد';
             return (
-              <article key={member.id} className="saas-card p-5">
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl shrink-0">
-                      <FaUserTie />
-                    </div>
-                    <div className="min-w-0">
-                      <h3 className="font-bold text-[#111827] truncate">{member.name}</h3>
-                      <div className="flex flex-wrap gap-1.5 mt-1">
-                        <span className="nura-chip nura-chip-sky">{CATEGORIES.find((c) => c.id === member.category)?.name || 'غير محدد'}</span>
-                        <span className="nura-chip nura-chip-mint">{branchName}</span>
-                      </div>
-                    </div>
+              <article key={member.id} className="relative overflow-hidden rounded-xl border border-[#E4EAEE] bg-white p-4">
+                <span className="absolute inset-y-0 start-0 w-[3px] bg-[#0FA3A3]" />
+                <div className="flex items-start gap-3 ps-1.5">
+                  <div className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#ECFEFF] text-[13px] font-bold text-[#0E7490]">
+                    {(member.name || 'م').trim().charAt(0)}
                   </div>
-                  <button type="button" onClick={() => handleDelete(member.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center shrink-0">
-                    <FaTrash className="text-xs" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="truncate text-[13.5px] font-bold text-[#0F172A]">{member.name}</h3>
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      <span className="rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-2 py-0.5 text-[9.5px] font-bold text-[#0E7490]">
+                        {CATEGORIES.find((c) => c.id === member.category)?.name || 'غير محدد'}
+                      </span>
+                      <span className="rounded-full border border-[#E4EAEE] bg-[#F8FAFC] px-2 py-0.5 text-[9.5px] font-bold text-[#475569]">
+                        {branchName}
+                      </span>
+                    </div>
+                    <p className="mt-2 flex items-center gap-1.5 text-[10.5px] text-[#94A3B8]">
+                      <FaEnvelope className="shrink-0 text-[9px]" />
+                      <span dir="ltr" className="truncate">{member.email}</span>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(member.id)}
+                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626] transition-colors hover:border-[#DC2626]"
+                    aria-label={`حذف ${member.name}`}
+                  >
+                    <FaTrash className="text-[10px]" />
                   </button>
-                </div>
-                <div className="flex items-center gap-2 text-sm text-[#8a9199]">
-                  <FaEnvelope className="text-emerald-500 text-xs" />
-                  <span dir="ltr">{member.email}</span>
                 </div>
               </article>
             );
@@ -194,55 +222,68 @@ const Staff = () => {
       )}
 
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden" dir="rtl">
-            <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
-              <h3 className="font-bold text-lg">إضافة موظفة جديدة</h3>
-              <button type="button" onClick={() => setShowModal(false)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><FaTimes /></button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/50 p-4">
+          <div className="w-full max-w-md overflow-hidden rounded-xl border border-[#E4EAEE] bg-white" dir="rtl">
+            <div className="flex items-center justify-between gap-3 border-b border-[#E4EAEE] px-5 py-4">
+              <div className="flex items-center gap-2.5">
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-[#ECFDF5] text-[#047857]"><FaUserTie className="text-[11px]" /></span>
+                <h3 className="text-[14px] font-extrabold">إضافة موظفة جديدة</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowModal(false)}
+                className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] text-[#64748B] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]"
+                aria-label="إغلاق"
+              >
+                <FaTimes className="text-[11px]" />
+              </button>
             </div>
 
-            <form onSubmit={handleAddStaff} className="p-5 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">اسم الموظفة</label>
-                <input type="text" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">البريد الإلكتروني (للدخول)</label>
-                <input type="email" value={form.email} onChange={(e) => setForm({...form, email: e.target.value})} required className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">كلمة المرور المؤقتة</label>
-                <input type="text" value={form.password} onChange={(e) => setForm({...form, password: e.target.value})} required placeholder="6 أحرف على الأقل" className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" dir="ltr" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">القسم المسؤول عنه</label>
-                <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})} className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200">
+            <form onSubmit={handleAddStaff} className="space-y-3 p-5">
+              <label className="block text-[10.5px] font-bold text-[#64748B]">اسم الموظفة
+                <input type="text" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required className={`${field} mt-1`} />
+              </label>
+              <label className="block text-[10.5px] font-bold text-[#64748B]">البريد الإلكتروني (للدخول)
+                <input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required className={`${field} mt-1`} dir="ltr" />
+              </label>
+              <label className="block text-[10.5px] font-bold text-[#64748B]">كلمة المرور المؤقتة
+                <input type="text" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} required placeholder="6 أحرف على الأقل" className={`${field} mt-1`} dir="ltr" />
+              </label>
+              <label className="block text-[10.5px] font-bold text-[#64748B]">القسم المسؤول عنه
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className={`${field} mt-1`}>
                   {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">الفرع</label>
-                <select 
-                  value={form.branch} 
-                  onChange={(e) => setForm({...form, branch: e.target.value})} 
+              </label>
+              <label className="block text-[10.5px] font-bold text-[#64748B]">الفرع
+                <select
+                  value={form.branch}
+                  onChange={(e) => setForm({ ...form, branch: e.target.value })}
                   required
-                  className="w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200"
+                  className={`${field} mt-1`}
                 >
                   <option value="" disabled>اختر الفرع...</option>
                   {branches.map(b => (
                     <option key={b.id} value={b.id}>{b.name}</option>
                   ))}
                 </select>
-              </div>
-              
-              <button type="submit" disabled={submitting || branches.length === 0} className="w-full bg-[#10b981] text-white py-3 rounded-xl font-bold mt-2 disabled:opacity-50">
+              </label>
+
+              <button type="submit" disabled={submitting || branches.length === 0} className="mt-1 w-full rounded-lg bg-[#059669] py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-50">
                 {submitting ? 'جاري الإضافة...' : 'إضافة الموظفة'}
               </button>
-              {branches.length === 0 && <p className="text-xs text-rose-500 text-center mt-2">الرجاء إضافة فرع أولاً من صفحة "الفروع"</p>}
+              {branches.length === 0 && (
+                <p className="flex items-center justify-center gap-1.5 text-[10.5px] text-[#DC2626]">
+                  <FaTimesCircle className="text-[9px]" /> الرجاء إضافة فرع أولاً من صفحة «الفروع»
+                </p>
+              )}
             </form>
           </div>
         </div>
       )}
+
+      <p className="text-[10.5px] text-[#94A3B8]">
+        الصلاحيات تُضبط عند الإضافة (قسم / فرع). <span className="font-bold text-[#0E7490]">جدول الدوام</span> يُعدّل من قسم الدوام والعطل.
+      </p>
     </div>
   );
 };

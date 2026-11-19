@@ -1,23 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
+import { applyDashboardTheme, readDashboardThemeDark } from '../../utils/dashboardTheme';
 
 const ThemeToggle = () => {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    const saved = localStorage.getItem('dashboard-theme');
-    if (saved) return saved === 'dark';
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  });
+  const [isDark, setIsDark] = useState(() => readDashboardThemeDark());
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add('dark');
-      localStorage.setItem('dashboard-theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      localStorage.setItem('dashboard-theme', 'light');
-    }
+    applyDashboardTheme(isDark);
   }, [isDark]);
 
   return (

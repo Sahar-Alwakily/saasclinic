@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ref, onValue, push, set, update, remove } from 'firebase/database';
 import { toast, ToastContainer } from 'react-toastify';
 import { database } from '../APIFirebase/firebase';
@@ -11,6 +11,10 @@ import AbTesting from '../components/marketing/AbTesting';
 
 const DEFAULT_A = 'مرحبا، عندك خصم على جلستك الجاية. احجزي من الرابط لما يناسبك.';
 const DEFAULT_B = 'اشتقنالك. رجعي هالأسبوع، وفي خصم جاهز إلك على الموعد.';
+
+const chipMint = 'rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]';
+const chipRose = 'rounded-full border border-[#FECACA] bg-[#FEF2F2] px-2.5 py-1 text-[11px] font-bold text-[#B91C1C]';
+const chipSky = 'rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-1 text-[11px] font-bold text-[#0369A1]';
 
 const Marketing = () => {
   const { clinicPath, clinicId } = useClinic();
@@ -45,6 +49,14 @@ const Marketing = () => {
     ];
     return () => u.forEach((fn) => fn());
   }, [clinicPath]);
+
+  const failedTotal = useMemo(() => messages.filter((x) => x.status === 'failed').length, [messages]);
+
+  const kpis = [
+    { label: 'الحملات', value: String(campaigns.length), note: 'من استرجاع العميلات', accent: '#059669' },
+    { label: 'مقالات المدونة', value: String(blog.length), note: 'في موقع العيادة', accent: '#0FA3A3' },
+    { label: 'طلبات المنتجات', value: String(orders.length), note: 'مبيعات من الكتالوج', accent: '#B45309' },
+  ];
 
   const createGroupOffer = async (e) => {
     e.preventDefault();
@@ -109,12 +121,27 @@ const Marketing = () => {
   };
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div>
-        <h1 className="text-[22px] font-bold text-[#111827] dark:text-white">التسويق</h1>
-        <p className="text-sm text-[#8a9199] mt-1">الحملات، العروض، وتتبع زيارات الشركاء ومشترياتهم.</p>
-      </div>
+      <header>
+        <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">نظرة الحملات</p>
+        <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">التسويق</h1>
+        <p className="mt-1 text-[12.5px] text-[#64748B]">الحملات، العروض الجماعية، تتبع الشركاء، واختبار رسائل التواصل.</p>
+      </header>
+
+      <section aria-label="مؤشرات التسويق" className="grid grid-cols-3 border-y border-[#E4EAEE]">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={`px-5 py-4 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]">
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />
+              {k.label}
+            </p>
+            <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
+      </section>
 
       <OverviewCards campaigns={campaigns.length} blog={blog.length} orders={orders.length} />
 
@@ -129,34 +156,43 @@ const Marketing = () => {
         onDelete={(id) => remove(ref(database, clinicPath(`groupOffers/${id}`)))}
       />
 
-      <BloggerTracking />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <BloggerTracking />
+        <div className="space-y-4">
+          <SmartTargeting enabled={smartTargeting} onChange={setTargeting} />
+          <AbTesting
+            templateA={templateA}
+            templateB={templateB}
+            onChangeA={setTemplateA}
+            onChangeB={setTemplateB}
+            onSave={saveCompare}
+            saving={savingCompare}
+          />
+        </div>
+      </div>
 
-      <SmartTargeting enabled={smartTargeting} onChange={setTargeting} />
-      <AbTesting
-        templateA={templateA}
-        templateB={templateB}
-        onChangeA={setTemplateA}
-        onChangeB={setTemplateB}
-        onSave={saveCompare}
-        saving={savingCompare}
-      />
-
-      <section className="saas-card p-5">
-        <h2 className="font-bold text-[#111827] dark:text-white mb-3">نتائج الحملات</h2>
-        {campaigns.length === 0 && <p className="text-sm text-[#8a9199]">لا حملات بعد.</p>}
-        {campaigns.map((c) => {
-          const rows = messages.filter((x) => x.campaignId === c.id);
-          const failed = rows.filter((x) => x.status === 'failed').length;
-          return (
-            <div key={c.id} className="py-3 border-b border-[#e4eee8] last:border-0">
-              <p className="font-bold text-[#111827] dark:text-white">{c.name || 'حملة'}</p>
-              <div className="flex gap-2 mt-1">
-                <span className="nura-chip nura-chip-sky">رسائل {rows.length}</span>
-                <span className="nura-chip nura-chip-rose">فشل {failed}</span>
-              </div>
-            </div>
-          );
-        })}
+      <section className="rounded-lg border border-[#E4EAEE] bg-white p-4">
+        <h2 className="text-[15px] font-bold">نتائج الحملات</h2>
+        <p className="mt-1 text-[12px] text-[#64748B]">ملخص رسائل كل حملة من سجل الاسترجاع.</p>
+        {campaigns.length === 0 && <p className="mt-6 text-center text-[12.5px] text-[#94A3B8]">لا حملات بعد.</p>}
+        <ul className="mt-4 divide-y divide-[#E4EAEE]">
+          {campaigns.map((c) => {
+            const rows = messages.filter((x) => x.campaignId === c.id);
+            const failed = rows.filter((x) => x.status === 'failed').length;
+            return (
+              <li key={c.id} className="py-3">
+                <p className="font-bold">{c.name || 'حملة'}</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <span className={chipSky}>رسائل {rows.length}</span>
+                  <span className={chipRose}>فشل {failed}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        {campaigns.length > 0 && failedTotal > 0 && (
+          <p className="mt-3 text-[11px] text-[#94A3B8]">إجمالي رسائل فاشلة عبر كل الحملات: {failedTotal}</p>
+        )}
       </section>
     </div>
   );

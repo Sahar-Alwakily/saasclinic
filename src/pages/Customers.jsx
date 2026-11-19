@@ -32,7 +32,8 @@ function ageOf(birthDate) {
 function cautionOf(c) {
   const med = c.medicalInfo || {};
   const bits = [];
-  if (String(med.allergies || '').trim()) bits.push(String(med.allergies).trim());
+  const allergy = String(med.allergies || '').trim();
+  if (allergy && !/^(لا يوجد|لا توجد|لا|none|n\/a|—|-)$/i.test(allergy)) bits.push(allergy);
   if (med.isPregnant) bits.push('حمل');
   if (med.isBreastfeeding) bits.push('رضاعة');
   return bits;
@@ -221,7 +222,6 @@ const Customers = () => {
   const safePage = Math.min(page, pages);
   const visible = ordered.slice((safePage - 1) * pageSize, safePage * pageSize);
   const selected = ordered.find((c) => c.id === selectedId) || ordered[0] || null;
-  const tones = ['#059669', '#0284c7', '#7c3aed', '#d97706', '#0f766e', '#be185d'];
   const initials = (c) => {
     const a = String(c.firstName || '').trim().charAt(0);
     const b = String(c.lastName || '').trim().charAt(0);
@@ -248,116 +248,79 @@ const Customers = () => {
   };
   const cautionLine = (c) => cautionOf(c).join(' · ');
 
+  const ghost = 'inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]';
+  const kpis = [
+    { label: 'السجلات', value: String(customers.length), note: addedThisMonth > 0 ? `↑ ${addedThisMonth} هذا الشهر · اكتمال ${stats.completePct}%` : `اكتمال الملفات ${stats.completePct}%`, accent: '#059669' },
+    { label: 'خطط جارية', value: String(stats.activePlans), note: `${stats.sessions} جلسة · ${stats.withTreatments} ملف بخطة`, accent: '#0FA3A3' },
+    { label: 'تنبيه سريري', value: String(stats.caution), note: 'حساسية أو حمل أو رضاعة', accent: '#DC2626' },
+    { label: 'إقرارات موقّعة', value: `${stats.signedPct}%`, note: `${stats.signed} ختم من ${customers.length}`, accent: '#059669' },
+  ];
+
   return (
-    <div className="max-w-[1480px] mx-auto w-full text-[#0f172a]" dir="rtl">
+    <div className="max-w-[1360px] mx-auto space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div className="flex flex-col gap-5">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-1">
-            <p className="text-xs text-slate-500">العيادة السريرية / الملفات الطبية والعميلات</p>
-            <h1 className="text-2xl sm:text-[28px] font-bold tracking-tight text-slate-900">سجلات العميلات والملفات السريرية</h1>
-            <p className="text-sm text-slate-500 max-w-2xl">ملفات العميلات، البروتوكولات المسجّلة، تنبيهات الحساسية، والإقرارات الموقّعة في العيادة.</p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={() => document.getElementById('customer-search')?.focus()} className="h-9 px-3 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 inline-flex items-center gap-1.5">
-              <Ms name="tune" size={16} />
-              تصفية متقدمة
-            </button>
-            <button type="button" onClick={exportCsv} className="h-9 px-3 rounded-xl bg-white border border-slate-200 text-sm font-semibold text-slate-700 inline-flex items-center gap-1.5">
-              <Ms name="file_download" size={16} />
-              تصدير السجلات السريرية
-            </button>
-            <button type="button" onClick={() => { setEditing(null); setShowModal(true); }} className="h-9 px-4 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-sm font-bold inline-flex items-center gap-1.5">
-              <Ms name="person_add" size={16} />
-              ملف سريري جديد
-            </button>
-          </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">الملفات الطبية والعميلات</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">سجلات العميلات</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">ملفات العميلات، البروتوكولات المسجّلة، تنبيهات الحساسية، والإقرارات الموقّعة.</p>
         </div>
-
-        <div className="bg-white p-2 rounded-full shadow-sm flex flex-col lg:flex-row lg:items-center gap-2">
-          <div className="relative flex-1 min-w-[240px]">
-            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400"><Ms name="search" size={18} /></span>
-            <input
-              id="customer-search"
-              value={searchTerm}
-              onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
-              placeholder="بحث بالاسم، أو رقم الهاتف"
-              className="w-full h-10 pr-10 pl-4 rounded-full bg-slate-50 text-sm outline-none"
-            />
-          </div>
-          <div className="flex items-center gap-1 overflow-x-auto p-1 bg-slate-100 rounded-full">
-            {[
-              ['all', `الكل (${customers.length} مريضة)`, 'text-slate-600'],
-              ['treatments', `خطط علاجية نشطة (${stats.withTreatments})`, 'text-slate-600'],
-              ['after', `تحتاج متابعة سريرية (${followCount})`, 'text-slate-600'],
-              ['caution', `حالات حساسية وحذر (${stats.caution})`, 'text-rose-600'],
-            ].map(([id, label, idle]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => { setChip(id); setPage(1); }}
-                className={`shrink-0 px-3 py-1.5 rounded-lg text-xs font-bold ${chip === id ? 'bg-white text-slate-900 shadow-sm' : idle}`}
-              >
-                {id === 'caution' && <span className="inline-block w-1.5 h-1.5 rounded-full bg-rose-500 ms-1" />}
-                {label}
-              </button>
-            ))}
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => document.getElementById('customer-search')?.focus()} className={ghost}>تصفية</button>
+          <button type="button" onClick={exportCsv} className={ghost}>تصدير السجلات</button>
+          <button type="button" onClick={() => { setEditing(null); setShowModal(true); }} className="inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white transition-colors hover:bg-[#047857]">تسجيل ملف عميلة</button>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">إجمالي السجلات السريرية النشطة</span>
-              <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><Ms name="badge" size={18} /></span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold font-mono">{customers.length}</span>
-              {addedThisMonth > 0 && <span className="text-xs font-bold text-emerald-700">↑ {addedThisMonth} هذا الشهر</span>}
-            </div>
-            <p className="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">اكتمال الملفات {stats.completePct}%</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">الخطط العلاجية الجارية</span>
-              <span className="w-9 h-9 rounded-xl bg-[#e0f2fe] text-[#0369a1] flex items-center justify-center"><Ms name="medical_information" size={18} /></span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold font-mono">{stats.activePlans}</span>
-              <span className="text-xs text-slate-500">أثناء العلاج</span>
-            </div>
-            <p className="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">{stats.sessions} جلسة مسجّلة · {stats.withTreatments} ملف بخطة</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-rose-700">تنبيهات الحساسية والحذر السريري</span>
-              <span className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center"><Ms name="warning" size={18} /></span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold font-mono text-rose-600">{stats.caution}</span>
-              <span className="text-[10px] font-bold tracking-wide text-rose-500">حالات</span>
-            </div>
-            <p className="mt-3 pt-2 border-t border-rose-100 text-[11px] text-rose-700">حساسية أو حمل أو رضاعة</p>
-          </div>
-          <div className="bg-white p-4 rounded-xl shadow-sm">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-slate-500">الإقرارات الموقّعة</span>
-              <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><Ms name="assignment_turned_in" size={18} /></span>
-            </div>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-extrabold font-mono">{stats.signedPct}%</span>
-            </div>
-            <p className="mt-3 pt-2 border-t border-slate-100 text-[11px] text-slate-500">{stats.signed} ختم من {customers.length}</p>
-          </div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative min-w-[240px] flex-1">
+          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8]"><Ms name="search" size={16} /></span>
+          <input
+            id="customer-search"
+            value={searchTerm}
+            onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
+            placeholder="بحث بالاسم أو رقم الهاتف"
+            className="h-10 w-full rounded-lg border border-[#E4EAEE] bg-white pr-9 pl-3 text-[13px] outline-none focus:border-[#0FA3A3]"
+          />
         </div>
+        <div className="flex items-center gap-2 overflow-x-auto">
+          {[
+            ['all', `الكل ${customers.length}`, '#94A3B8'],
+            ['treatments', `خطط نشطة ${stats.withTreatments}`, '#0FA3A3'],
+            ['after', `متابعة ${followCount}`, '#B45309'],
+            ['caution', `حذر ${stats.caution}`, '#DC2626'],
+          ].map(([id, label, dot]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => { setChip(id); setPage(1); }}
+              className={`inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11.5px] font-bold transition-colors ${chip === id ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155] hover:border-[#0FA3A3]'}`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full" style={{ background: dot }} />
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-        <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
-          <div className="xl:col-span-8 space-y-3">
-            <div className="flex items-center justify-between gap-3 px-1">
-              <p className="text-sm font-bold">قائمة المريضات والبروتوكولات <span className="text-slate-400 font-medium">عرض {visible.length} من أصل {ordered.length}</span></p>
-              <label className="text-xs text-slate-500 inline-flex items-center gap-2">
-                فرز حسب:
-                <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} className="bg-white border border-slate-200 rounded-xl px-2 py-1 text-xs font-bold text-slate-700">
+      <section aria-label="مؤشرات الملفات" className="grid grid-cols-2 border-y border-[#E4EAEE] lg:grid-cols-4">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={['px-5 py-4', i % 2 === 1 ? 'border-s border-[#E4EAEE]' : '', i > 1 ? 'border-t border-[#E4EAEE]' : '', 'lg:border-t-0', i > 0 ? 'lg:border-s lg:border-[#E4EAEE]' : ''].join(' ')}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />{k.label}</p>
+            <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
+      </section>
+
+        <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-12">
+          <div className="space-y-2 xl:col-span-8">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-[13px] font-bold text-[#334155]">قائمة الملفات <span className="font-medium text-[#94A3B8]">عرض {visible.length} من {ordered.length}</span></p>
+              <label className="inline-flex items-center gap-2 text-[11.5px] text-[#64748B]">
+                فرز
+                <select value={sort} onChange={(e) => { setSort(e.target.value); setPage(1); }} className="rounded-lg border border-[#E4EAEE] bg-white px-2 py-1 text-[11.5px] font-bold text-[#334155]">
                   <option value="session">أحدث جلسة علاجية</option>
                   <option value="new">أحدث ملف</option>
                   <option value="name">الاسم</option>
@@ -365,65 +328,64 @@ const Customers = () => {
               </label>
             </div>
 
-            {visible.length === 0 && <div className="bg-white rounded-2xl border border-slate-200 p-10 text-center text-sm text-slate-500">لا ملفات مطابقة.</div>}
+            {visible.length === 0 && <div className="rounded-xl border border-[#E4EAEE] bg-white p-10 text-center text-[13px] text-[#64748B]">لا ملفات مطابقة.</div>}
 
-            {visible.map((cust, index) => {
+            {visible.map((cust) => {
               const treat = activeTreatment(cust);
               const sessions = (treat?.sessions || cust.sessions || []).length;
               const flags = cautionLine(cust);
               const upcoming = nextApt(cust);
               const age = ageOf(cust.birthDate);
               const on = selected?.id === cust.id;
+              const accent = flags ? '#DC2626' : treat ? '#0FA3A3' : '#94A3B8';
               return (
                 <article
                   key={cust.id}
                   onClick={() => setSelectedId(cust.id)}
-                  className={`bg-white rounded-2xl shadow-sm p-4 cursor-pointer border ${on ? 'border-emerald-600' : 'border-slate-200/80'}`}
+                  className="relative cursor-pointer overflow-hidden rounded-lg border bg-white px-3 py-3 transition-colors hover:border-[#CBD5E1]"
+                  style={{ borderColor: on ? accent : '#E4EAEE', boxShadow: on ? `0 0 0 1px ${accent}` : 'none' }}
                 >
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: accent }} />
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <span className="w-12 h-12 rounded-2xl text-white font-bold flex items-center justify-center shrink-0" style={{ background: tones[(safePage * 6 + index) % tones.length] }}>{initials(cust)}</span>
+                    <div className="flex min-w-0 items-center gap-3 ps-1.5">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#F4F7F8] text-[12px] font-extrabold text-[#0E7490]">{initials(cust)}</span>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-slate-900">{cust.firstName} {cust.lastName}</h3>
-                          {age != null && <span className="text-xs text-slate-500">{age} سنة</span>}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-[13px] font-bold text-[#0F172A]">{cust.firstName} {cust.lastName}</h3>
+                          {age != null && <span className="text-[11px] text-[#94A3B8]">{age} سنة</span>}
                         </div>
-                        <p className="text-xs text-slate-500 mt-0.5" dir="ltr">{cust.phone || '—'}</p>
+                        <p className="mt-0.5 text-[11px] text-[#64748B]" dir="ltr">{cust.phone || '—'}</p>
                         {flags ? (
-                          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-rose-700 bg-rose-50 rounded-full px-2 py-0.5"><Ms name="medical_services" size={13} />تنبيه: {flags}</p>
+                          <p className="mt-1 inline-flex items-center rounded-full border border-[#F7D3D3] bg-[#FEF2F2] px-2 py-0.5 text-[10px] font-bold text-[#DC2626]">تنبيه: {flags}</p>
                         ) : cust.adsStamp?.signature ? (
-                          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800 bg-emerald-50 rounded-full px-2 py-0.5"><Ms name="verified" size={13} />إقرار موقّع</p>
+                          <p className="mt-1 inline-flex items-center rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2 py-0.5 text-[10px] font-bold text-[#047857]">إقرار موقّع</p>
                         ) : (
-                          <p className="mt-1 inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 bg-slate-100 rounded-full px-2 py-0.5">بدون تنبيه مسجّل</p>
+                          <p className="mt-1 inline-flex items-center rounded-full border border-[#E4EAEE] bg-[#F4F7F8] px-2 py-0.5 text-[10px] font-bold text-[#64748B]">لا توجد حساسية مسجّلة</p>
                         )}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                       {digits(cust.phone) && (
-                        <a href={`https://wa.me/${digits(cust.phone)}`} target="_blank" rel="noreferrer" className="h-9 px-3 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 inline-flex items-center gap-1">
-                          <Ms name="chat" size={14} /> واتساب
-                        </a>
+                        <a href={`https://wa.me/${digits(cust.phone)}`} target="_blank" rel="noreferrer" className="inline-flex h-8 items-center rounded-lg border border-[#E4EAEE] bg-white px-2.5 text-[11.5px] font-bold text-[#334155] hover:border-[#0FA3A3] hover:text-[#0E7490]">واتساب</a>
                       )}
-                      <button type="button" onClick={() => navigate(`/customers/${cust.id}`)} className="h-9 px-3 rounded-xl bg-emerald-700 text-white text-xs font-bold inline-flex items-center gap-1">
-                        <Ms name="folder_open" size={14} /> الملف الشامل
-                      </button>
+                      <button type="button" onClick={() => navigate(`/customers/${cust.id}`)} className="inline-flex h-8 items-center rounded-lg bg-[#059669] px-2.5 text-[11.5px] font-bold text-white hover:bg-[#047857]">الملف</button>
                     </div>
                   </div>
-                  <div className="mt-4 grid sm:grid-cols-2 gap-3 pt-3 border-t border-slate-100">
-                    <div>
-                      <p className="text-[11px] text-slate-400">البروتوكول العلاجي الحالي</p>
-                      <p className="text-sm font-bold mt-1">{treat?.serviceName || 'لا علاج مسجّل'}</p>
-                      <p className="text-[11px] text-slate-500 mt-1">{sessions ? `${sessions} جلسة` : 'بدون جلسات'}{treat ? ` · ${phaseLabel(treat.currentPhase)}` : ''}</p>
+                  <div className="mt-3 grid gap-3 border-t border-[#EDF1F4] pt-3 sm:grid-cols-2">
+                    <div className="ps-1.5">
+                      <p className="text-[11px] text-[#94A3B8]">البروتوكول الحالي</p>
+                      <p className="mt-1 text-[13px] font-bold text-[#334155]">{treat?.serviceName || 'لا علاج مسجّل'}</p>
+                      <p className="mt-1 text-[11px] text-[#64748B]">{sessions ? `${sessions} جلسة` : 'بدون جلسات'}{treat ? ` · ${phaseLabel(treat.currentPhase)}` : ''}</p>
                     </div>
                     <div>
-                      <p className="text-[11px] text-slate-400">الموعد السريري القادم</p>
+                      <p className="text-[11px] text-[#94A3B8]">الموعد القادم</p>
                       {upcoming ? (
                         <>
-                          <p className="text-sm font-bold mt-1">{upcoming.date}{upcoming.time ? ` · ${upcoming.time}` : ''}</p>
-                          <p className="text-[11px] text-slate-500 mt-1">{upcoming.service || upcoming.serviceName || 'موعد مسجّل'}</p>
+                          <p className="mt-1 text-[13px] font-bold text-[#334155]">{upcoming.date}{upcoming.time ? ` · ${upcoming.time}` : ''}</p>
+                          <p className="mt-1 text-[11px] text-[#64748B]">{upcoming.service || upcoming.serviceName || 'موعد مسجّل'}</p>
                         </>
                       ) : (
-                        <p className="text-sm text-slate-400 mt-1">لا موعد قادم</p>
+                        <p className="mt-1 text-[13px] text-[#94A3B8]">لا موعد قادم</p>
                       )}
                     </div>
                   </div>
@@ -431,69 +393,63 @@ const Customers = () => {
               );
             })}
 
-            <div className="flex items-center justify-between pt-1 px-1 text-xs text-slate-500">
-              <span>عرض {visible.length} من أصل {ordered.length} ملف</span>
+            <div className="flex items-center justify-between pt-1 text-[11.5px] text-[#94A3B8]">
+              <span>عرض {visible.length} من {ordered.length} ملف</span>
               <div className="flex items-center gap-1">
-                <button type="button" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} className="w-8 h-8 rounded-lg bg-white border border-slate-200 disabled:opacity-40"><Ms name="chevron_right" size={16} /></button>
+                <button type="button" disabled={safePage <= 1} onClick={() => setPage(safePage - 1)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] bg-white disabled:opacity-40"><Ms name="chevron_right" size={16} /></button>
                 {Array.from({ length: pages }, (_, i) => i + 1).slice(0, 5).map((n) => (
-                  <button key={n} type="button" onClick={() => setPage(n)} className={`w-8 h-8 rounded-lg text-xs font-bold ${n === safePage ? 'bg-emerald-700 text-white' : 'bg-white border border-slate-200'}`}>{n}</button>
+                  <button key={n} type="button" onClick={() => setPage(n)} className={`h-8 w-8 rounded-lg text-[11.5px] font-bold ${n === safePage ? 'bg-[#059669] text-white' : 'border border-[#E4EAEE] bg-white text-[#334155]'}`}>{n}</button>
                 ))}
-                <button type="button" disabled={safePage >= pages} onClick={() => setPage(safePage + 1)} className="w-8 h-8 rounded-lg bg-white border border-slate-200 disabled:opacity-40"><Ms name="chevron_left" size={16} /></button>
+                <button type="button" disabled={safePage >= pages} onClick={() => setPage(safePage + 1)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] bg-white disabled:opacity-40"><Ms name="chevron_left" size={16} /></button>
               </div>
             </div>
           </div>
 
           <div className="xl:col-span-4">
             {selected && (
-              <aside className="bg-white p-4 rounded-xl shadow-sm space-y-4 xl:sticky xl:top-24">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-bold">معاينة الملف السريري النشط</p>
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="w-12 h-12 rounded-2xl bg-emerald-700 text-white font-bold flex items-center justify-center">{initials(selected)}</span>
+              <aside className="overflow-hidden rounded-xl border border-[#E4EAEE] bg-white xl:sticky xl:top-24" style={{ boxShadow: 'inset 0 2px 0 #0FA3A3' }}>
+                <div className="flex items-start justify-between gap-2 border-b border-[#E4EAEE] px-4 py-3">
                   <div>
-                    <h3 className="font-bold">{selected.firstName} {selected.lastName}</h3>
-                    <p className="text-xs text-slate-500">{ageOf(selected.birthDate) != null ? `${ageOf(selected.birthDate)} سنة` : 'بدون تاريخ ميلاد'}</p>
-                    <p className="text-xs text-slate-500" dir="ltr">{selected.phone || '—'}</p>
+                    <p className="text-[14px] font-extrabold">{selected.firstName} {selected.lastName}</p>
+                    <p className="mt-0.5 text-[11px] text-[#64748B]">{ageOf(selected.birthDate) != null ? `${ageOf(selected.birthDate)} سنة` : 'بدون تاريخ ميلاد'} · <span dir="ltr">{selected.phone || '—'}</span></p>
                   </div>
+                  <span className="grid h-9 w-9 place-items-center rounded-lg bg-[#F4F7F8] text-[12px] font-extrabold text-[#0E7490]">{initials(selected)}</span>
                 </div>
+                <div className="space-y-3 px-4 py-3">
                 {cautionLine(selected) && (
-                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-100 text-xs text-rose-800">
-                    <p className="font-bold mb-1">تنبيه سريري</p>
+                  <div className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] p-3 text-[12px] text-[#DC2626]">
+                    <p className="mb-1 font-bold">تنبيه سريري</p>
                     <p>{cautionLine(selected)}</p>
                   </div>
                 )}
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-100">
-                  <p className="text-xs font-bold text-emerald-900">سجل الإقرار</p>
+                <div className="rounded-lg border border-[#C9EEE0] bg-[#ECFDF5] p-3">
+                  <p className="text-[12px] font-bold text-[#047857]">سجل الإقرار</p>
                   {selected.adsStamp?.signature ? (
-                    <p className="text-[11px] text-emerald-800 mt-1">موقّع{selected.adsStamp.stampedAt ? ` · ${new Date(selected.adsStamp.stampedAt).toLocaleDateString('ar')}` : ''}{selected.adsStamp.stampedBy ? ` · ${selected.adsStamp.stampedBy}` : ''}</p>
+                    <p className="mt-1 text-[11px] text-[#047857]">موقّع{selected.adsStamp.stampedAt ? ` · ${new Date(selected.adsStamp.stampedAt).toLocaleDateString('ar')}` : ''}{selected.adsStamp.stampedBy ? ` · ${selected.adsStamp.stampedBy}` : ''}</p>
                   ) : (
-                    <p className="text-[11px] text-emerald-800 mt-1">بدون ختم إقرار</p>
+                    <p className="mt-1 text-[11px] text-[#047857]">بدون ختم إقرار</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-xs font-bold mb-2">تسلسل الزيارات السريرية الأخير</p>
-                  {(selected.sessions || []).length === 0 && <p className="text-xs text-slate-500">لا جلسات في الملف.</p>}
+                  <p className="mb-2 text-[12px] font-bold text-[#334155]">آخر الزيارات</p>
+                  {(selected.sessions || []).length === 0 && <p className="text-[12px] text-[#94A3B8]">لا جلسات في الملف.</p>}
                   {(selected.sessions || []).slice().sort((a, b) => new Date(b.recordedAt || 0) - new Date(a.recordedAt || 0)).slice(0, 4).map((s) => (
-                    <div key={s.id || s.recordedAt} className="py-2 border-b border-slate-100 last:border-0">
-                      <p className="text-sm font-bold">{s.serviceTitle || s.serviceName || 'جلسة'}</p>
-                      <p className="text-[11px] text-slate-500">{String(s.recordedAt || s.date || '').slice(0, 10)}{s.note ? ` · ${s.note}` : ''}</p>
+                    <div key={s.id || s.recordedAt} className="border-b border-[#EDF1F4] py-2 last:border-0">
+                      <p className="text-[13px] font-bold text-[#0F172A]">{s.serviceTitle || s.serviceName || 'جلسة'}</p>
+                      <p className="text-[11px] text-[#64748B]">{String(s.recordedAt || s.date || '').slice(0, 10)}{s.note ? ` · ${s.note}` : ''}</p>
                     </div>
                   ))}
                 </div>
-                <button type="button" onClick={() => navigate(`/customers/${selected.id}`)} className="w-full py-2.5 rounded-xl bg-emerald-700 text-white text-sm font-bold inline-flex items-center justify-center gap-1">
-                  <Ms name="folder_open" size={16} /> فتح الملف الشامل
-                </button>
+                <button type="button" onClick={() => navigate(`/customers/${selected.id}`)} className="w-full rounded-lg bg-[#059669] py-2.5 text-[13px] font-bold text-white hover:bg-[#047857]">فتح الملف الشامل</button>
                 <div className="grid grid-cols-2 gap-2">
-                  <button type="button" onClick={() => { setEditing(selected); setShowModal(true); }} className="py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">تعديل الملف</button>
-                  <button type="button" onClick={(e) => handleDelete(selected.id, e)} className="py-2 rounded-xl bg-rose-50 text-rose-700 text-xs font-bold">حذف الملف</button>
+                  <button type="button" onClick={() => { setEditing(selected); setShowModal(true); }} className="rounded-lg border border-[#E4EAEE] bg-white py-2 text-[11.5px] font-bold text-[#334155] hover:border-[#0FA3A3]">تعديل الملف</button>
+                  <button type="button" onClick={(e) => handleDelete(selected.id, e)} className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] py-2 text-[11.5px] font-bold text-[#DC2626]">حذف الملف</button>
+                </div>
                 </div>
               </aside>
             )}
           </div>
         </div>
-      </div>
 
       <CustomerFormModal
         show={showModal}

@@ -7,24 +7,24 @@ const cards = [
     key: 'campaigns',
     to: '/winback',
     label: 'الحملات',
-    tone: 'stat-card-mint',
-    iconWrap: 'bg-emerald-100 text-emerald-700',
+    accent: '#059669',
+    iconWrap: 'bg-[#ECFDF5] text-[#047857]',
     Icon: Ticket,
   },
   {
     key: 'blog',
     to: '/website?tab=blog',
     label: 'المدونة',
-    tone: 'stat-card-sky',
-    iconWrap: 'bg-sky-100 text-sky-700',
+    accent: '#0FA3A3',
+    iconWrap: 'bg-[#ECFEFF] text-[#0E7490]',
     Icon: Users,
   },
   {
     key: 'orders',
     to: '/products?tab=orders',
     label: 'طلبات المنتجات',
-    tone: 'stat-card-gold',
-    iconWrap: 'bg-amber-100 text-amber-700',
+    accent: '#B45309',
+    iconWrap: 'bg-[#FFFBEB] text-[#B45309]',
     Icon: ShoppingCart,
   },
 ];
@@ -32,19 +32,20 @@ const cards = [
 const OverviewCards = ({ campaigns, blog, orders }) => {
   const values = { campaigns, blog, orders };
   return (
-    <div className="grid sm:grid-cols-3 gap-3">
-      {cards.map(({ key, to, label, tone, iconWrap, Icon }) => (
+    <div className="grid gap-3 sm:grid-cols-3">
+      {cards.map(({ key, to, label, accent, iconWrap, Icon }) => (
         <Link
           key={key}
           to={to}
-          className={`saas-card ${tone} p-5 flex items-center justify-between gap-3 transition hover:-translate-y-0.5`}
+          className="flex items-center justify-between gap-3 rounded-lg border border-[#E4EAEE] bg-white p-4 transition hover:border-[#C6EEEE]"
+          style={{ borderRightWidth: 3, borderRightColor: accent }}
         >
           <div>
-            <p className="text-xs font-bold text-[#6b7280]">{label}</p>
-            <p className="stat-num text-[34px] leading-none mt-2">{values[key]}</p>
+            <p className="text-[11px] font-bold text-[#64748B]">{label}</p>
+            <p className="mt-2 text-[28px] font-light leading-none tabular-nums tracking-tight">{values[key]}</p>
           </div>
-          <span className={`w-11 h-11 rounded-2xl flex items-center justify-center ${iconWrap}`}>
-            <Icon size={20} />
+          <span className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconWrap}`}>
+            <Icon size={18} />
           </span>
         </Link>
       ))}
