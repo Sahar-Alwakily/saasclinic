@@ -1,12 +1,11 @@
-import { upcomingGaps, reminderDue, mergeAptSettings, noShowRisk } from './appointmentOps';
+import {
+  upcomingGaps, reminderDue, mergeAptSettings, noShowRisk, BOOKABLE_STATUSES,
+} from './appointmentOps';
+import { toYmd, DAYS as DAY_NAMES } from './scheduleSlots';
+import { hourFromTime } from './timeParse';
 
-export const DAY_NAMES = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-
-export function toYmd(d) {
-  const x = d instanceof Date ? d : new Date(d);
-  if (Number.isNaN(x.getTime())) return '';
-  return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
-}
+// مصدر toYmd و DAY_NAMES هو ./scheduleSlots — إعادة تصدير للمستوردين القدامى
+export { toYmd, DAY_NAMES, hourFromTime };
 
 export function inDateRange(dateStr, startYmd, endYmd) {
   if (!dateStr) return false;
@@ -18,10 +17,11 @@ export function comparisonWindows(now = new Date()) {
   const thisStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
   const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const prevStart = toYmd(prevMonth);
-  const prevEndDate = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+  // عدد أيام الشهر السابق (day 0 من الشهر الحالي = آخر يوم من السابق)
   const lastDayPrev = new Date(now.getFullYear(), now.getMonth(), 0).getDate();
-  prevEndDate.setDate(Math.min(now.getDate(), lastDayPrev));
-  const prevEnd = toYmd(prevEndDate);
+  // نبني التاريخ مباشرة بالقيمة المقيّدة حتى لا يفيض إلى الشهر الحالي
+  // (مثال: 31 مارس → 28 فبرايا وليس 28 مارس)
+  const prevEnd = toYmd(new Date(now.getFullYear(), now.getMonth() - 1, Math.min(now.getDate(), lastDayPrev)));
   return { thisStart, thisEnd, prevStart, prevEnd };
 }
 
@@ -96,7 +96,7 @@ export function clinicHealth({ appointments = [], customers = [] }, now = new Da
 
   const scored = pillars.filter((p) => p.value != null);
   let score = null;
-  if (scored.length) {
+  if (appointments.length && scored.length) {
     const parts = scored.map((p) => {
       if (p.id === 'attend' || p.id === 'keep') return Math.max(0, Math.min(100, Number(p.value)));
       if (p.id === 'book') {
@@ -131,13 +131,14 @@ export function dailyTasks({
   branches = [],
   messages = [],
   settings,
-  now = new Date(),
-}) {
-  const today = toYmd(now);
+  now,
+} = {}, nowArg) {
+  const at = now || nowArg || new Date();
+  const today = toYmd(at);
   const aptSettings = mergeAptSettings(settings);
   const pending = (appointments || []).filter((a) => a.status === 'pending' && a.date >= today);
-  const gaps = upcomingGaps({ schedules, appointments, branches, dateStr: today });
-  const followups = (appointments || []).filter((a) => reminderDue(a, aptSettings, now).length > 0);
+  const gaps = upcomingGaps({ schedules, appointments, branches, dateStr: today, now: at });
+  const followups = (appointments || []).filter((a) => reminderDue(a, aptSettings, at).length > 0);
   const noshowToday = (appointments || []).filter((a) => a.status === 'noshow' && a.date === today && !a.noshowFollowupSent);
   const failed = (messages || []).filter((m) => m.status === 'failed');
   return {
@@ -156,9 +157,10 @@ export function interventionAlerts({
   waitlist = [],
   tasks,
   health,
-  now = new Date(),
-}) {
-  const today = toYmd(now);
+  now,
+} = {}, nowArg) {
+  const at = now || nowArg || new Date();
+  const today = toYmd(at);
   const list = [];
   if (tasks.pending.length) {
     list.push({
@@ -207,8 +209,8 @@ export function interventionAlerts({
     });
   }
   const highRisk = (appointments || [])
-    .filter((a) => ['pending', 'confirmed'].includes(a.status) && a.date >= today)
-    .map((a) => ({ ...a, risk: noShowRisk(appointments, a, now) }))
+    .filter((a) => BOOKABLE_STATUSES.includes(a.status) && a.date >= today)
+    .map((a) => ({ ...a, risk: noShowRisk(appointments, a, at) }))
     .filter((a) => a.risk.earlyConfirm);
   if (highRisk.length) {
     list.push({
@@ -235,7 +237,7 @@ export function interventionAlerts({
       const d = new Date(s.recordedAt || 0);
       return d > latest ? d : latest;
     }, new Date(0));
-    return (now - last) / 86400000 > 90;
+    return (at - last) / 86400000 > 90;
   });
   if (inactive.length) {
     list.push({
@@ -249,18 +251,7 @@ export function interventionAlerts({
   return list;
 }
 
-export function hourFromTime(t) {
-  const s = String(t || '');
-  const m = s.match(/(\d{1,2})/);
-  if (!m) return null;
-  let h = parseInt(m[1], 10);
-  const pm = /م|pm/i.test(s);
-  const am = /ص|am/i.test(s);
-  if (pm && h < 12) h += 12;
-  if (am && h === 12) h = 0;
-  if (h < 0 || h > 23) return null;
-  return h;
-}
+// hourFromTime مُصدَّرة أعلى الملف من ./timeParse
 
 function occupiesSlot(apt) {
   return apt && !['cancelled'].includes(apt.status);
@@ -296,7 +287,7 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
 
   const today = toYmd(now);
   const todayBooked = (appointments || []).filter((a) => a.date === today && occupiesSlot(a) && a.status !== 'noshow').length;
-  const gapsToday = upcomingGaps({ schedules, appointments, branches, dateStr: today });
+  const gapsToday = upcomingGaps({ schedules, appointments, branches, dateStr: today, now });
   const todaySlots = todayBooked + gapsToday.length;
   const todayFill = todaySlots ? Math.round((todayBooked / todaySlots) * 100) : null;
 
@@ -305,8 +296,8 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
     const d = new Date(now);
     d.setDate(d.getDate() + i);
     const dateStr = toYmd(d);
-    const booked = (appointments || []).filter((a) => a.date === dateStr && ['pending', 'confirmed'].includes(a.status)).length;
-    const gaps = upcomingGaps({ schedules, appointments, branches, dateStr });
+    const booked = (appointments || []).filter((a) => a.date === dateStr && BOOKABLE_STATUSES.includes(a.status)).length;
+    const gaps = upcomingGaps({ schedules, appointments, branches, dateStr, now });
     const cap = booked + gaps.length;
     lookahead.push({
       date: dateStr,
@@ -326,7 +317,7 @@ export function occupancyInsights({ appointments = [], schedules = {}, branches 
   const services = Object.entries(mix).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, count]) => ({ name, count }));
 
   const agenda = (appointments || [])
-    .filter((a) => a.date === today && ['pending', 'confirmed'].includes(a.status))
+    .filter((a) => a.date === today && BOOKABLE_STATUSES.includes(a.status))
     .map((a) => ({ ...a, hour: hourFromTime(a.time) }))
     .sort((a, b) => (a.hour ?? 99) - (b.hour ?? 99) || String(a.time).localeCompare(String(b.time)));
 
@@ -379,10 +370,12 @@ function foldAr(s) {
 function detectIntent(question, forced) {
   if (forced) return forced;
   const n = foldAr(question);
-  const book = n.includes('حجز') || n.includes('موعد');
+  // "حجوزات/مواعيد" صيغ جمع — "حجز/موعد" مفرد: "حجوزات" لا تحتوي "حجز" كنص جزئي
+  const book = n.includes('حجز') || n.includes('حجوز') || n.includes('موعد') || n.includes('مواعيد');
   if ((n.includes('انخفض') || n.includes('ليش') || n.includes('لماذا') || n.includes('سبب')) && book) return 'drop';
   if (n.includes('ازدحام') || n.includes('ساعه') || n.includes('ساعات') || n.includes('ايام') || n.includes('امتلاء')) return 'crowd';
-  if (n.includes('ايراد') || n.includes('دخل') || n.includes('فلوس') || (n.includes('مقارن') && n.includes('شهر'))) return 'rev';
+  // "تدخل" تحوي "دخل" — نستثنيها حتى لا تنحرف أسئلة "شو محتاج تدخل" نحو الإيراد
+  if (n.includes('ايراد') || /(?<!ت)دخل/.test(n) || n.includes('فلوس') || (n.includes('مقارن') && n.includes('شهر'))) return 'rev';
   if (n.includes('حضور') || n.includes('غياب') || n.includes('غاب')) return 'attend';
   if (n.includes('شاغر') || n.includes('فراغ') || n.includes('انتظار')) return 'gap';
   if (n.includes('تدخل') || n.includes('اليوم')) return 'today';

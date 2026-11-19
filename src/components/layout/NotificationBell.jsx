@@ -11,6 +11,19 @@ function rows(snap) {
   return val ? Object.entries(val).map(([id, v]) => ({ id, ...(v || {}) })) : [];
 }
 
+const NOTE_ACCENTS = {
+  pending: '#B45309',
+  today: '#0FA3A3',
+  failed: '#DC2626',
+  orders: '#B45309',
+  default: '#059669',
+};
+
+function noteAccent(id) {
+  if (id.startsWith('inbox')) return '#059669';
+  return NOTE_ACCENTS[id] || NOTE_ACCENTS.default;
+}
+
 function buildNotes({ appointments, inbox, messages, orders }) {
   const today = toYmd(new Date());
   const items = [];
@@ -112,37 +125,55 @@ const NotificationBell = () => {
     <div className="relative" ref={rootRef}>
       <button
         type="button"
-        className="relative w-10 h-10 rounded-full bg-white border border-[#ebeef2] text-[#6b7280] flex items-center justify-center dark:bg-[#152029] dark:border-[#2A3944] dark:text-[#E8EEEA]"
+        className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-[#E4EAEE] bg-white text-[#64748B] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490] dark:border-[#2A3944] dark:bg-[#152029] dark:text-[#E8EEEA]"
         aria-label="تنبيهات"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
-        <Bell size={16} />
+        <Bell size={16} strokeWidth={2.25} />
         {notes.length > 0 && (
-          <span className="absolute -top-1 -left-1 min-w-5 h-5 px-1 rounded-full bg-[#10b981] text-white text-[10px] font-bold flex items-center justify-center">
+          <span className="absolute -start-0.5 -top-0.5 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-white bg-[#059669] px-1 text-[10px] font-bold text-white dark:border-[#152029]">
             {notes.length > 9 ? '9+' : notes.length}
           </span>
         )}
       </button>
       {open && (
-        <div className="absolute top-12 end-0 z-40 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-[#e4eee8] bg-white shadow-lg dark:bg-[#152029] dark:border-[#2A3944]">
-          <div className="px-4 py-3 border-b border-[#e4eee8] dark:border-[#2A3944]">
-            <p className="font-bold text-sm text-[#111827] dark:text-white">التنبيهات</p>
-            <p className="text-xs text-[#8a9199] mt-0.5">{notes.length ? `${notes.length} بند يحتاج متابعة` : 'ما في شي معلّق'}</p>
+        <div
+          className="absolute end-0 top-[calc(100%+0.5rem)] z-40 w-[min(22rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-[#E4EAEE] bg-white shadow-xl dark:border-[#2A3944] dark:bg-[#152029]"
+          role="menu"
+        >
+          <div className="border-b border-[#E4EAEE] bg-[#F8FBFC] px-4 py-3 dark:border-[#2A3944] dark:bg-[#101920]">
+            <p className="text-[11px] font-bold text-[#94A3B8]">المتابعة</p>
+            <p className="text-[14px] font-extrabold text-[#0F172A] dark:text-white">التنبيهات</p>
+            <p className="mt-0.5 text-[11px] text-[#64748B]">
+              {notes.length ? `${notes.length} بند يحتاج متابعة` : 'لا شيء معلّق الآن'}
+            </p>
           </div>
-          <div className="max-h-80 overflow-y-auto p-2">
-            {notes.length === 0 && <p className="text-sm text-[#8a9199] px-2 py-4 text-center">كل شي هادي هلق.</p>}
-            {notes.map((note) => (
-              <button
-                key={note.id}
-                type="button"
-                onClick={() => go(note.to)}
-                className="w-full text-right rounded-xl px-3 py-2.5 hover:bg-[#f8faf9] dark:hover:bg-[#101920]"
-              >
-                <span className="block text-sm font-bold text-[#111827] dark:text-white">{note.title}</span>
-                {note.detail && <span className="block text-xs text-[#8a9199] mt-0.5 line-clamp-2">{note.detail}</span>}
-              </button>
-            ))}
+          <div className="max-h-[min(20rem,70vh)] space-y-2 overflow-y-auto p-2">
+            {notes.length === 0 && (
+              <div className="rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-8 text-center text-[13px] text-[#64748B] dark:border-[#2A3944] dark:bg-[#101920]">
+                كل شيء هادئ — لا تنبيهات حالياً.
+              </div>
+            )}
+            {notes.map((note) => {
+              const accent = noteAccent(note.id);
+              return (
+                <button
+                  key={note.id}
+                  type="button"
+                  onClick={() => go(note.to)}
+                  className="relative w-full overflow-hidden rounded-lg border border-[#E4EAEE] bg-white py-2.5 ps-4 pe-3 text-right transition-colors hover:border-[#CBD5E1] hover:bg-[#F8FBFC] dark:border-[#2A3944] dark:bg-[#152029] dark:hover:bg-[#101920]"
+                  role="menuitem"
+                >
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: accent }} />
+                  <span className="block text-[13px] font-bold text-[#0F172A] dark:text-white">{note.title}</span>
+                  {note.detail && (
+                    <span className="mt-0.5 block line-clamp-2 text-[11px] leading-relaxed text-[#64748B]">{note.detail}</span>
+                  )}
+                  <span className="mt-1 block text-[10.5px] font-bold text-[#0E7490]">فتح ←</span>
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

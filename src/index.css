@@ -197,6 +197,11 @@
   border-color: #2a3944;
 }
 
+.dark .saas-app :is(.stat-card-mint, .stat-card-sky, .stat-card-gold, .stat-card-rose, .stat-card-lilac) {
+  background: #152029 !important;
+  border-color: #2a3944 !important;
+}
+
 .saas-rail {
   background: #ffffff;
   color: #14171c;
@@ -217,6 +222,180 @@
 .dark .saas-topbar {
   background: rgba(14, 23, 30, 0.92);
   border-color: #2a3944;
+}
+
+.dark body {
+  background: #101920;
+  color: #e8eeea;
+}
+
+.saas-canvas {
+  background: #f4f7f8;
+}
+.dark .saas-canvas {
+  background: #101920;
+}
+
+/* ── Dark: remap console surfaces (pages use light hex utilities) ── */
+.dark .saas-app :is(
+  .bg-\[\#F4F7F8\],
+  .bg-\[\#F8FBFC\],
+  .bg-\[\#F7F8F6\],
+  .bg-\[\#F3F5F7\],
+  .bg-\[\#f3f5f7\],
+  .bg-\[\#EDF3F5\],
+  .bg-\[\#EDF1F4\],
+  .bg-\[\#F1F5F7\]
+) {
+  background-color: #101920 !important;
+}
+
+.dark .saas-app .bg-white {
+  background-color: #152029 !important;
+}
+
+.dark .saas-app :is(
+  .border-\[\#E4EAEE\],
+  .border-\[\#E5E9EC\],
+  .border-\[\#ebeef2\],
+  .border-\[\#EDF1F4\],
+  .border-\[\#F1F5F7\],
+  .border-\[\#CBD5E1\],
+  .border-\[\#E4E7EC\]
+) {
+  border-color: #2a3944 !important;
+}
+
+.dark .saas-app :is(
+  .text-\[\#0F172A\],
+  .text-\[\#111827\],
+  .text-\[\#1E2229\],
+  .text-\[\#202A32\],
+  .text-\[\#172B3A\],
+  .text-\[\#14171c\]
+) {
+  color: #e8eeea !important;
+}
+
+.dark .saas-app :is(
+  .text-\[\#334155\],
+  .text-\[\#475569\],
+  .text-\[\#1F5C4D\]
+) {
+  color: #c4ced6 !important;
+}
+
+.dark .saas-app :is(
+  .text-\[\#64748B\],
+  .text-\[\#6b7280\],
+  .text-\[\#75818B\],
+  .text-\[\#7C8A99\],
+  .text-\[\#8a9199\],
+  .text-\[\#9ca3af\]
+) {
+  color: #9aa7b0 !important;
+}
+
+.dark .saas-app :is(.text-\[\#94A3B8\], .text-\[\#c0c5cc\]) {
+  color: #7a8a94 !important;
+}
+
+.dark .saas-app .divide-\[\#E4EAEE\] > :not([hidden]) ~ :not([hidden]),
+.dark .saas-app .divide-\[\#EDF1F4\] > :not([hidden]) ~ :not([hidden]),
+.dark .saas-app .divide-x.divide-\[\#E4EAEE\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2a3944 !important;
+}
+
+.dark .saas-app :is(
+  .hover\:bg-\[\#F8FBFC\]:hover,
+  .hover\:bg-\[\#F4F7F8\]:hover,
+  .hover\:bg-\[\#f3f5f7\]:hover,
+  .hover\:bg-white:hover
+) {
+  background-color: #1a2830 !important;
+}
+
+.dark .saas-app .bg-\[\#ECFDF5\] {
+  background-color: rgba(5, 150, 105, 0.16) !important;
+}
+.dark .saas-app .border-\[\#C9EEE0\] {
+  border-color: rgba(5, 150, 105, 0.38) !important;
+}
+
+.dark .saas-app .bg-\[\#FEF2F2\] {
+  background-color: rgba(220, 38, 38, 0.14) !important;
+}
+.dark .saas-app .border-\[\#F7D3D3\] {
+  border-color: rgba(220, 38, 38, 0.35) !important;
+}
+
+.dark .saas-app .bg-\[\#FFFBEB\] {
+  background-color: rgba(180, 83, 9, 0.16) !important;
+}
+.dark .saas-app .border-\[\#F3E2C2\] {
+  border-color: rgba(180, 83, 9, 0.35) !important;
+}
+
+.dark .saas-app .bg-\[\#ECFEFF\] {
+  background-color: rgba(15, 163, 163, 0.14) !important;
+}
+.dark .saas-app .border-\[\#C8EDF2\],
+.dark .saas-app .border-\[\#C6EEEE\] {
+  border-color: rgba(15, 163, 163, 0.35) !important;
+}
+
+.dark .saas-app .bg-\[\#F0F9FF\] {
+  background-color: rgba(14, 116, 144, 0.16) !important;
+}
+.dark .saas-app .border-\[\#BAE6FD\] {
+  border-color: rgba(14, 116, 144, 0.35) !important;
+}
+
+.dark .saas-app .bg-\[\#EDF5F2\] {
+  background-color: rgba(5, 150, 105, 0.14) !important;
+}
+
+.dark .saas-app .hover\:bg-\[\#ecfdf5\]:hover {
+  background-color: rgba(5, 150, 105, 0.12) !important;
+}
+
+.dark .saas-topbar .text-\[\#111827\] {
+  color: #e8eeea !important;
+}
+
+.dark .nura-search {
+  background: rgba(5, 150, 105, 0.12) !important;
+  color: #9aa7b0;
+}
+.dark .nura-search input {
+  color: #e8eeea !important;
+}
+.dark .nura-search kbd {
+  background: #152029 !important;
+  color: #7a8a94 !important;
+}
+
+.dark .saas-rail .text-\[\#1E2229\] {
+  color: #e8eeea !important;
+}
+.dark .saas-rail button.hover\:bg-\[\#f3f5f7\]:hover {
+  background-color: #1a2830 !important;
+}
+
+.dark .cal-hatch {
+  background: repeating-linear-gradient(
+    -45deg,
+    #1a2830,
+    #1a2830 7px,
+    #152029 7px,
+    #152029 14px
+  );
+}
+
+.dark .Toastify__toast-theme--light {
+  background: #152029;
+  color: #e8eeea;
+  border: 1px solid #2a3944;
 }
 
 .saas-app h1.font-product { font-size: 1.55rem; line-height: 1.25; }

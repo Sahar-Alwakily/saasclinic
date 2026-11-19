@@ -37,7 +37,7 @@ import SupportRequests from './pages/SupportRequests';
 import SupportAccess from './pages/SupportAccess';
 import PlanGate from './components/plan/PlanGate';
 const bootScreen = (
-  <div className="min-h-screen flex items-center justify-center bg-[#f3f5f7] text-[#8a9199] text-sm">جاري فتح مساحة العمل...</div>
+  <div className="saas-app min-h-screen flex items-center justify-center bg-[#f3f5f7] text-[#8a9199] text-sm dark:bg-[#101920] dark:text-[#9aa7b0]">جاري فتح مساحة العمل...</div>
 );
 
 const SuspendedClinic = () => {

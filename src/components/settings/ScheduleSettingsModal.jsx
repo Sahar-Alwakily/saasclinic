@@ -6,8 +6,18 @@ import { FaSave, FaMapMarkerAlt, FaUserTie, FaCheck } from 'react-icons/fa';
 import { toast, ToastContainer } from 'react-toastify';
 import { parseHolidayDates, formatHourLabel } from '../../utils/scheduleSlots';
 import { Link } from 'react-router-dom';
+import TeamNav from '../team/TeamNav';
+import TeamStatStrip from '../team/TeamStatStrip';
 
 const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+const panel = 'rounded-xl border border-[#E4EAEE] bg-white';
+const field = 'h-8 w-full rounded-lg border border-[#E4EAEE] bg-white px-2 text-[11.5px] font-bold tabular-nums text-[#334155] outline-none focus:border-[#0FA3A3]';
+const chip = (on) => `inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[11.5px] font-bold transition-colors ${
+  on
+    ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]'
+    : 'border-[#E4EAEE] bg-white text-[#475569] hover:border-[#CBD5E1] hover:text-[#334155]'
+}`;
 
 function HolidayDatesEditor({ label, hint, dates, onChange }) {
   const [draft, setDraft] = useState('');
@@ -22,19 +32,37 @@ function HolidayDatesEditor({ label, hint, dates, onChange }) {
   const remove = (ymd) => onChange(list.filter((d) => d !== ymd).join(', '));
   return (
     <div className="space-y-2">
-      <p className="text-sm font-bold">{label}</p>
-      {hint && <p className="text-xs text-stone-500">{hint}</p>}
+      <p className="text-[11.5px] font-bold text-[#334155]">{label}</p>
+      {hint && <p className="text-[10px] text-[#94A3B8]">{hint}</p>}
       <div className="flex gap-2">
-        <input type="date" value={draft} onChange={(e) => setDraft(e.target.value)} className="flex-1 p-2.5 rounded-xl bg-[#f8faf9] border border-[#e4eee8] text-sm" dir="ltr" />
-        <button type="button" onClick={add} className="px-4 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold">إضافة</button>
+        <input
+          type="date"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          className="h-9 flex-1 rounded-lg border border-[#E4EAEE] bg-white px-2.5 text-[12px] text-[#334155] outline-none focus:border-[#0FA3A3]"
+          dir="ltr"
+        />
+        <button
+          type="button"
+          onClick={add}
+          className="rounded-lg border border-[#E4EAEE] bg-white px-3 py-1.5 text-[11.5px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]"
+        >
+          إضافة
+        </button>
       </div>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {list.map((ymd) => (
-          <button key={ymd} type="button" onClick={() => remove(ymd)} className="nura-chip nura-chip-gold" dir="ltr">
+          <button
+            key={ymd}
+            type="button"
+            onClick={() => remove(ymd)}
+            className="rounded-full border border-[#F3E2C2] bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-bold tabular-nums text-[#B45309] transition-colors hover:border-[#B45309]"
+            dir="ltr"
+          >
             {ymd} ×
           </button>
         ))}
-        {!list.length && <p className="text-xs text-[#8a9199]">لا تواريخ بعد</p>}
+        {!list.length && <p className="text-[10.5px] text-[#94A3B8]">لا تواريخ بعد</p>}
       </div>
     </div>
   );
@@ -42,10 +70,10 @@ function HolidayDatesEditor({ label, hint, dates, onChange }) {
 
 const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
   const { clinicPath } = useClinic();
-  
+
   const [branches, setBranches] = useState([]);
   const [selectedBranch, setSelectedBranch] = useState('');
-  
+
   const [staffList, setStaffList] = useState([]);
   const [selectedStaffId, setSelectedStaffId] = useState('');
   const [schedule, setSchedule] = useState({});
@@ -85,7 +113,7 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
       const list = val ? Object.entries(val)
         .map(([id, item]) => ({ id, ...item }))
         .filter(u => u.role !== 'admin' && u.branch === selectedBranch) : [];
-      
+
       setStaffList(list);
       if (list.length > 0) setSelectedStaffId(list[0].id);
       else setSelectedStaffId('');
@@ -97,10 +125,10 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
   useEffect(() => {
     if (!clinicPath || !selectedStaffId || !selectedBranch) return;
     setLoading(true);
-    
+
     const scheduleKey = `${selectedBranch}_${selectedStaffId}`;
     const scheduleRef = ref(database, clinicPath(`scheduleSettings/${scheduleKey}`));
-    
+
     const unsub = onValue(scheduleRef, (snap) => {
       setSchedule(snap.val() || {});
       setLoading(false);
@@ -120,10 +148,10 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
     }));
   };
 
-  const handleTimeChange = (dayIdx, field, value) => {
+  const handleTimeChange = (dayIdx, fieldName, value) => {
     setSchedule(prev => ({
       ...prev,
-      [`day_${dayIdx}`]: { ...prev[`day_${dayIdx}`], [field]: Number(value) }
+      [`day_${dayIdx}`]: { ...prev[`day_${dayIdx}`], [fieldName]: Number(value) }
     }));
   };
 
@@ -137,7 +165,7 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
         holidays: parseHolidayDates(schedule.holidays).join(', '),
       });
       toast.success('تم حفظ جدول وعطل الموظفة');
-    } catch (error) {
+    } catch {
       toast.error('حدث خطأ أثناء الحفظ');
     } finally {
       setIsSaving(false);
@@ -172,109 +200,116 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
 
   const body = (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-[12px] text-[#047857]">موظفات الفرع</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{staffList.length}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-[12px] text-[#0369a1]">أيام دوامها</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{activeDays}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-[12px] text-[#b45309]">عطل الموظفة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{staffHolidays}</p>
-        </div>
-        <div className="saas-card stat-card-rose p-4">
-          <p className="text-[12px] text-[#be123c]">عطلة العيادة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{clinicHolidayCount}</p>
-        </div>
-      </div>
+      <TeamStatStrip
+        items={[
+          { label: 'موظفات الفرع', value: staffList.length, note: 'حسب الفرع المحدد', accent: '#059669' },
+          { label: 'أيام دوامها', value: activeDays, note: selectedStaff?.name || 'اختاري موظفة', accent: '#0FA3A3' },
+          { label: 'عطل الموظفة', value: staffHolidays, note: 'إجازات فردية', accent: '#B45309' },
+          { label: 'عطلة العيادة', value: clinicHolidayCount, note: 'إغلاق شامل للفريق', accent: '#DC2626' },
+        ]}
+      />
 
-      <section className="saas-card p-4 sm:p-5 space-y-4">
+      <section className={`${panel} space-y-4 p-4`}>
         <div>
-          <p className="text-xs font-bold text-[#8a9199] mb-2 flex items-center gap-1"><FaMapMarkerAlt /> الفرع</p>
+          <p className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold text-[#64748B]"><FaMapMarkerAlt className="text-[9px]" /> الفرع</p>
           {branches.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {branches.map((branch) => (
-                <button
-                  key={branch.id}
-                  type="button"
-                  onClick={() => setSelectedBranch(branch.id)}
-                  className={`px-3 py-2 rounded-2xl text-sm font-bold ${
-                    selectedBranch === branch.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
-                  }`}
-                >
-                  {selectedBranch === branch.id ? <FaCheck className="inline ml-1 text-xs" /> : null}
-                  {branch.name}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5">
+              {branches.map((branch) => {
+                const active = selectedBranch === branch.id;
+                return (
+                  <button
+                    key={branch.id}
+                    type="button"
+                    onClick={() => setSelectedBranch(branch.id)}
+                    className={chip(active)}
+                  >
+                    {active ? <FaCheck className="text-[9px]" /> : null}
+                    {branch.name}
+                  </button>
+                );
+              })}
             </div>
           ) : (
-            <p className="text-sm text-rose-600 font-bold">أضيفي فرعاً أولاً من الفريق والفروع.</p>
+            <p className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] px-3 py-2 text-[11.5px] font-bold text-[#DC2626]">
+              أضيفي فرعاً أولاً من قسم «الفروع».
+            </p>
           )}
         </div>
-        <div>
-          <p className="text-xs font-bold text-[#8a9199] mb-2 flex items-center gap-1"><FaUserTie /> الموظفة</p>
+        <div className="border-t border-[#EDF1F4] pt-3">
+          <p className="mb-2 flex items-center gap-1.5 text-[10.5px] font-bold text-[#64748B]"><FaUserTie className="text-[9px]" /> الموظفة</p>
           {staffList.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {staffList.map((staff) => (
-                <button
-                  key={staff.id}
-                  type="button"
-                  onClick={() => setSelectedStaffId(staff.id)}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-2xl text-sm font-bold ${
-                    selectedStaffId === staff.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
-                  }`}
-                >
-                  <span className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs ${
-                    selectedStaffId === staff.id ? 'bg-white/20' : 'bg-white text-emerald-700'
-                  }`}>
-                    {(staff.name || 'م').trim().charAt(0)}
-                  </span>
-                  {staff.name}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-1.5">
+              {staffList.map((staff) => {
+                const active = selectedStaffId === staff.id;
+                return (
+                  <button
+                    key={staff.id}
+                    type="button"
+                    onClick={() => setSelectedStaffId(staff.id)}
+                    className={chip(active)}
+                  >
+                    <span className={`grid h-6 w-6 place-items-center rounded-md text-[10px] font-bold ${
+                      active ? 'bg-white text-[#0E7490]' : 'bg-[#F4F7F8] text-[#475569]'
+                    }`}>
+                      {(staff.name || 'م').trim().charAt(0)}
+                    </span>
+                    {staff.name}
+                  </button>
+                );
+              })}
             </div>
           ) : (
-            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4 text-sm text-amber-800">
-              لا موظفات في هذا الفرع. <Link to="/staff" className="font-bold underline">أضيفيهن من الموظفات</Link>.
+            <div className="flex flex-wrap items-center gap-2 rounded-lg border border-[#F3E2C2] bg-[#FFFBEB] px-3 py-2 text-[11.5px] text-[#B45309]">
+              لا موظفات في هذا الفرع.
+              <Link to="/staff" className="font-bold text-[#B45309] underline underline-offset-2">أضيفيهن من الموظفات</Link>.
             </div>
           )}
         </div>
       </section>
 
-      <section className="saas-card p-4 sm:p-5 space-y-3">
+      <section className={`${panel} space-y-3 p-4`}>
         <HolidayDatesEditor
           label="عطلة شاملة للعيادة"
           hint="تاريخ واحد يُغلق الحجز لكل الموظفات دفعة واحدة."
           dates={clinicHolidays}
           onChange={setClinicHolidays}
         />
-        <button type="button" onClick={saveClinicHolidays} disabled={savingClinic} className="px-4 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold disabled:opacity-50">
+        <button
+          type="button"
+          onClick={saveClinicHolidays}
+          disabled={savingClinic}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-[#C9EEE0] bg-[#ECFDF5] px-3 py-1.5 text-[11.5px] font-bold text-[#047857] transition-colors hover:border-[#059669] disabled:opacity-50"
+        >
           {savingClinic ? 'جاري الحفظ...' : 'حفظ عطلة العيادة'}
         </button>
       </section>
 
       {staffList.length > 0 && (
-        <section className="saas-card p-4 sm:p-5 space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
+        <section className={`${panel} space-y-3 p-4`}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4EAEE] pb-3">
             <div>
-              <h2 className="font-bold text-[#111827]">أسبوع {selectedStaff?.name || 'الموظفة'}</h2>
-              <p className="text-xs text-[#8a9199] mt-0.5">فعّلي اليوم ثم حددي من أي ساعة إلى أي ساعة.</p>
+              <h2 className="text-[13.5px] font-extrabold text-[#0F172A]">أسبوع {selectedStaff?.name || 'الموظفة'}</h2>
+              <p className="mt-0.5 text-[10.5px] text-[#94A3B8]">فعّلي اليوم ثم حددي من أي ساعة إلى أي ساعة.</p>
             </div>
-            <button type="button" onClick={handleSave} disabled={isSaving} className="px-4 py-2.5 rounded-xl bg-[#10b981] text-white text-sm font-bold flex items-center gap-2 disabled:opacity-50">
-              <FaSave /> {isSaving ? 'جاري الحفظ...' : 'حفظ الجدول'}
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={isSaving}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#059669] px-3.5 py-2 text-[12px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-50"
+            >
+              <FaSave className="text-[10px]" /> {isSaving ? 'جاري الحفظ...' : 'حفظ الجدول'}
             </button>
           </div>
+
           <HolidayDatesEditor
             label="عطل هذه الموظفة"
             hint="إجازة لهذه الموظفة فقط — الحجز يُغلق لها في هذه الأيام."
             dates={schedule.holidays}
             onChange={(holidays) => setSchedule((prev) => ({ ...prev, holidays }))}
           />
+
           {loading ? (
-            <p className="text-center py-8 text-[#8a9199]">جاري تحميل الجدول...</p>
+            <p className="py-8 text-center text-[11.5px] text-[#94A3B8]">جاري تحميل الجدول...</p>
           ) : (
             <div className="space-y-2">
               {DAYS.map((day, idx) => {
@@ -282,29 +317,29 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
                 return (
                   <div
                     key={idx}
-                    className={`rounded-2xl border p-3 sm:p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 ${
-                      dayData.active ? 'bg-emerald-50/70 border-emerald-100' : 'bg-[#f8faf9] border-[#e4eee8]'
+                    className={`flex flex-col justify-between gap-3 rounded-lg border px-3 py-2.5 md:flex-row md:items-center ${
+                      dayData.active ? 'border-[#C9EEE0] bg-[#F6FEFB]' : 'border-[#E4EAEE] bg-white'
                     }`}
                   >
-                    <label className="flex items-center gap-3 cursor-pointer min-w-[9rem]">
+                    <label className="flex min-w-[8.5rem] cursor-pointer items-center gap-2.5">
                       <input type="checkbox" checked={!!dayData.active} onChange={() => handleToggleDay(idx)} className="sr-only" />
-                      <span className={`w-11 h-6 rounded-full relative shrink-0 ${dayData.active ? 'bg-[#10b981]' : 'bg-gray-300'}`}>
-                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-all ${dayData.active ? 'left-0.5' : 'right-0.5'}`} />
+                      <span className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${dayData.active ? 'bg-[#059669]' : 'bg-[#CBD5E1]'}`}>
+                        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-all ${dayData.active ? 'left-0.5' : 'right-0.5'}`} />
                       </span>
-                      <span className={`font-bold ${dayData.active ? 'text-emerald-800' : 'text-[#8a9199]'}`}>{day}</span>
+                      <span className={`text-[12px] font-bold ${dayData.active ? 'text-[#047857]' : 'text-[#64748B]'}`}>{day}</span>
                     </label>
                     {dayData.active ? (
-                      <div className="flex-1 flex gap-2 items-center">
-                        <select value={dayData.start} onChange={(e) => handleTimeChange(idx, 'start', e.target.value)} className="flex-1 p-2.5 rounded-xl bg-white border border-emerald-100 text-sm font-bold">
+                      <div className="flex flex-1 items-center gap-2">
+                        <select value={dayData.start} onChange={(e) => handleTimeChange(idx, 'start', e.target.value)} className={field}>
                           {hourOptions()}
                         </select>
-                        <span className="text-[#8a9199] text-sm font-bold">إلى</span>
-                        <select value={dayData.end} onChange={(e) => handleTimeChange(idx, 'end', e.target.value)} className="flex-1 p-2.5 rounded-xl bg-white border border-emerald-100 text-sm font-bold">
+                        <span className="text-[10.5px] font-bold text-[#94A3B8]">إلى</span>
+                        <select value={dayData.end} onChange={(e) => handleTimeChange(idx, 'end', e.target.value)} className={field}>
                           {hourOptions()}
                         </select>
                       </div>
                     ) : (
-                      <p className="flex-1 text-sm text-[#8a9199]">إجازة</p>
+                      <p className="flex-1 text-[11.5px] text-[#94A3B8]">إجازة</p>
                     )}
                   </div>
                 );
@@ -316,7 +351,9 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
 
       {!embedded && onClose && (
         <div className="flex justify-end">
-          <button type="button" onClick={onClose} className="px-5 py-2.5 rounded-xl bg-emerald-50 text-emerald-800 font-bold">إغلاق</button>
+          <button type="button" onClick={onClose} className="rounded-lg border border-[#E4EAEE] bg-white px-4 py-2 text-[12px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]">
+            إغلاق
+          </button>
         </div>
       )}
     </div>
@@ -324,23 +361,24 @@ const ScheduleSettingsModal = ({ show = true, onClose, embedded = false }) => {
 
   if (embedded) {
     return (
-      <div className="space-y-5" dir="rtl">
+      <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
         <ToastContainer position="top-left" rtl />
-        <div className="flex flex-wrap items-end justify-between gap-3">
+        <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-[22px] font-bold text-[#111827]">دوام الموظفين</h1>
-            <p className="text-sm text-[#8a9199] mt-1">أيام وساعات كل موظفة، عطلها، وعطلة العيادة للكل.</p>
+            <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">الفريق</p>
+            <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">الدوام والعطل</h1>
+            <p className="mt-1 text-[12.5px] text-[#64748B]">أيام وساعات كل موظفة، عطلها، وعطلة العيادة للكل.</p>
           </div>
-          <Link to="/staff" className="nura-chip nura-chip-mint">الموظفات</Link>
-        </div>
+          <TeamNav />
+        </header>
         {body}
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50" dir="rtl">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#0F172A]/60 p-4" dir="rtl">
+      <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl border border-[#E4EAEE] bg-[#F4F7F8]">
         {body}
       </div>
     </div>

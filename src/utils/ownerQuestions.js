@@ -34,7 +34,7 @@ const PLACES = [
   { keys: ['واتس', 'واتساب'], path: '/settings?tab=whatsapp', label: 'واتساب', trail: 'الإعدادات ← واتساب', note: 'هون الربط والرقم. إذا قصدك نصوص الرسائل: المواعيد ← التذكيرات والقواعد، آخر الصفحة.' },
   { keys: ['قائمة الانتظار', 'طابور الانتظار'], path: '/appointments/waitlist', label: 'الانتظار', trail: 'المواعيد ← قائمة الانتظار', note: '' },
   { keys: ['المواعيد المتاحه', 'الساعات الفاضي'], path: '/appointments/gaps', label: 'المتاح', trail: 'المواعيد ← المواعيد المتاحة', note: '' },
-  { keys: ['دوام الموظف', 'جدول الدوام'], path: '/appointments/schedule', label: 'الدوام', trail: 'المواعيد ← دوام الموظفين', note: '' },
+  { keys: ['دوام الموظف', 'جدول الدوام'], path: '/appointments/schedule', label: 'الدوام', trail: 'الفريق والفروع ← دوام الموظفين', note: '' },
   { keys: ['حضور الموظفات', 'حضور العاملات'], path: '/appointments/attendance', label: 'الحضور', trail: 'المواعيد ← الحضور', note: '' },
   { keys: ['سياسات الموقع', 'سياسه الموقع'], path: '/website?tab=policies', label: 'السياسات', trail: 'موقع العيادة ← السياسات', note: '' },
   { keys: ['المدونه', 'المقالات'], path: '/website?tab=blog', label: 'المدونة', trail: 'موقع العيادة ← المدونة', note: '' },

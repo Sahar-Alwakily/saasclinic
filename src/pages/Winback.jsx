@@ -5,30 +5,80 @@ import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
 import { Link } from 'react-router-dom';
 import {
-  FaWhatsapp, FaPause, FaPlay, FaStop, FaSync, FaUserNurse, FaBan,
+  FaWhatsapp, FaPause, FaPlay, FaStop, FaSync, FaBan, FaEllipsisV, FaCog, FaPlus, FaPaperPlane,
 } from 'react-icons/fa';
 import {
   mergeSettings, DEFAULT_WINBACK_SETTINGS, CATEGORY_LABELS, buildJourneys, rankOpportunities,
   groupLapsed, buildMessage, firstOpenSlots, waDigits, suggestSegments, campaignMetrics,
-  channelInsights, monthlyReport, publicServiceLabel, normalizePhone,
+  channelInsights, monthlyReport, normalizePhone,
 } from '../utils/winback';
 import { deliverUtilityNotice } from '../utils/sendClinicWaReminder';
 
-const field = 'w-full p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const card = 'rounded-lg border border-[#E4EAEE] bg-white';
+const primaryBtn = 'inline-flex items-center gap-1 rounded-lg bg-[#059669] px-3 py-2 text-[12.5px] font-bold text-white hover:bg-[#047857]';
+const pillActive = 'shrink-0 rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-3 py-1.5 text-[11.5px] font-bold text-[#0E7490]';
+const pillIdle = 'shrink-0 rounded-full border border-[#E4EAEE] bg-white px-3 py-1.5 text-[11.5px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3]';
+const ghost = 'inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]';
+const chipMint = 'rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2.5 py-0.5 text-[10px] font-bold text-[#047857]';
+const chipGold = 'rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-0.5 text-[10px] font-bold text-[#B45309]';
+const chipMuted = 'rounded-full border border-[#E4EAEE] bg-[#F4F7F8] px-2.5 py-0.5 text-[10px] font-bold text-[#64748B]';
+const chipRose = 'rounded-full border border-[#FECACA] bg-[#FEF2F2] px-2.5 py-0.5 text-[10px] font-bold text-[#B91C1C]';
 
-const TABS = [
-  { id: 'detect', label: 'الاكتشاف' },
-  { id: 'chance', label: 'جاهزات للعودة' },
-  { id: 'campaigns', label: 'حملات التواصل' },
-  { id: 'offers', label: 'عروض وخصومات' },
-  { id: 'auto', label: 'رسائل تلقائية' },
-  { id: 'results', label: 'نتائج التواصل' },
-  { id: 'advanced', label: 'المتقدم' },
+const MAIN_TABS = [
+  { id: 'who', label: 'مين ما رجعوا؟' },
+  { id: 'campaigns', label: 'الحملات' },
+  { id: 'results', label: 'النتائج' },
 ];
+
+const ADVANCED_SECTIONS = [
+  { id: 'offers', label: 'العروض' },
+  { id: 'auto', label: 'إرسال تلقائي' },
+  { id: 'advanced', label: 'مجموعات وأدوات' },
+];
+
+function starsForChance(pct) {
+  const n = pct >= 80 ? 5 : pct >= 60 ? 4 : pct >= 40 ? 3 : pct >= 20 ? 2 : 1;
+  return '⭐'.repeat(n);
+}
+
+function journeyStatusBadge(j) {
+  if (j.upcoming?.length) return { label: 'موعد قادم', accent: '#B45309', chip: chipGold };
+  if (j.doNotContact) return { label: 'ما منبعتلها', accent: '#94A3B8', chip: chipMuted };
+  if (j.holdout) return { label: 'للمقارنة', accent: '#94A3B8', chip: chipMuted };
+  if (!j.eligible) return { label: 'وصلنا الحد', accent: '#DC2626', chip: chipRose };
+  return { label: 'جاهزة', accent: '#059669', chip: chipMint };
+}
+
+function campaignAccent(status) {
+  if (status === 'active') return '#059669';
+  if (status === 'review') return '#0FA3A3';
+  if (status === 'paused') return '#B45309';
+  return '#94A3B8';
+}
+
+function campaignStatusLabel(status) {
+  if (status === 'review') return 'مسودة';
+  if (status === 'active') return 'شغالة';
+  if (status === 'paused') return 'متوقفة مؤقتاً';
+  if (status === 'stopped') return 'متوقفة';
+  return status || '—';
+}
+
+function channelLabel(ch) {
+  if (ch === 'whatsapp') return 'واتساب';
+  if (ch === 'sms') return 'رسالة نصية';
+  if (ch === 'email') return 'بريد';
+  return ch || 'واتساب';
+}
+
+function variantLabel(v) {
+  return v === 'B' ? 'الرسالة الثانية' : 'الرسالة الأولى';
+}
 
 const Winback = () => {
   const { clinicPath, clinicId, clinicInfo } = useClinic();
-  const [tab, setTab] = useState('detect');
+  const [tab, setTab] = useState('who');
   const [customers, setCustomers] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [services, setServices] = useState([]);
@@ -47,6 +97,10 @@ const Winback = () => {
   const [draftVariant, setDraftVariant] = useState(true);
   const [offerForm, setOfferForm] = useState({ title: '', discountType: 'percent', value: 10, expiresAt: '', serviceId: '', adminApproved: false });
   const [settingsForm, setSettingsForm] = useState(DEFAULT_WINBACK_SETTINGS);
+  const [advancedOpen, setAdvancedOpen] = useState(false);
+  const [advancedTab, setAdvancedTab] = useState('offers');
+  const [showNewCampaign, setShowNewCampaign] = useState(false);
+  const [msgMenuOpen, setMsgMenuOpen] = useState(null);
 
   const settings = useMemo(() => mergeSettings(settingsRaw), [settingsRaw]);
 
@@ -130,6 +184,19 @@ const Winback = () => {
     window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   };
 
+  const bulkWhatsAppReady = () => {
+    const list = ranked.filter((j) => j.eligible && !j.doNotContact);
+    if (!list.length) return toast.info('ما في عميلات جاهزين نبعتلهم اليوم');
+    list.slice(0, 5).forEach((j) => contactWhatsApp(j));
+    if (list.length > 5) toast.info(`فُتح واتساب لـ 5 — الباقي ${list.length - 5} من القائمة`);
+  };
+
+  const prepareCampaignTargets = () => {
+    const next = {};
+    ranked.filter((j) => j.eligible).forEach((j) => { next[j.phoneKey] = true; });
+    setSelected(next);
+  };
+
   const saveSettings = async () => {
     await set(ref(database, clinicPath('winbackSettings')), settingsForm);
     toast.success('تم حفظ قواعد العيادة');
@@ -169,6 +236,7 @@ const Winback = () => {
     targets.forEach((j) => { nextSel[j.phoneKey] = true; });
     setSelected(nextSel);
     toast.success(status === 'review' ? 'أُنشئت الحملة للمراجعة' : 'تم الحفظ');
+    setShowNewCampaign(false);
     setTab('campaigns');
   };
 
@@ -291,249 +359,279 @@ const Winback = () => {
     const next = {};
     ranked.filter((j) => seg.phones.includes(j.phoneKey)).forEach((j) => { next[j.phoneKey] = true; });
     setSelected(next);
-    setTab('chance');
-    toast.info('شُحنت الشريحة للمراجعة');
+    setTab('who');
+    toast.info('شُحنت المجموعة للمراجعة');
   };
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
+  if (loading) {
+    return <div className="flex h-64 items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E4EAEE] border-t-[#059669]" /></div>;
+  }
+
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).getTime();
+  const returnedThisMonth = appointments.filter((a) => (a.createdAt || 0) >= monthStart && a.campaignId).length;
+
+  const whoKpis = [
+    { label: 'غايبين', value: String(lapsed.length), note: 'ما إجوش من فترة', accent: '#B45309' },
+    { label: 'جاهزين نبعتلهم', value: String(ranked.length), note: 'ممكن نبعتلهم اليوم', accent: '#059669' },
+    { label: 'رجعوا هالشهر', value: String(returnedThisMonth), note: 'حجزوا موعد من جديد', accent: '#0FA3A3' },
+  ];
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div>
-        <h1 className="text-[22px] font-bold text-[#111827]">استرجاع العميلات المنقطعات</h1>
-        <p className="text-sm text-[#8a9199] mt-1">اكتشفي العميلات اللواتي يحتجن للمتابعة، وأرسلي لهن العروض أو رسائل التواصل بضغطة زر.</p>
-      </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">التواصل والعودة</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">رجّعي عميلاتك اللي غابوا</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">شوفي مين غاب، ابعتي لهم واتساب، وتتبّعي الحملات ببساطة.</p>
+        </div>
+        <button type="button" onClick={() => setAdvancedOpen(true)} className={ghost}>
+          <FaCog className="text-[12px] text-[#0FA3A3]" />
+          إعدادات متقدمة
+        </button>
+      </header>
 
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-        {TABS.map((t) => (
-          <button key={t.id} type="button" onClick={() => setTab(t.id)} className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${tab === t.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>{t.label}</button>
+        {MAIN_TABS.map((t) => (
+          <button key={t.id} type="button" onClick={() => setTab(t.id)} className={tab === t.id ? pillActive : pillIdle}>{t.label}</button>
         ))}
       </div>
 
-      {tab === 'detect' && (
+      {tab === 'who' && (
         <div className="space-y-4">
-          <div className="grid md:grid-cols-4 gap-3">
-            <Stat label="بحاجة لاسترجاع" value={lapsed.length} tone="gold" />
-            <Stat label="جاهزات للتواصل الآن" value={ranked.length} tone="mint" />
-            <Stat label="لديهن مواعيد قادمة" value={journeys.filter((j) => j.upcoming.length).length} tone="sky" />
-            <Stat label="طلبن عدم التواصل" value={journeys.filter((j) => j.doNotContact).length} tone="rose" />
-          </div>
-          <div className="grid md:grid-cols-2 gap-4">
-            <div className="saas-card p-4">
-              <h3 className="font-bold mb-3 text-[#111827]">توزيع العميلات حسب الخدمة</h3>
-              {Object.entries(groups.byService).map(([k, n]) => <p key={k} className="text-sm flex justify-between py-1"><span>{k}</span><span className="font-bold">{n}</span></p>)}
-              {!Object.keys(groups.byService).length && <p className="text-sm text-gray-400">لا بيانات بعد</p>}
-            </div>
-            <div className="saas-card p-4">
-              <h3 className="font-bold mb-3 text-[#111827]">توزيع العميلات حسب الفرع</h3>
-              {lapsed.slice(0, 8).map((j) => (
-                <p key={j.phoneKey} className="text-sm flex justify-between py-1 gap-2">
-                  <span className="truncate">{j.displayName} · {j.lastBranch || '—'}</span>
-                  <span className="text-gray-400 shrink-0">{j.daysSince} يوم</span>
+          <section aria-label="ملخص سريع" className="grid grid-cols-3 border-y border-[#E4EAEE]">
+            {whoKpis.map((k, i) => (
+              <div key={k.label} className={`px-5 py-4 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+                <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]">
+                  <span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />
+                  {k.label}
                 </p>
-              ))}
-            </div>
-          </div>
-          <div className="saas-card overflow-hidden">
-            <table className="w-full text-sm">
-              <thead className="bg-[#f8faf9] text-[#8a9199]">
-                <tr>
-                  <th className="p-3 text-right">العميلة</th>
-                  <th className="p-3 text-right">آخر خدمة / فرع</th>
-                  <th className="p-3 text-right">آخر زيارة</th>
-                  <th className="p-3 text-right">فترة الغياب</th>
-                  <th className="p-3 text-right">الحالة</th>
-                </tr>
-              </thead>
-              <tbody>
-                {lapsed.map((j) => (
-                  <tr key={j.phoneKey} className="border-t border-gray-50 dark:border-slate-700">
-                    <td className="p-3 font-bold dark:text-white">{j.displayName}<div className="text-xs text-gray-400" dir="ltr">{j.phone}</div></td>
-                    <td className="p-3">{j.lastService || '—'}<div className="text-xs text-gray-400">{j.lastBranch}</div></td>
-                    <td className="p-3">{j.daysSince} يوم</td>
-                    <td className="p-3">{j.thresholdDays} يوم {j.lastService ? `(${publicServiceLabel(j.lastService, services)})` : ''}</td>
-                    <td className="p-3 text-xs">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span>{j.upcoming.length ? 'موعد قادم' : j.doNotContact ? 'بدون تواصل' : j.holdout ? 'مجموعة مقارنة' : j.eligible ? 'مؤهلة' : 'مستبعدة (سقف تواصل)'}</span>
-                        <button type="button" onClick={() => contactWhatsApp(j)} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#10b981] text-white font-bold">
-                          <FaWhatsapp /> تواصل واتساب
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!lapsed.length && <p className="p-8 text-center text-gray-400">لا توجد منقطعات وفق مدة العيادة الحالية.</p>}
-          </div>
-        </div>
-      )}
-
-      {tab === 'chance' && (
-        <div className="space-y-4">
-          <div className="saas-card p-4 space-y-3">
-            <h3 className="font-bold text-[#111827]">مراجعة المستهدفات قبل الإطلاق</h3>
-            <div className="grid md:grid-cols-3 gap-3">
-              <input value={draftName} onChange={(e) => setDraftName(e.target.value)} className={field} />
-              <select value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)} className={field}>
-                {settings.channels.whatsapp && <option value="whatsapp">واتساب</option>}
-                {settings.channels.sms && <option value="sms">رسالة نصية</option>}
-                {settings.channels.email && <option value="email">بريد</option>}
-              </select>
-              <select value={draftOffer} onChange={(e) => setDraftOffer(e.target.value)} className={field}>
-                <option value="">بدون عرض</option>
-                {offers.filter((o) => o.adminApproved).map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
-              </select>
-            </div>
-            <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={draftVariant} onChange={(e) => setDraftVariant(e.target.checked)} /> اختبار صيغتين (أ/ب)</label>
-            <button type="button" onClick={() => createCampaign('review')} className="bg-[#10b981] text-white px-4 py-2 rounded-xl font-bold">حفظ للمراجعة</button>
-          </div>
-          {ranked.map((j) => (
-            <label key={j.phoneKey} className="flex gap-3 saas-card p-4">
-              <input type="checkbox" checked={!!selected[j.phoneKey]} onChange={() => toggleSelect(j.phoneKey)} />
-              <div className="flex-1">
-                <p className="font-bold dark:text-white">{j.displayName} <span className="text-xs text-gray-400">نقاط {j.score}</span></p>
-                <p className="text-xs text-gray-500">انقطاع {j.daysSince} يوم · {j.visitCount} حجوزات · احتمال عودة {j.returnChance}% ({j.confidence})</p>
-                <p className="text-xs text-gray-400 mt-1">توقيت مقترح: {j.suggestedAt.toLocaleString('ar')}</p>
-                {j.customerId && <Link className="text-xs text-emerald-700 font-bold" to={`/customers/${j.customerId}`}>الملف</Link>}
+                <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+                <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+                <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
               </div>
-              <button type="button" onClick={() => optOut(j)} className="text-xs text-rose-500 flex items-center gap-1"><FaBan /> انسحاب</button>
-            </label>
-          ))}
-          {!ranked.length && <p className="text-center text-gray-400 py-10">لا مؤهلات حالياً (مواعيد قادمة، انسحاب، أو سقف تواصل).</p>}
-        </div>
-      )}
+            ))}
+          </section>
 
-      {tab === 'campaigns' && (
-        <div className="space-y-4">
-          {campaigns.length === 0 && <p className="text-gray-400 text-center py-10">لا حملات بعد. اختاري العميلات من «جاهزات للعودة».</p>}
-          {campaigns.map((c) => {
-            const campMsgs = messages.filter((m) => m.campaignId === c.id);
-            return (
-              <div key={c.id} className="saas-card p-4">
-                <div className="flex flex-wrap justify-between gap-2 mb-3">
-                  <div>
-                    <h3 className="font-bold dark:text-white">{c.name}</h3>
-                    <p className="text-xs text-gray-400">{c.status} · {c.channel} · { (c.targetIds || []).length } مستهدفة · مقارنة {(c.holdoutIds || []).length}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    {c.status === 'review' && <button type="button" onClick={() => launchCampaign(c)} className="px-3 py-1.5 bg-[#10b981] text-white rounded-lg text-sm font-bold"><FaPlay className="inline ml-1" /> إطلاق</button>}
-                    {c.status === 'active' && <button onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'paused' })} className="px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm"><FaPause /></button>}
-                    {c.status === 'paused' && <button onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'active' })} className="px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-sm"><FaPlay /></button>}
-                    {c.status !== 'stopped' && <button onClick={() => stopCampaign(c.id)} className="px-3 py-1.5 bg-rose-50 text-rose-600 rounded-lg text-sm"><FaStop /></button>}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {campMsgs.map((m) => (
-                    <div key={m.id} className="text-sm border border-gray-50 dark:border-slate-700 rounded-xl p-3">
-                      <div className="flex justify-between gap-2">
-                        <p className="font-bold dark:text-white">{m.name} <span className="text-xs font-normal text-gray-400">{m.status} · {m.variant}</span></p>
-                        <div className="flex flex-wrap gap-1">
-                          {m.status === 'queued' && <button onClick={() => sendMessage(m)} className="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs"><FaWhatsapp /> إرسال</button>}
-                          {m.status === 'failed' && <button onClick={() => retryFailed(m)} className="px-2 py-1 bg-amber-50 text-amber-700 rounded-lg text-xs"><FaSync /> إعادة</button>}
-                          {m.status === 'sent' && (
-                            <>
-                              <button onClick={() => markStatus(m, 'delivered')} className="px-2 py-1 bg-gray-50 rounded-lg text-xs">وصلت</button>
-                              <button onClick={() => markStatus(m, 'read')} className="px-2 py-1 bg-gray-50 rounded-lg text-xs">قُرئت</button>
-                              <button onClick={() => sendReminder(m)} className="px-2 py-1 bg-gray-50 rounded-lg text-xs">تذكير واحد</button>
-                            </>
-                          )}
-                          <button onClick={() => handoff(m)} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs"><FaUserNurse /> استقبال</button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={bulkWhatsAppReady} className={primaryBtn}>
+              <FaWhatsapp /> ابعتيلهن واتساب
+            </button>
+            <button
+              type="button"
+              onClick={() => { prepareCampaignTargets(); setShowNewCampaign(true); setTab('campaigns'); }}
+              className={ghost}
+            >
+              حمّلي الجاهزين لحملة
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-[13px] font-bold text-[#334155]">
+              الغائبات عن العيادة <span className="font-medium text-[#94A3B8]">{lapsed.length}</span>
+            </p>
+            {lapsed.length === 0 && (
+              <div className="rounded-xl border border-[#E4EAEE] bg-white p-10 text-center text-[13px] text-[#64748B]">
+                ما في عميلات غايبين حسب مدة العيادة.
+              </div>
+            )}
+            {lapsed.map((j) => {
+              const st = journeyStatusBadge(j);
+              const initials = String(j.displayName || '?').trim().charAt(0);
+              return (
+                <article key={j.phoneKey} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-3 py-3 transition-colors hover:border-[#CBD5E1]">
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: st.accent }} />
+                  <div className="flex flex-wrap items-start justify-between gap-3 ps-1.5">
+                    <div className="flex min-w-0 items-start gap-3">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#F4F7F8] text-[12px] font-extrabold text-[#0E7490]">{initials}</span>
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-[13px] font-bold text-[#0F172A]">{j.displayName}</h3>
+                          <span className={st.chip}>{st.label}</span>
                         </div>
+                        <p className="mt-0.5 text-[11px] text-[#64748B]" dir="ltr">{j.phone}</p>
+                        {j.customerId && (
+                          <Link className="mt-1 inline-block text-[11px] font-bold text-[#0E7490] hover:underline" to={`/customers/${j.customerId}`}>الملف</Link>
+                        )}
                       </div>
-                      <pre className="whitespace-pre-wrap text-xs text-gray-500 mt-2 font-sans">{m.body}</pre>
                     </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {inbox.filter((i) => i.status === 'open').length > 0 && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-2xl p-4">
-              <h3 className="font-bold mb-2">صندوق الاستقبال</h3>
-              {inbox.filter((i) => i.status === 'open').map((i) => (
-                <div key={i.id} className="text-sm flex justify-between py-2">
-                  <span>{i.name} — {i.phone}</span>
-                  <button onClick={() => update(ref(database, clinicPath(`winbackInbox/${i.id}`)), { status: 'done' })} className="text-xs font-bold">تم</button>
-                </div>
-              ))}
+                    <div className="flex shrink-0 items-center gap-2">
+                      <button type="button" onClick={() => contactWhatsApp(j)} className={ghost}>
+                        <FaWhatsapp className="text-[#059669]" /> واتساب
+                      </button>
+                      <button type="button" onClick={() => optOut(j)} className="inline-flex h-8 items-center rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-2.5 text-[11.5px] font-bold text-[#B91C1C]">
+                        <FaBan className="text-[10px]" /> انسحاب
+                      </button>
+                    </div>
+                  </div>
+                  <div className="mt-3 grid gap-3 border-t border-[#EDF1F4] pt-3 ps-1.5 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[11px] text-[#94A3B8]">آخر زيارة</p>
+                      <p className="mt-1 text-[13px] font-bold text-[#334155]">من {j.daysSince} يوم</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[#94A3B8]">آخر خدمة</p>
+                      <p className="mt-1 text-[13px] font-bold text-[#334155]">{j.lastService || '—'}</p>
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+
+          {ranked.length > 0 && (
+            <div className={`${card} p-4`}>
+              <h3 className="text-[15px] font-bold text-[#0F172A]">أولوية للتواصل اليوم</h3>
+              <p className="mt-1 text-[12px] text-[#64748B]">مرتّبين حسب فرصة ترجع.</p>
+              <ul className="mt-3 space-y-2">
+                {ranked.map((j) => (
+                  <li key={j.phoneKey} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-3 py-3">
+                    <span className="absolute inset-y-0 start-0 w-[3px] bg-[#059669]" />
+                    <div className="flex flex-wrap items-center justify-between gap-2 ps-1.5">
+                      <div>
+                        <p className="text-[13px] font-bold">{j.displayName}</p>
+                        <p className="text-[11px] text-[#64748B]">
+                          غايبة {j.daysSince} يوم · فرصة ترجع <span className="text-[12px]">{starsForChance(j.returnChance)}</span>
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button type="button" onClick={() => contactWhatsApp(j)} className={ghost}><FaWhatsapp className="text-[#059669]" /> واتساب</button>
+                        <button type="button" onClick={() => optOut(j)} className="text-[11px] font-bold text-[#B91C1C]">انسحاب</button>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
       )}
 
-      {tab === 'offers' && (
-        <div className="grid md:grid-cols-2 gap-4">
-          <form onSubmit={saveOffer} className="saas-card p-4 space-y-3">
-            <h3 className="font-bold dark:text-white">عرض عودة (موافقة الإدارة)</h3>
-            <input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} placeholder="اسم العرض" className={field} />
-            <div className="flex gap-2">
-              <select value={offerForm.discountType} onChange={(e) => setOfferForm({ ...offerForm, discountType: e.target.value })} className={`flex-1 ${field}`}>
-                <option value="percent">نسبة خصم</option>
-                <option value="amount">قيمة ثابتة ₪</option>
-              </select>
-              <input type="number" value={offerForm.value} onChange={(e) => setOfferForm({ ...offerForm, value: e.target.value })} className="w-28 p-3 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200" />
-            </div>
-            <input type="date" value={offerForm.expiresAt} onChange={(e) => setOfferForm({ ...offerForm, expiresAt: e.target.value })} className={field} />
-            <select value={offerForm.serviceId} onChange={(e) => setOfferForm({ ...offerForm, serviceId: e.target.value })} className={field}>
-              <option value="">كل الخدمات المؤهلة</option>
-              {services.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
-            </select>
-            <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={offerForm.adminApproved} onChange={(e) => setOfferForm({ ...offerForm, adminApproved: e.target.checked })} /> موافقة الإدارة</label>
-            <p className="text-xs text-amber-700">لا تكتبي نتائج علاجية. العرض تنظيمي لجلسة محددة وينتهي بتاريخ الصلاحية. الكوبون يُستخدم مرة لكل عميلة.</p>
-            <button type="submit" className="w-full bg-[#10b981] text-white py-2.5 rounded-xl font-bold">حفظ العرض</button>
-          </form>
-          <div className="space-y-3">
-            {offers.map((o) => {
-              const used = Object.keys(o.usedBy || {}).length;
-              const camp = campaigns.filter((c) => c.offerId === o.id);
-              return (
-                <div key={o.id} className="saas-card p-4">
-                  <p className="font-bold dark:text-white">{o.title}</p>
-                  <p className="text-xs text-gray-500">ينتهي {o.expiresAt || '—'} · استخدامات {used} · حجوزات مرتبطة {camp.length}</p>
-                </div>
-              );
-            })}
+      {tab === 'campaigns' && (
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-[13px] font-bold text-[#334155]">الحملات النشطة والمسودات</p>
+            <button
+              type="button"
+              onClick={() => { setShowNewCampaign((v) => !v); if (!showNewCampaign) prepareCampaignTargets(); }}
+              className="inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#047857]"
+            >
+              <FaPlus className="text-[11px]" /> حملة جديدة
+            </button>
           </div>
-        </div>
-      )}
 
-      {tab === 'auto' && (
-        <div className="saas-card p-5 space-y-4 max-w-2xl">
-          <h3 className="font-bold dark:text-white">قواعد تحددها العيادة</h3>
-          <label className="text-sm">مدة الانقطاع الافتراضية (يوم)
-            <input type="number" value={settingsForm.defaultLapseDays} onChange={(e) => setSettingsForm({ ...settingsForm, defaultLapseDays: Number(e.target.value) })} className={`${field} mt-1`} />
-          </label>
-          {Object.keys(CATEGORY_LABELS).map((cat) => (
-            <label key={cat} className="text-sm block">انقطاع {CATEGORY_LABELS[cat]}
-              <input type="number" value={settingsForm.lapseByCategory?.[cat] ?? ''} onChange={(e) => setSettingsForm({ ...settingsForm, lapseByCategory: { ...settingsForm.lapseByCategory, [cat]: Number(e.target.value) } })} className={`${field} mt-1`} />
-            </label>
-          ))}
-          <div className="flex gap-3 text-sm">
-            {['whatsapp', 'sms', 'email'].map((ch) => (
-              <label key={ch} className="flex items-center gap-1"><input type="checkbox" checked={!!settingsForm.channels?.[ch]} onChange={(e) => setSettingsForm({ ...settingsForm, channels: { ...settingsForm.channels, [ch]: e.target.checked } })} /> {ch}</label>
-            ))}
-          </div>
-          <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!settingsForm.reminderEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, reminderEnabled: e.target.checked })} /> تذكير واحد بعد أيام
-            <input type="number" className="w-20 p-2 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none" value={settingsForm.reminderAfterDays} onChange={(e) => setSettingsForm({ ...settingsForm, reminderAfterDays: Number(e.target.value) })} />
-          </label>
-          <div className="grid grid-cols-2 gap-2">
-            <label className="text-sm">سقف أيام بين الرسائل<input type="number" value={settingsForm.contactCapDays} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapDays: Number(e.target.value) })} className={`${field} mt-1`} /></label>
-            <label className="text-sm">حد الرسائل شهرياً<input type="number" value={settingsForm.contactCapPerMonth} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapPerMonth: Number(e.target.value) })} className={`${field} mt-1`} /></label>
-            <label className="text-sm">نسبة مجموعة المقارنة<input type="number" value={settingsForm.holdoutPercent} onChange={(e) => setSettingsForm({ ...settingsForm, holdoutPercent: Number(e.target.value) })} className={`${field} mt-1`} /></label>
-            <label className="text-sm">حد النقاط للأتمتة<input type="number" value={settingsForm.autoMinScore} onChange={(e) => setSettingsForm({ ...settingsForm, autoMinScore: Number(e.target.value) })} className={`${field} mt-1`} /></label>
-          </div>
-          <label className="text-sm flex items-center gap-2"><input type="checkbox" checked={!!settingsForm.autoRulesEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, autoRulesEnabled: e.target.checked })} /> تشغيل مسودة تلقائية للمؤهلات فوق حد النقاط (تبقى للمراجعة)</label>
-          <button type="button" onClick={saveSettings} className="bg-[#10b981] text-white px-4 py-2 rounded-xl font-bold">حفظ القواعد</button>
-          {settings.autoRulesEnabled && (
-            <button type="button" className="block text-sm text-emerald-700 font-bold" onClick={() => {
-              const next = {};
-              ranked.filter((j) => j.score >= settings.autoMinScore).forEach((j) => { next[j.phoneKey] = true; });
-              setSelected(next);
-              setTab('chance');
-              toast.info('شُحنت المسودة للمراجعة — لن تُرسل دون إطلاقكِ');
-            }}>تشغيل القواعد الآن</button>
+          {showNewCampaign && (
+            <div className={`${card} space-y-3 p-4`}>
+              <h3 className="text-[15px] font-bold text-[#0F172A]">حملة جديدة</h3>
+              <label className="block text-[12px] font-bold text-[#64748B]">
+                اسم الحملة
+                <input value={draftName} onChange={(e) => setDraftName(e.target.value)} className={`${field} mt-1`} />
+              </label>
+              <label className="block text-[12px] font-bold text-[#64748B]">
+                طريقة التواصل
+                <select value={draftChannel} onChange={(e) => setDraftChannel(e.target.value)} className={`${field} mt-1`}>
+                  <option value="whatsapp">واتساب</option>
+                  {settings.channels.sms && <option value="sms">رسالة نصية</option>}
+                  {settings.channels.email && <option value="email">بريد</option>}
+                </select>
+              </label>
+              <label className="block text-[12px] font-bold text-[#64748B]">
+                عرض اختياري
+                <select value={draftOffer} onChange={(e) => setDraftOffer(e.target.value)} className={`${field} mt-1`}>
+                  <option value="">بدون عرض</option>
+                  {offers.filter((o) => o.adminApproved).map((o) => <option key={o.id} value={o.id}>{o.title}</option>)}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-[12.5px]">
+                <input type="checkbox" checked={draftVariant} onChange={(e) => setDraftVariant(e.target.checked)} />
+                جربي رسالتين وشوفي أي وحدة أحسن
+              </label>
+              <button type="button" onClick={() => createCampaign('review')} className={primaryBtn}>حفظ الحملة</button>
+            </div>
+          )}
+
+          {campaigns.length === 0 && !showNewCampaign && (
+            <div className="rounded-xl border border-[#E4EAEE] bg-white p-10 text-center text-[13px] text-[#64748B]">
+              ما في حملات بعد. اضغطي «حملة جديدة».
+            </div>
+          )}
+
+          {campaigns.map((c) => {
+            const campMsgs = messages.filter((m) => m.campaignId === c.id);
+            const accent = campaignAccent(c.status);
+            return (
+              <article key={c.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white p-4">
+                <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: accent }} />
+                <div className="mb-3 flex flex-wrap items-start justify-between gap-2 ps-1">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="text-[16px] font-bold text-[#0F172A]">{c.name}</h3>
+                      <span className={c.status === 'active' ? chipMint : c.status === 'review' ? 'rounded-full border border-[#BAE6FD] bg-[#F0F9FF] px-2.5 py-0.5 text-[10px] font-bold text-[#0369A1]' : chipGold}>{campaignStatusLabel(c.status)}</span>
+                    </div>
+                    <p className="mt-1 text-[12px] text-[#64748B]">
+                      {channelLabel(c.channel)} · عدد اللي رح نبعتلهم {(c.targetIds || []).length}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {c.status === 'review' && (
+                      <button type="button" onClick={() => launchCampaign(c)} className={primaryBtn}>
+                        <FaPlay className="text-[10px]" /> ابدئي الإرسال
+                      </button>
+                    )}
+                    {c.status === 'active' && (
+                      <button
+                        type="button"
+                        onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'paused' })}
+                        className={ghost}
+                      >
+                        <FaPause className="text-[10px]" /> إيقاف مؤقت
+                      </button>
+                    )}
+                    {c.status === 'paused' && (
+                      <button
+                        type="button"
+                        onClick={() => update(ref(database, clinicPath(`winbackCampaigns/${c.id}`)), { status: 'active' })}
+                        className={primaryBtn}
+                      >
+                        <FaPlay className="text-[10px]" /> متابعة
+                      </button>
+                    )}
+                    {c.status !== 'stopped' && (
+                      <button type="button" onClick={() => stopCampaign(c.id)} className="inline-flex items-center gap-1 rounded-lg border border-[#FECACA] bg-[#FEF2F2] px-3 py-2 text-[12px] font-bold text-[#B91C1C]">
+                        <FaStop className="text-[10px]" /> إيقاف نهائي
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {campMsgs.map((m) => (
+                    <MessageRow
+                      key={m.id}
+                      msg={m}
+                      msgMenuOpen={msgMenuOpen}
+                      setMsgMenuOpen={setMsgMenuOpen}
+                      sendMessage={sendMessage}
+                      retryFailed={retryFailed}
+                      markStatus={markStatus}
+                      sendReminder={sendReminder}
+                      handoff={handoff}
+                    />
+                  ))}
+                </div>
+              </article>
+            );
+          })}
+
+          {inbox.filter((i) => i.status === 'open').length > 0 && (
+            <div className={`${card} p-4`}>
+              <h3 className="text-[15px] font-bold text-[#0F172A]">محادثات محوّلة للموظفة</h3>
+              {inbox.filter((i) => i.status === 'open').map((i) => (
+                <div key={i.id} className="flex justify-between py-2 text-[13px]">
+                  <span>{i.name} — {i.phone}</span>
+                  <button type="button" onClick={() => update(ref(database, clinicPath(`winbackInbox/${i.id}`)), { status: 'done' })} className="text-[11px] font-bold text-[#047857]">تم</button>
+                </div>
+              ))}
+            </div>
           )}
         </div>
       )}
@@ -542,59 +640,286 @@ const Winback = () => {
         <ResultsPanel campaigns={campaigns} messages={messages} appointments={appointments} journeys={journeys} offers={offers} />
       )}
 
-      {tab === 'advanced' && (
-        <div className="space-y-4">
-          <div className="saas-card p-4">
-            <h3 className="font-bold mb-2 text-[#111827]">شرائح مقترحة لحملة جديدة</h3>
-            {segments.map((s) => (
-              <div key={s.id} className="flex justify-between items-center py-2 text-sm">
-                <span>{s.title} ({s.count})</span>
-                <button type="button" onClick={() => applySegment(s)} className="text-emerald-700 font-bold">مراجعة</button>
-              </div>
-            ))}
-            {!segments.length && <p className="text-sm text-gray-400">لا شرائح كافية بعد.</p>}
-          </div>
-          <div className="saas-card p-4">
-            <h3 className="font-bold mb-2 text-[#111827]">أداء القنوات والصيغ</h3>
-            {channelInsights(messages).map((c) => (
-              <p key={c.channel} className="text-sm">{c.channel}: إرسال {c.sent} · رد {c.replyRate}%</p>
-            ))}
-            {!messages.length && <p className="text-sm text-gray-400">بعد الإطلاق تظهر أفضل قناة ووقت حسب النتائج.</p>}
-            <p className="text-xs text-gray-400 mt-2">اختبار أ/ب يوزّع الصيغ عند الإطلاق. سقف التواصل من قواعد العيادة يمنع الإرهاق.</p>
-          </div>
-          <MonthlyPanel campaigns={campaigns} messages={messages} appointments={appointments} journeys={journeys} offers={offers} />
-        </div>
+      {advancedOpen && (
+        <AdvancedModal
+          onClose={() => setAdvancedOpen(false)}
+          advancedTab={advancedTab}
+          setAdvancedTab={setAdvancedTab}
+          offerForm={offerForm}
+          setOfferForm={setOfferForm}
+          saveOffer={saveOffer}
+          offers={offers}
+          campaigns={campaigns}
+          services={services}
+          settingsForm={settingsForm}
+          setSettingsForm={setSettingsForm}
+          saveSettings={saveSettings}
+          settings={settings}
+          ranked={ranked}
+          setSelected={setSelected}
+          setTab={setTab}
+          setAdvancedOpen={setAdvancedOpen}
+          segments={segments}
+          applySegment={applySegment}
+          groups={groups}
+          messages={messages}
+          appointments={appointments}
+          journeys={journeys}
+        />
       )}
     </div>
   );
 };
 
-function Stat({ label, value, tone = '' }) {
-  const card = { mint: 'stat-card-mint', sky: 'stat-card-sky', gold: 'stat-card-gold', rose: 'stat-card-rose' }[tone] || '';
+function MessageRow({
+  msg, msgMenuOpen, setMsgMenuOpen, sendMessage, retryFailed, markStatus, sendReminder, handoff,
+}) {
   return (
-    <div className={`saas-card p-4 ${card}`}>
-      <p className="text-xs text-[#8a9199]">{label}</p>
-      <p className="stat-num text-[28px] leading-none mt-2">{value}</p>
+    <div className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white p-3 text-[13px]">
+      <span className="absolute inset-y-0 start-0 w-[3px] bg-[#0FA3A3]" />
+      <div className="flex flex-wrap items-center justify-between gap-2 ps-1.5">
+        <div>
+          <p className="font-bold text-[#0F172A]">{msg.name}</p>
+          <p className="text-[11px] text-[#64748B]">{variantLabel(msg.variant)}</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {msg.status === 'queued' && (
+            <button type="button" onClick={() => sendMessage(msg)} className={primaryBtn}>
+              <FaPaperPlane className="text-[10px]" /> إرسال
+            </button>
+          )}
+          {msg.status === 'failed' && (
+            <button type="button" onClick={() => retryFailed(msg)} className={ghost}>
+              <FaSync className="text-[10px]" /> إعادة
+            </button>
+          )}
+          {msg.status === 'sent' && (
+            <>
+              <button type="button" onClick={() => markStatus(msg, 'delivered')} className={ghost}>وصلت</button>
+              <button type="button" onClick={() => markStatus(msg, 'read')} className={ghost}>قُرئت</button>
+            </>
+          )}
+          <div className="relative">
+            <button
+              type="button"
+              aria-label="خيارات إضافية"
+              onClick={() => setMsgMenuOpen(msgMenuOpen === msg.id ? null : msg.id)}
+              className="rounded-lg border border-[#E4EAEE] bg-white px-2 py-2 text-[#64748B]"
+            >
+              <FaEllipsisV />
+            </button>
+            {msgMenuOpen === msg.id && (
+              <div className="absolute end-0 z-10 mt-1 min-w-[160px] rounded-lg border border-[#E4EAEE] bg-white p-1 shadow-lg">
+                {msg.status === 'sent' && (
+                  <button type="button" onClick={() => { sendReminder(msg); setMsgMenuOpen(null); }} className="block w-full rounded px-3 py-2 text-right text-[12px] font-bold hover:bg-[#F8FBFC]">تذكير مرة ثانية</button>
+                )}
+                <button type="button" onClick={() => { handoff(msg); setMsgMenuOpen(null); }} className="block w-full rounded px-3 py-2 text-right text-[12px] font-bold hover:bg-[#F8FBFC]">حوّليها للموظفة</button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AdvancedModal({
+  onClose, advancedTab, setAdvancedTab, offerForm, setOfferForm, saveOffer, offers, campaigns, services,
+  settingsForm, setSettingsForm, saveSettings, settings, ranked, setSelected, setTab, setAdvancedOpen,
+  segments, applySegment, groups, messages, appointments, journeys,
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" dir="rtl" role="dialog" aria-modal="true" onClick={onClose}>
+      <div
+        className="flex max-h-[min(92vh,900px)] w-full max-w-[1360px] flex-col overflow-hidden rounded-xl border border-[#E4EAEE] bg-[#F4F7F8] shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <header className="flex flex-wrap items-end justify-between gap-3 border-b border-[#E4EAEE] bg-white px-5 py-4">
+          <div>
+            <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">استرجاع العميلات</p>
+            <h2 className="mt-1 text-[20px] font-extrabold tracking-tight text-[#0F172A]">إعدادات متقدمة</h2>
+            <p className="mt-1 text-[12px] text-[#64748B]">العروض، الإرسال التلقائي، والمجموعات الجاهزة.</p>
+          </div>
+          <button type="button" onClick={onClose} className={ghost}>إغلاق</button>
+        </header>
+        <div className="flex gap-1.5 overflow-x-auto border-b border-[#E4EAEE] bg-white px-5 py-2">
+          {ADVANCED_SECTIONS.map((s) => (
+            <button key={s.id} type="button" onClick={() => setAdvancedTab(s.id)} className={advancedTab === s.id ? pillActive : pillIdle}>{s.label}</button>
+          ))}
+        </div>
+        <div className="space-y-4 overflow-y-auto p-5">
+        {advancedTab === 'offers' && (
+          <div className="grid gap-4 md:grid-cols-2">
+            <form onSubmit={saveOffer} className={`${card} space-y-3 p-4`}>
+              <h3 className="text-[15px] font-bold text-[#0F172A]">عرض عودة (موافقة الإدارة)</h3>
+              <input value={offerForm.title} onChange={(e) => setOfferForm({ ...offerForm, title: e.target.value })} placeholder="اسم العرض" className={field} />
+              <div className="flex gap-2">
+                <select value={offerForm.discountType} onChange={(e) => setOfferForm({ ...offerForm, discountType: e.target.value })} className={`flex-1 ${field}`}>
+                  <option value="percent">نسبة خصم</option>
+                  <option value="amount">قيمة ثابتة ₪</option>
+                </select>
+                <input type="number" value={offerForm.value} onChange={(e) => setOfferForm({ ...offerForm, value: e.target.value })} className="w-28 rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px]" />
+              </div>
+              <input type="date" value={offerForm.expiresAt} onChange={(e) => setOfferForm({ ...offerForm, expiresAt: e.target.value })} className={field} />
+              <select value={offerForm.serviceId} onChange={(e) => setOfferForm({ ...offerForm, serviceId: e.target.value })} className={field}>
+                <option value="">كل الخدمات المؤهلة</option>
+                {services.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+              </select>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={offerForm.adminApproved} onChange={(e) => setOfferForm({ ...offerForm, adminApproved: e.target.checked })} /> موافقة الإدارة</label>
+              <p className="text-xs text-[#B45309]">لا تكتبي نتائج علاجية. العرض تنظيمي لجلسة محددة وينتهي بتاريخ الصلاحية.</p>
+              <button type="submit" className={`w-full ${primaryBtn} justify-center py-2.5`}>حفظ العرض</button>
+            </form>
+            <div className="space-y-3">
+              {offers.map((o) => {
+                const used = Object.keys(o.usedBy || {}).length;
+                const camp = campaigns.filter((c) => c.offerId === o.id);
+                return (
+                  <div key={o.id} className={`${card} p-4`}>
+                    <p className="font-bold">{o.title}</p>
+                    <p className="text-xs text-[#64748B]">ينتهي {o.expiresAt || '—'} · استخدامات {used} · حملات {camp.length}</p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {advancedTab === 'auto' && (
+          <div className={`${card} max-w-2xl space-y-4 p-5`}>
+            <h3 className="text-[15px] font-bold text-[#0F172A]">قواعد العيادة</h3>
+            <label className="text-[13px] font-bold text-[#64748B]">كم يوم بدون زيارة نعتبرها غايبة
+              <input type="number" value={settingsForm.defaultLapseDays} onChange={(e) => setSettingsForm({ ...settingsForm, defaultLapseDays: Number(e.target.value) })} className={`${field} mt-1`} />
+            </label>
+            {Object.keys(CATEGORY_LABELS).map((cat) => (
+              <label key={cat} className="block text-[13px] font-bold text-[#64748B]">غياب {CATEGORY_LABELS[cat]}
+                <input type="number" value={settingsForm.lapseByCategory?.[cat] ?? ''} onChange={(e) => setSettingsForm({ ...settingsForm, lapseByCategory: { ...settingsForm.lapseByCategory, [cat]: Number(e.target.value) } })} className={`${field} mt-1`} />
+              </label>
+            ))}
+            <div className="flex flex-wrap gap-3 text-sm">
+              {['whatsapp', 'sms', 'email'].map((ch) => (
+                <label key={ch} className="flex items-center gap-1">
+                  <input type="checkbox" checked={!!settingsForm.channels?.[ch]} onChange={(e) => setSettingsForm({ ...settingsForm, channels: { ...settingsForm.channels, [ch]: e.target.checked } })} />
+                  {channelLabel(ch)}
+                </label>
+              ))}
+            </div>
+            <label className="flex flex-wrap items-center gap-2 text-sm">
+              <input type="checkbox" checked={!!settingsForm.reminderEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, reminderEnabled: e.target.checked })} />
+              تذكير واحد بعد أيام
+              <input type="number" className="w-20 rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] p-2" value={settingsForm.reminderAfterDays} onChange={(e) => setSettingsForm({ ...settingsForm, reminderAfterDays: Number(e.target.value) })} />
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="text-sm">أقل أيام بين الرسائل<input type="number" value={settingsForm.contactCapDays} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapDays: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+              <label className="text-sm">أقصى عدد رسائل شهرياً<input type="number" value={settingsForm.contactCapPerMonth} onChange={(e) => setSettingsForm({ ...settingsForm, contactCapPerMonth: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+              <label className="text-sm">ناس ما منبعتلهم (للمقارنة) %<input type="number" value={settingsForm.holdoutPercent} onChange={(e) => setSettingsForm({ ...settingsForm, holdoutPercent: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+              <label className="text-sm">أقل أهمية عشان تتبعت تلقائي<input type="number" value={settingsForm.autoMinScore} onChange={(e) => setSettingsForm({ ...settingsForm, autoMinScore: Number(e.target.value) })} className={`${field} mt-1`} /></label>
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={!!settingsForm.autoRulesEnabled} onChange={(e) => setSettingsForm({ ...settingsForm, autoRulesEnabled: e.target.checked })} />
+              إرسال تلقائي — مسودة للمراجعة فقط
+            </label>
+            <button type="button" onClick={saveSettings} className={primaryBtn}>حفظ القواعد</button>
+            {settings.autoRulesEnabled && (
+              <button
+                type="button"
+                className="block text-sm font-bold text-[#047857]"
+                onClick={() => {
+                  const next = {};
+                  ranked.filter((j) => j.score >= settings.autoMinScore).forEach((j) => { next[j.phoneKey] = true; });
+                  setSelected(next);
+                  setTab('who');
+                  setAdvancedOpen(false);
+                  toast.info('شُحنت المسودة للمراجعة — لن تُرسل دون «ابدئي الإرسال»');
+                }}
+              >
+                شغّلي الإرسال التلقائي الآن
+              </button>
+            )}
+          </div>
+        )}
+
+        {advancedTab === 'advanced' && (
+          <div className="space-y-4">
+            <div className={`${card} p-4`}>
+              <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">مجموعات جاهزة</h3>
+              {segments.map((s) => (
+                <div key={s.id} className="flex items-center justify-between py-2 text-sm">
+                  <span>{s.title} ({s.count})</span>
+                  <button type="button" onClick={() => { applySegment(s); setAdvancedOpen(false); }} className="text-[12px] font-bold text-[#047857] hover:underline">استخدمي</button>
+                </div>
+              ))}
+              {!segments.length && <p className="text-sm text-[#94A3B8]">لا مجموعات كافية بعد.</p>}
+            </div>
+            <div className={`${card} p-4`}>
+              <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">توزيع الغائبات حسب الخدمة</h3>
+              {Object.entries(groups.byService).map(([k, n]) => (
+                <p key={k} className="flex justify-between border-b border-[#EDF1F4] py-2 text-[13px] last:border-0">
+                  <span className="text-[#64748B]">{k}</span>
+                  <span className="font-bold tabular-nums">{n}</span>
+                </p>
+              ))}
+              {!Object.keys(groups.byService).length && <p className="text-sm text-[#94A3B8]">لا بيانات بعد</p>}
+            </div>
+            <div className={`${card} p-4`}>
+              <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">أي طريقة تواصل أنجح؟</h3>
+              {channelInsights(messages).map((c) => (
+                <p key={c.channel} className="text-sm">{channelLabel(c.channel)}: أرسلنا {c.sent} · ردّوا {c.replyRate}%</p>
+              ))}
+              {!messages.length && <p className="text-sm text-[#94A3B8]">بعد أول حملة تظهر الأرقام هنا.</p>}
+              <p className="mt-2 text-xs text-[#94A3B8]">جربي رسالتين يختار النظام بينهما. أقصى عدد رسائل يحمي العميلات من الإزعاج.</p>
+            </div>
+            <MonthlyPanel campaigns={campaigns} messages={messages} appointments={appointments} journeys={journeys} offers={offers} />
+          </div>
+        )}
+        </div>
+      </div>
     </div>
   );
 }
 
 function ResultsPanel({ campaigns, messages, appointments, journeys, offers }) {
-  if (!campaigns.length) return <p className="text-gray-400 text-center py-10">لا نتائج حتى إطلاق حملة.</p>;
+  if (!campaigns.length) {
+    return (
+      <div className="rounded-xl border border-[#E4EAEE] bg-white p-10 text-center text-[13px] text-[#64748B]">
+        لا نتائج حتى تبدئي حملة وترسلي.
+      </div>
+    );
+  }
+  const resultStats = [
+    { key: 'sent', label: 'بعتنا لـ', accent: '#059669' },
+    { key: 'delivered', label: 'وصلت', accent: '#0FA3A3' },
+    { key: 'replied', label: 'ردّوا', accent: '#B45309' },
+    { key: 'bookings', label: 'حجزوا', accent: '#059669' },
+  ];
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {campaigns.map((c) => {
-        const m = campaignMetrics(c, messages.filter((x) => x.campaignId === c.id), appointments, journeys, offers.find((o) => o.id === c.offerId));
+        const campMsgs = messages.filter((x) => x.campaignId === c.id);
+        const m = campaignMetrics(c, campMsgs, appointments, journeys, offers.find((o) => o.id === c.offerId));
+        const cameBack = Math.min(10, Math.max(0, Math.round(Number(m.incrementalRate || 0) / 10)));
+        const replied = campMsgs.filter((x) => x.replied).length;
+        const values = { sent: m.sent, delivered: m.delivered, replied, bookings: m.bookings };
         return (
-          <div key={c.id} className="saas-card p-4 grid md:grid-cols-4 gap-3 text-sm">
-            <p className="md:col-span-4 font-bold dark:text-white">{c.name}</p>
-            <p>مستهدفات {m.targeted}</p>
-            <p>تسليم {m.deliveryRate}%</p>
-            <p>استجابة {m.responseRate}%</p>
-            <p>حجوزات {m.bookings}</p>
-            <p>حضور {m.attended}</p>
-            <p className="md:col-span-4 text-xs text-gray-400">عودة مجموعة المقارنة {m.holdoutReturned} · أثر محتمل (فرق النسب) {m.incrementalRate} نقطة</p>
-          </div>
+          <article key={c.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white">
+            <span className="absolute inset-y-0 start-0 w-[3px] bg-[#059669]" />
+            <div className="p-4 ps-5">
+              <h3 className="text-[16px] font-bold text-[#0F172A]">{c.name}</h3>
+              <section className="mt-4 grid grid-cols-2 border-y border-[#E4EAEE] sm:grid-cols-4">
+                {resultStats.map((k, i) => (
+                  <div key={k.key} className={`px-4 py-3 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+                    <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]">
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />
+                      {k.label}
+                    </p>
+                    <p className="mt-2 text-[28px] font-light tabular-nums leading-none">{values[k.key] ?? 0}</p>
+                  </div>
+                ))}
+              </section>
+              <p className="mt-4 text-[13px] text-[#334155]">
+                من كل 10 بعتنالهم، رجعوا <span className="font-bold tabular-nums">{cameBack}</span> بسبب الرسائل.
+              </p>
+            </div>
+          </article>
         );
       })}
     </div>
@@ -605,9 +930,9 @@ function MonthlyPanel({ campaigns, messages, appointments, journeys, offers }) {
   const list = campaigns.map((c) => campaignMetrics(c, messages.filter((x) => x.campaignId === c.id), appointments, journeys, offers.find((o) => o.id === c.offerId)));
   const r = monthlyReport(campaigns, list);
   return (
-    <div className="saas-card p-4">
-      <h3 className="font-bold mb-2 text-[#111827]">تقرير شهري</h3>
-      <p className="text-sm">حملات {r.campaigns} · موثوقية السجل: {r.reliability}</p>
+    <div className={`${card} p-4`}>
+      <h3 className="mb-2 text-[15px] font-bold text-[#0F172A]">ملخص الشهر</h3>
+      <p className="text-[13px] text-[#64748B]">حملات هذا الشهر: <span className="font-bold tabular-nums text-[#0F172A]">{r.campaigns}</span></p>
     </div>
   );
 }

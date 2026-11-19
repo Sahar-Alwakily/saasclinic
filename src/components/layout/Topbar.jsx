@@ -83,9 +83,9 @@ const Topbar = () => {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="بحث في العميلات…"
-          className="flex-1 bg-transparent border-0 outline-none text-sm text-[#111827]"
+          className="flex-1 bg-transparent border-0 outline-none text-sm text-[#111827] dark:text-[#E8EEEA]"
         />
-        <kbd className="text-[10px] px-1.5 py-0.5 rounded-md bg-white text-[#9ca3af]">Enter</kbd>
+        <kbd className="text-[10px] px-1.5 py-0.5 rounded-md bg-white text-[#9ca3af] dark:bg-[#152029] dark:text-[#7a8a94]">Enter</kbd>
       </form>
       <div className="flex items-center gap-2">
         <ThemeToggle />
@@ -93,7 +93,7 @@ const Topbar = () => {
         <div className="hidden sm:flex items-center gap-2 ps-1">
           <div className="w-9 h-9 rounded-full bg-[#EDF5F2] text-[#1F5C4D] font-bold flex items-center justify-center text-sm">{initial}</div>
           <div className="leading-tight min-w-0">
-            <p className="text-[13px] font-bold text-[#111827] truncate max-w-[9rem]">{clinicInfo?.ownerName || clinicInfo?.name || 'العيادة'}</p>
+            <p className="text-[13px] font-bold text-[#111827] dark:text-[#E8EEEA] truncate max-w-[9rem]">{clinicInfo?.ownerName || clinicInfo?.name || 'العيادة'}</p>
             <p className="text-[11px] text-[#9ca3af]">{userRole === 'admin' ? 'مالكة' : 'تشغيل'}</p>
           </div>
         </div>

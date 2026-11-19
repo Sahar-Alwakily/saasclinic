@@ -33,7 +33,6 @@ const NAV = [
       { to: '/appointments/waitlist', label: 'قائمة الانتظار', cap: 'ops' },
       { to: '/appointments/gaps', label: 'المواعيد المتاحة', cap: 'ops' },
       { to: '/appointments/reminders', label: 'التذكيرات والقواعد', cap: 'ops' },
-      { to: '/appointments/schedule', label: 'دوام الموظفين' },
       { to: '/appointments/attendance', label: 'الحضور' },
     ],
   },
@@ -90,6 +89,7 @@ const NAV = [
     admin: true,
     children: [
       { to: '/staff', label: 'الموظفات' },
+      { to: '/appointments/schedule', label: 'دوام الموظفين' },
       { to: '/branches', label: 'الفروع والجداول' },
     ],
   },
@@ -181,10 +181,12 @@ const Sidebar = () => {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const childActive = item.children?.some((c) => childIsActive(c.to));
-                const sectionOpen = pathname === item.to || pathname.startsWith(`${item.to}/`) || childActive;
+                const sectionOpen = item.to === '/appointments'
+                  ? pathname.startsWith('/appointments') && pathname !== '/appointments/schedule'
+                  : pathname === item.to || pathname.startsWith(`${item.to}/`) || childActive;
                 return (
                   <div key={item.to}>
-                    <NavLink to={item.to} className={({ isActive }) => linkClass({ isActive: isActive || sectionOpen })}>
+                    <NavLink end to={item.to} className={({ isActive }) => linkClass({ isActive: isActive || sectionOpen })}>
                       <Icon className="shrink-0 text-[13px] opacity-80" />
                       <span className="truncate">{item.label}</span>
                     </NavLink>

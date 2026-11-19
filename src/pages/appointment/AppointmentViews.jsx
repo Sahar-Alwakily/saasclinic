@@ -8,7 +8,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast, ToastContainer } from 'react-toastify';
 import {
   mergeAptSettings, DEFAULT_APT_SETTINGS, rankWaitlist, upcomingGaps, reminderDue,
-  noshowFollowupBody, waDigits, makeToken, appendHistory,
+  noshowFollowupBody, waDigits, makeToken, appendHistory, BOOKABLE_STATUSES,
 } from '../../utils/appointmentOps';
 import { addDays, toYmd, parseTimeOffset, isFutureSlot } from '../../utils/scheduleSlots';
 import { deliverAppointmentReminder, deliverUtilityNotice } from '../../utils/sendClinicWaReminder';
@@ -18,13 +18,47 @@ import {
   formatDurationAr, formatHms, clockLabel, monthPrefixFromYmd, monthTitleAr,
 } from '../../utils/staffHours';
 
-const field = 'w-full p-3 rounded-xl bg-[#f8faf9] border border-[#e4eee8] outline-none focus:ring-2 focus:ring-emerald-200 text-sm';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-white px-2.5 py-2 text-[12.5px] outline-none focus:border-[#0FA3A3]';
+const panel = 'rounded-xl border border-[#E4EAEE] bg-white';
+const seg = (on) => `rounded-md px-2.5 py-1.5 text-[11px] font-bold transition-colors ${on ? 'bg-[#ECFEFF] text-[#0E7490]' : 'text-[#64748B] hover:text-[#334155]'}`;
 
 const WAIT_STATUS = {
-  waiting: { label: 'بالطابور', chip: 'nura-chip-lilac', card: 'stat-card-lilac' },
-  offered: { label: 'عُرض عليها', chip: 'nura-chip-gold', card: 'stat-card-gold' },
-  booked: { label: 'حُجز', chip: 'nura-chip-mint', card: 'stat-card-mint' },
+  waiting: { label: 'بالطابور', accent: '#B45309', soft: '#FFFBEB', softBorder: '#F3E2C2', ink: '#B45309' },
+  offered: { label: 'عُرض عليها', accent: '#0FA3A3', soft: '#ECFEFF', softBorder: '#C6EEEE', ink: '#0E7490' },
+  booked: { label: 'حُجز', accent: '#059669', soft: '#ECFDF5', softBorder: '#C9EEE0', ink: '#047857' },
 };
+
+function StatStrip({ items }) {
+  return (
+    <section className="grid grid-cols-2 border-y border-[#E4EAEE] lg:grid-cols-4">
+      {items.map((it, i) => (
+        <div
+          key={it.label}
+          className={[
+            'px-5 py-4',
+            i % 2 === 1 ? 'border-s border-[#E4EAEE]' : '',
+            i > 1 ? 'border-t border-[#E4EAEE]' : '',
+            'lg:border-t-0',
+            i > 0 ? 'lg:border-s lg:border-[#E4EAEE]' : '',
+          ].join(' ')}
+        >
+          <p className="text-[11px] text-[#64748B]">{it.label}</p>
+          <p className="mt-1.5 text-[30px] font-light leading-none tabular-nums tracking-tight" style={{ color: it.accent }}>{it.value}</p>
+          {it.note && <p className="mt-1.5 truncate text-[10.5px] text-[#7C8A99]">{it.note}</p>}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function EmptyNote({ title, hint }) {
+  return (
+    <div className="px-5 py-10 text-center">
+      <p className="text-[12.5px] font-bold text-[#334155]">{title}</p>
+      {hint && <p className="mt-1 text-[11px] text-[#94A3B8]">{hint}</p>}
+    </div>
+  );
+}
 
 function waitAgo(ts) {
   if (!ts) return '';
@@ -252,54 +286,47 @@ export function WaitlistView() {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">قائمة الانتظار</h1>
-          <p className="text-sm text-[#8a9199] mt-1">الطابور الحقيقي للعيادة — أول من يناسب الشاغر يُعرض عليها الموعد.</p>
+          <Link to="/appointments" className="text-[11px] font-bold tracking-wide text-[#94A3B8] hover:text-[#0E7490]">المواعيد ←</Link>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">قائمة الانتظار</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">الطابور الحقيقي للعيادة — أول من يناسب الشاغر يُعرض عليها الموعد.</p>
         </div>
-        <Link to="/appointments/gaps" className="nura-chip nura-chip-sky">المواعيد المتاحة</Link>
-      </div>
+        <Link to="/appointments/gaps" className="inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]">المواعيد المتاحة</Link>
+      </header>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-lilac p-4">
-          <p className="text-[12px] text-[#6d28d9]">بالطابور</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{waiting.length}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-[12px] text-[#b45309]">عُرض عليها</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{offered.length}</p>
-        </div>
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-[12px] text-[#047857]">حُجز من الطابور</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{booked.length}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-[12px] text-[#0369a1]">شواغر مفتوحة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{d.openVacancies.length}</p>
-        </div>
-      </div>
+      <StatStrip
+        items={[
+          { label: 'بالطابور', value: waiting.length, note: 'بانتظار شاغر مناسب', accent: '#B45309' },
+          { label: 'عُرض عليها', value: offered.length, note: `مهلة العرض ${d.settings.waitlistOfferMinutes} د`, accent: '#0FA3A3' },
+          { label: 'حُجز من الطابور', value: booked.length, note: 'تحوّلت إلى موعد', accent: '#059669' },
+          { label: 'شواغر مفتوحة', value: d.openVacancies.length, note: 'جاهزة للعرض الآن', accent: '#0E7490' },
+        ]}
+      />
 
       {d.openVacancies.length > 0 && (
-        <section className="saas-card p-4">
-          <div className="flex items-center justify-between gap-2 mb-3">
-            <h2 className="font-bold text-[#111827]">شواغر جاهزة للعرض</h2>
-            <span className="text-xs text-[#8a9199]">يُرسل العرض لأعلى 5 تطابقاً · مهلة {d.settings.waitlistOfferMinutes} د</span>
+        <section className={panel}>
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4EAEE] px-5 py-3.5">
+            <h2 className="text-[14px] font-extrabold">شواغر جاهزة للعرض</h2>
+            <span className="text-[10.5px] text-[#94A3B8]">أعلى 5 تطابقاً · مهلة {d.settings.waitlistOfferMinutes} د</span>
           </div>
-          <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+          <div className="grid gap-2 p-4 md:grid-cols-2 xl:grid-cols-3">
             {d.openVacancies.slice(0, 6).map((v) => {
               const matches = rankWaitlist(d.waitlist, v);
               return (
-                <div key={v.id} className="rounded-2xl border border-sky-100 bg-sky-50/70 p-4">
-                  <p className="font-bold text-sm text-[#111827]">{v.service || 'ساعة شاغرة'}</p>
-                  <p className="text-xs text-[#0369a1] mt-1">{v.date} · {v.time}{v.branchName ? ` · ${v.branchName}` : ''}</p>
-                  <p className="text-xs text-[#8a9199] mt-2">{matches.length} عميلة تناسب هذا الشاغر</p>
+                <div key={v.id} className="rounded-lg border border-[#E4EAEE] bg-white p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="truncate text-[12.5px] font-bold text-[#0F172A]">{v.service || 'ساعة شاغرة'}</p>
+                    <span className="shrink-0 rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-1.5 py-0.5 text-[9.5px] font-bold text-[#0E7490]">{matches.length} تطابق</span>
+                  </div>
+                  <p className="mt-1 text-[11px] tabular-nums text-[#64748B]">{v.date} · {v.time}{v.branchName ? ` · ${v.branchName}` : ''}</p>
                   <button
                     type="button"
                     onClick={() => d.sendOffers(v)}
                     disabled={!matches.length}
-                    className="mt-3 w-full py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold disabled:opacity-40"
+                    className="mt-2.5 w-full rounded-lg bg-[#059669] py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-40"
                   >
                     إرسال عروض
                   </button>
@@ -310,56 +337,58 @@ export function WaitlistView() {
         </section>
       )}
 
-      <div className="grid lg:grid-cols-[1fr_20rem] gap-4 items-start">
-        <section className="saas-card p-4 sm:p-5">
-          <div className="flex flex-wrap gap-1.5 mb-4">
-            {filters.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                  filter === f.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
-                }`}
-              >
-                {f.label} {f.n}
-              </button>
-            ))}
+      <div className="grid items-start gap-4 lg:grid-cols-[1fr_20rem]">
+        <section className={`${panel} overflow-hidden`}>
+          <div className="flex flex-wrap items-center gap-2 border-b border-[#E4EAEE] px-4 py-3">
+            <h2 className="me-auto text-[14px] font-extrabold">الطابور</h2>
+            <div className="inline-flex items-center gap-0.5 rounded-lg border border-[#E4EAEE] bg-white p-0.5">
+              {filters.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
+                  className={seg(filter === f.id)}
+                >
+                  {f.label} <span className="tabular-nums">{f.n}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="space-y-3">
+          <div className="divide-y divide-[#EDF1F4]">
             {visible.map((w, i) => {
               const st = WAIT_STATUS[w.status] || WAIT_STATUS.waiting;
               const matches = d.openVacancies.filter((v) => rankWaitlist([w], v).length).length;
               return (
-                <article key={w.id} className={`rounded-2xl border p-4 ${st.card}`}>
-                  <div className="flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-2xl bg-white/80 text-[#6d28d9] font-bold flex items-center justify-center shrink-0">
+                <article key={w.id} className="relative overflow-hidden px-4 py-3">
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: st.accent }} />
+                  <div className="flex items-start gap-3 ps-1.5">
+                    <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#F4F7F8] text-[11.5px] font-bold text-[#475569]">
                       {w.status === 'waiting' ? i + 1 : (w.name || 'ع').trim().charAt(0)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-bold text-[#111827] truncate">{w.name || 'عميلة'}</p>
-                        <span className={`nura-chip ${st.chip}`}>{st.label}</span>
+                        <p className="truncate text-[13px] font-bold text-[#0F172A]">{w.name || 'عميلة'}</p>
+                        <span className="rounded-full border px-1.5 py-0.5 text-[9.5px] font-bold" style={{ background: st.soft, color: st.ink, borderColor: st.softBorder }}>{st.label}</span>
                       </div>
-                      <p className="text-sm text-[#6b7280] mt-1">{w.service || 'بدون خدمة'}{w.duration ? ` · ${w.duration}` : ''}</p>
-                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[12px] text-[#8a9199] mt-2">
-                        {w.phone && <span dir="ltr">{w.phone}</span>}
+                      <p className="mt-0.5 text-[11.5px] text-[#64748B]">{w.service || 'بدون خدمة'}{w.duration ? ` · ${w.duration}` : ''}</p>
+                      <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[10.5px] text-[#94A3B8]">
+                        {w.phone && <span dir="ltr" className="tabular-nums">{w.phone}</span>}
                         {branchName(w.branchId) && <span>{branchName(w.branchId)}</span>}
                         {staffName(w.specialistId) && <span>{staffName(w.specialistId)}</span>}
                         <span>{preferredLabel(w.preferredTimes)}</span>
                         {w.createdAt && (
-                          <span className="inline-flex items-center gap-1"><FaClock className="text-[10px]" /> {waitAgo(w.createdAt)}</span>
+                          <span className="inline-flex items-center gap-1"><FaClock className="text-[9px]" /> {waitAgo(w.createdAt)}</span>
                         )}
                       </div>
                       {matches > 0 && w.status !== 'booked' && (
-                        <p className="text-[12px] font-bold text-sky-700 mt-2">{matches} شاغر يناسبها الآن</p>
+                        <p className="mt-1 text-[10.5px] font-bold text-[#0E7490]">{matches} شاغر يناسبها الآن</p>
                       )}
                     </div>
                     {w.phone && (
                       <button
                         type="button"
                         onClick={() => window.open(`https://wa.me/${waDigits(w.phone)}`, '_blank')}
-                        className="w-10 h-10 rounded-xl bg-white text-emerald-600 flex items-center justify-center shrink-0"
+                        className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#C9EEE0] bg-[#ECFDF5] text-[#059669] transition-colors hover:border-[#059669]"
                         aria-label="واتساب"
                       >
                         <FaWhatsapp />
@@ -370,53 +399,50 @@ export function WaitlistView() {
               );
             })}
             {!visible.length && (
-              <div className="text-center py-12">
-                <p className="font-bold text-[#111827]">لا أحد في هذا التبويب</p>
-                <p className="text-sm text-[#8a9199] mt-1">أضيفي عميلة من البطاقة الجانبية حتى يظهر الطابور هنا.</p>
-              </div>
+              <EmptyNote title="لا أحد في هذا التبويب" hint="أضيفي عميلة من البطاقة الجانبية حتى يظهر الطابور هنا." />
             )}
           </div>
         </section>
 
-        <form onSubmit={d.addWaitlist} className="saas-card p-5 space-y-3 lg:sticky lg:top-24">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="w-8 h-8 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center"><FaPlus className="text-xs" /></span>
-            <h2 className="font-bold text-[#111827]">إضافة للطابور</h2>
+        <form onSubmit={d.addWaitlist} className={`${panel} space-y-3 p-4 lg:sticky lg:top-24`}>
+          <div className="flex items-center gap-2 border-b border-[#E4EAEE] pb-3">
+            <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#ECFEFF] text-[#0E7490]"><FaPlus className="text-[10px]" /></span>
+            <h2 className="text-[13px] font-extrabold">إضافة للطابور</h2>
           </div>
-          <label className="block text-xs font-bold text-[#6b7280]">الاسم
+          <label className="block text-[10.5px] font-bold text-[#64748B]">الاسم
             <input value={d.waitForm.name} onChange={(e) => d.setWaitForm({ ...d.waitForm, name: e.target.value })} className={`${field} mt-1`} />
           </label>
-          <label className="block text-xs font-bold text-[#6b7280]">الهاتف
+          <label className="block text-[10.5px] font-bold text-[#64748B]">الهاتف
             <input value={d.waitForm.phone} onChange={(e) => d.setWaitForm({ ...d.waitForm, phone: e.target.value })} className={`${field} mt-1`} dir="ltr" />
           </label>
-          <label className="block text-xs font-bold text-[#6b7280]">الخدمة
+          <label className="block text-[10.5px] font-bold text-[#64748B]">الخدمة
             <select value={d.waitForm.serviceId} onChange={(e) => d.setWaitForm({ ...d.waitForm, serviceId: e.target.value })} className={`${field} mt-1`}>
               <option value="">اختاري الخدمة</option>
               {d.services.map((s) => <option key={s.id} value={s.id}>{s.title} {s.duration ? `· ${s.duration}` : ''}</option>)}
             </select>
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <label className="block text-xs font-bold text-[#6b7280]">الفرع
+            <label className="block text-[10.5px] font-bold text-[#64748B]">الفرع
               <select value={d.waitForm.branchId} onChange={(e) => d.setWaitForm({ ...d.waitForm, branchId: e.target.value })} className={`${field} mt-1`}>
                 <option value="">أي فرع</option>
                 {d.branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </label>
-            <label className="block text-xs font-bold text-[#6b7280]">المختصة
+            <label className="block text-[10.5px] font-bold text-[#64748B]">المختصة
               <select value={d.waitForm.specialistId} onChange={(e) => d.setWaitForm({ ...d.waitForm, specialistId: e.target.value })} className={`${field} mt-1`}>
                 <option value="">أي مختصة</option>
                 {d.staff.filter((s) => s.role !== 'admin').map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </label>
           </div>
-          <label className="block text-xs font-bold text-[#6b7280]">الوقت المفضّل
+          <label className="block text-[10.5px] font-bold text-[#64748B]">الوقت المفضّل
             <select value={d.waitForm.preferredTimes} onChange={(e) => d.setWaitForm({ ...d.waitForm, preferredTimes: e.target.value })} className={`${field} mt-1`}>
               <option value="any">أي وقت</option>
               <option value="morning">صباح</option>
               <option value="afternoon">بعد الظهر</option>
             </select>
           </label>
-          <button type="submit" className="w-full py-3 rounded-xl bg-[#10b981] text-white font-bold">إضافة للطابور</button>
+          <button type="submit" className="w-full rounded-lg bg-[#059669] py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-[#047857]">إضافة للطابور</button>
         </form>
       </div>
     </div>
@@ -464,54 +490,39 @@ export function GapsView() {
   ];
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">المواعيد المتاحة</h1>
-          <p className="text-sm text-[#8a9199] mt-1">ساعات الجدول الفارغة، والشواغر بعد إلغاء — للعرض على الطابور.</p>
+          <Link to="/appointments" className="text-[11px] font-bold tracking-wide text-[#94A3B8] hover:text-[#0E7490]">المواعيد ←</Link>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">المواعيد المتاحة</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">ساعات الجدول الفارغة، والشواغر بعد إلغاء — للعرض على الطابور.</p>
         </div>
-        <Link to="/appointments/waitlist" className="nura-chip nura-chip-lilac">قائمة الانتظار</Link>
-      </div>
+        <Link to="/appointments/waitlist" className="inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]">قائمة الانتظار</Link>
+      </header>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-[12px] text-[#0369a1]">فراغ اليوم</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{d.gapsToday.length}</p>
-        </div>
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-[12px] text-[#047857]">فراغ غداً</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{d.gapsTom.length}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-[12px] text-[#b45309]">بعد إلغاء</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{d.openVacancies.length}</p>
-        </div>
-        <div className="saas-card stat-card-lilac p-4">
-          <p className="text-[12px] text-[#6d28d9]">بالطابور</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{waiting}</p>
-        </div>
-      </div>
+      <StatStrip
+        items={[
+          { label: 'فراغ اليوم', value: d.gapsToday.length, note: 'ساعات فارغة قابلة للحجز', accent: '#0FA3A3' },
+          { label: 'فراغ غداً', value: d.gapsTom.length, note: 'من دوام الفريق', accent: '#059669' },
+          { label: 'بعد إلغاء', value: d.openVacancies.length, note: 'شواغر مفتوحة للعرض', accent: '#B45309' },
+          { label: 'بالطابور', value: waiting, note: 'ينتظرن شاغراً مناسباً', accent: '#0E7490' },
+        ]}
+      />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-1.5">
+      <div className={`${panel} flex flex-wrap items-center justify-between gap-2 px-3 py-2.5`}>
+        <div className="inline-flex items-center gap-0.5 rounded-lg border border-[#E4EAEE] bg-white p-0.5">
           {tabs.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-                tab === t.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
-              }`}
-            >
-              {t.label} {t.n}
+            <button key={t.id} type="button" onClick={() => setTab(t.id)} className={seg(tab === t.id)}>
+              {t.label} <span className="tabular-nums">{t.n}</span>
             </button>
           ))}
         </div>
         <select
           value={staffFilter}
           onChange={(e) => setStaffFilter(e.target.value)}
-          className="px-3 py-2 rounded-2xl bg-white border border-[#e4eee8] text-sm font-bold"
+          aria-label="تصفية الفريق"
+          className="h-8 rounded-lg border border-[#E4EAEE] bg-white px-2 text-[11.5px] font-bold text-[#334155] outline-none focus:border-[#0FA3A3]"
         >
           <option value="all">كل الفريق</option>
           {staffList.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -519,29 +530,31 @@ export function GapsView() {
       </div>
 
       {tab === 'cancelled' && (
-        <section className="grid md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {vacancies.map((v) => {
             const n = matchCount(v);
             return (
-              <article key={v.id} className="saas-card stat-card-gold p-4">
-                <p className="font-bold text-[#111827]">{v.service || 'ساعة شاغرة'}</p>
-                <p className="text-sm text-[#b45309] mt-1">{v.date} · {v.time}{v.branchName ? ` · ${v.branchName}` : ''}</p>
-                <p className="text-xs text-[#8a9199] mt-2">{n} عميلة في الطابور تناسب هذا الموعد</p>
-                <button
-                  type="button"
-                  onClick={() => d.sendOffers(v)}
-                  disabled={!n}
-                  className="mt-3 w-full py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold disabled:opacity-40"
-                >
-                  إرسال عروض · {d.settings.waitlistOfferMinutes} د
-                </button>
+              <article key={v.id} className="relative overflow-hidden rounded-xl border border-[#E4EAEE] bg-white p-4">
+                <span className="absolute inset-y-0 start-0 w-[3px] bg-[#B45309]" />
+                <div className="ps-1.5">
+                  <p className="text-[13px] font-bold text-[#0F172A]">{v.service || 'ساعة شاغرة'}</p>
+                  <p className="mt-1 text-[11px] tabular-nums text-[#64748B]">{v.date} · {v.time}{v.branchName ? ` · ${v.branchName}` : ''}</p>
+                  <p className="mt-1.5 text-[10.5px] text-[#94A3B8]">{n} عميلة في الطابور تناسب هذا الموعد</p>
+                  <button
+                    type="button"
+                    onClick={() => d.sendOffers(v)}
+                    disabled={!n}
+                    className="mt-3 w-full rounded-lg bg-[#059669] py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-40"
+                  >
+                    إرسال عروض · {d.settings.waitlistOfferMinutes} د
+                  </button>
+                </div>
               </article>
             );
           })}
           {!vacancies.length && (
-            <div className="saas-card p-10 text-center md:col-span-2 xl:col-span-3">
-              <p className="font-bold text-[#111827]">لا شاغر من إلغاء الآن</p>
-              <p className="text-sm text-[#8a9199] mt-1">عند إلغاء موعد يظهر هنا حتى يُعرض على الطابور.</p>
+            <div className={`${panel} md:col-span-2 xl:col-span-3`}>
+              <EmptyNote title="لا شاغر من إلغاء الآن" hint="عند إلغاء موعد يظهر هنا حتى يُعرض على الطابور." />
             </div>
           )}
         </section>
@@ -550,19 +563,19 @@ export function GapsView() {
       {tab !== 'cancelled' && (
         <div className="space-y-3">
           {groups.map((row) => (
-            <section key={`${row.date}-${row.specialistId}-${row.branchId}`} className="saas-card p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-700 font-bold flex items-center justify-center">
+            <section key={`${row.date}-${row.specialistId}-${row.branchId}`} className={`${panel} overflow-hidden`}>
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#E4EAEE] px-4 py-3">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#ECFEFF] text-[11.5px] font-bold text-[#0E7490]">
                     {(row.specialistName || 'ع').trim().charAt(0)}
                   </div>
-                  <div>
-                    <p className="font-bold text-[#111827]">{row.specialistName}</p>
-                    <p className="text-xs text-[#8a9199]">{row.date}{row.branchName ? ` · ${row.branchName}` : ''} · {row.slots.length} ساعة</p>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-bold text-[#0F172A]">{row.specialistName}</p>
+                    <p className="text-[10.5px] text-[#94A3B8]">{row.date}{row.branchName ? ` · ${row.branchName}` : ''} · {row.slots.length} ساعة</p>
                   </div>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 p-4">
                 {row.slots.map((slot) => {
                   const n = matchCount(slot);
                   return (
@@ -570,12 +583,12 @@ export function GapsView() {
                       key={`${slot.time}-${slot.specialistId}`}
                       type="button"
                       onClick={() => d.offerFromGap(slot)}
-                      className={`min-w-[6.5rem] text-right rounded-2xl border px-3 py-2.5 ${
-                        n ? 'bg-violet-50 border-violet-100' : 'bg-[#f8faf9] border-[#e4eee8]'
+                      className={`min-w-[6.5rem] rounded-lg border px-3 py-2 text-start transition-colors ${
+                        n ? 'border-[#C6EEEE] bg-[#ECFEFF] hover:border-[#0FA3A3]' : 'border-[#E4EAEE] bg-white hover:border-[#CBD5E1]'
                       }`}
                     >
-                      <p className="text-sm font-bold text-[#111827]">{slot.time}</p>
-                      <p className={`text-[11px] mt-0.5 ${n ? 'text-violet-700 font-bold' : 'text-[#8a9199]'}`}>
+                      <p className="text-[12px] font-bold tabular-nums text-[#0F172A]">{slot.time}</p>
+                      <p className={`mt-0.5 text-[10.5px] ${n ? 'font-bold text-[#0E7490]' : 'text-[#94A3B8]'}`}>
                         {n ? `${n} بالطابور` : 'بدون تطابق'}
                       </p>
                     </button>
@@ -585,9 +598,8 @@ export function GapsView() {
             </section>
           ))}
           {!groups.length && (
-            <div className="saas-card p-10 text-center">
-              <p className="font-bold text-[#111827]">لا ساعات فارغة في هذا اليوم</p>
-              <p className="text-sm text-[#8a9199] mt-1">الفراغ يُحسب من دوام الموظفات ناقص الحجوزات غير الملغاة.</p>
+            <div className={panel}>
+              <EmptyNote title="لا ساعات فارغة في هذا اليوم" hint="الفراغ يُحسب من دوام الموظفات ناقص الحجوزات غير الملغاة." />
             </div>
           )}
         </div>
@@ -602,47 +614,79 @@ export function RemindersView() {
   const pending = d.appointments.filter((a) => a.status === 'pending' && a.date >= d.todayStr);
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div>
-        <h1 className="font-product text-2xl md:text-3xl">التذكيرات والقواعد</h1>
-        <p className="text-stone-500 text-sm mt-1">تذكيرات مستحقة، قواعد العيادة، وقوالب واتساب للتأكيد والتذكير والإلغاء.</p>
-      </div>
-      <div className="grid lg:grid-cols-2 gap-5">
-        <div className="space-y-3">
-          <h3 className="font-product text-xl">تذكيرات مستحقة</h3>
-          {due.map((a) => {
-            const hours = reminderDue(a, d.settings)[0];
-            return (
-              <div key={a.id} className="saas-card p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-                <div className="flex-1">
-                  <p className="font-semibold">{a.customerName}</p>
-                  <p className="text-xs text-stone-500">{a.date} · {a.time} · {a.service}</p>
-                </div>
-                <button type="button" onClick={() => d.sendReminder(a, hours)} className="px-4 py-2 rounded-full bg-[#172B3A] text-white text-sm font-bold">
-                  تذكير واتساب · {hours}س
-                </button>
-              </div>
-            );
-          })}
-          {!due.length && <div className="saas-card p-8 text-sm text-stone-400">لا تذكير داخل النافذة الآن.</div>}
-          <h3 className="font-product text-xl pt-2">تحتاج تأكيد العميلة</h3>
-          {pending.map((a) => (
-            <div key={a.id} className="saas-card p-4 flex justify-between gap-3 text-sm">
-              <span>{a.customerName} · {a.date} {a.time}</span>
-              <button type="button" onClick={() => d.sendReminder(a, 'confirm')} className="text-[#172B3A] font-bold">تذكير تأكيد</button>
-            </div>
-          ))}
-          {!pending.length && <p className="text-sm text-stone-400">لا حجوزات معلّقة قادمة.</p>}
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <Link to="/appointments" className="text-[11px] font-bold tracking-wide text-[#94A3B8] hover:text-[#0E7490]">المواعيد ←</Link>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">التذكيرات والقواعد</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">تذكيرات مستحقة، قواعد العيادة، وقوالب واتساب للتأكيد والتذكير والإلغاء.</p>
         </div>
-        <div className="saas-card p-6 space-y-3">
-          <h3 className="font-product text-2xl mb-2">قواعد العيادة</h3>
-          <p className="text-xs text-stone-500 -mt-1">هذه القواعد تشغّل قوالب واتساب في الأسفل: متى يُرسل التأكيد، والتذكير، والإلغاء.</p>
-          <label className="text-sm flex items-center gap-2">
-            <input type="checkbox" checked={!!d.form.autoConfirm} onChange={(e) => d.setForm({ ...d.form, autoConfirm: e.target.checked })} />
+        <Link to="/appointments" className="inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]">التقويم</Link>
+      </header>
+
+      <StatStrip
+        items={[
+          { label: 'تذكيرات مستحقة', value: due.length, note: 'داخل نافذة الإرسال', accent: '#0FA3A3' },
+          { label: 'تحتاج تأكيد', value: pending.length, note: 'حجوزات معلّقة قادمة', accent: '#B45309' },
+          { label: 'سقف الرسائل', value: d.form.reminderCap, note: 'لكل موعد', accent: '#64748B' },
+          { label: 'مهلة العرض', value: `${d.form.waitlistOfferMinutes} د`, note: 'لقبول شاغر الانتظار', accent: '#0E7490' },
+        ]}
+      />
+
+      <div className="grid items-start gap-4 lg:grid-cols-2">
+        <div className="space-y-3">
+          <section className={`${panel} overflow-hidden`}>
+            <div className="flex items-center justify-between border-b border-[#E4EAEE] px-4 py-3">
+              <h2 className="text-[13px] font-extrabold">تذكيرات مستحقة</h2>
+              <span className="rounded-full border border-[#C6EEEE] bg-[#ECFEFF] px-2 py-0.5 text-[10px] font-bold text-[#0E7490]">{due.length}</span>
+            </div>
+            <div className="divide-y divide-[#EDF1F4]">
+              {due.map((a) => {
+                const hours = reminderDue(a, d.settings)[0];
+                return (
+                  <div key={a.id} className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[12.5px] font-bold text-[#0F172A]">{a.customerName}</p>
+                      <p className="mt-0.5 text-[10.5px] tabular-nums text-[#64748B]">{a.date} · {a.time} · {a.service}</p>
+                    </div>
+                    <button type="button" onClick={() => d.sendReminder(a, hours)} className="shrink-0 rounded-lg border border-[#C9EEE0] bg-[#ECFDF5] px-3 py-1.5 text-[11px] font-bold text-[#047857] transition-colors hover:border-[#059669]">
+                      تذكير واتساب · {hours}س
+                    </button>
+                  </div>
+                );
+              })}
+              {!due.length && <p className="px-4 py-6 text-[11.5px] text-[#94A3B8]">لا تذكير داخل النافذة الآن.</p>}
+            </div>
+          </section>
+
+          <section className={`${panel} overflow-hidden`}>
+            <div className="flex items-center justify-between border-b border-[#E4EAEE] px-4 py-3">
+              <h2 className="text-[13px] font-extrabold">تحتاج تأكيد العميلة</h2>
+              <span className="rounded-full border border-[#F3E2C2] bg-[#FFFBEB] px-2 py-0.5 text-[10px] font-bold text-[#B45309]">{pending.length}</span>
+            </div>
+            <div className="divide-y divide-[#EDF1F4]">
+              {pending.map((a) => (
+                <div key={a.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-[11.5px]">
+                  <span className="truncate text-[#334155]">{a.customerName} · <span className="tabular-nums">{a.date} {a.time}</span></span>
+                  <button type="button" onClick={() => d.sendReminder(a, 'confirm')} className="shrink-0 text-[11px] font-bold text-[#0E7490] hover:text-[#059669]">تذكير تأكيد</button>
+                </div>
+              ))}
+              {!pending.length && <p className="px-4 py-6 text-[11.5px] text-[#94A3B8]">لا حجوزات معلّقة قادمة.</p>}
+            </div>
+          </section>
+        </div>
+
+        <section className={`${panel} space-y-3 p-5`}>
+          <div className="border-b border-[#E4EAEE] pb-3">
+            <h2 className="text-[14px] font-extrabold">قواعد العيادة</h2>
+            <p className="mt-0.5 text-[10.5px] text-[#94A3B8]">هذه القواعد تشغّل قوالب واتساب بالأسفل: متى يُرسل التأكيد، والتذكير، والإلغاء.</p>
+          </div>
+          <label className="flex items-center gap-2 text-[12px] text-[#334155]">
+            <input type="checkbox" className="accent-[#059669]" checked={!!d.form.autoConfirm} onChange={(e) => d.setForm({ ...d.form, autoConfirm: e.target.checked })} />
             تأكيد تلقائي بعد الحجز (قالب التأكيد)
           </label>
-          <label className="text-sm block">تذكيرات واتساب — قبل الموعد بكم ساعة
+          <label className="block text-[11.5px] text-[#334155]">تذكيرات واتساب — قبل الموعد بكم ساعة
             <input
               value={d.form.reminderHoursText ?? (d.form.reminderHours || []).join(',')}
               onChange={(e) => d.setForm({ ...d.form, reminderHoursText: e.target.value })}
@@ -650,23 +694,23 @@ export function RemindersView() {
               placeholder="24, 3"
             />
           </label>
-          <p className="text-[11px] text-stone-400 -mt-1">18 ساعة فأكثر = قالب «قبل 24 ساعة». أقل من 18 = قالب «يوم الموعد».</p>
-          <label className="text-sm block">سقف الرسائل لكل موعد (يمنع تكرار القالب)
+          <p className="-mt-1 text-[10px] text-[#94A3B8]">18 ساعة فأكثر = قالب «قبل 24 ساعة». أقل من 18 = قالب «يوم الموعد».</p>
+          <label className="block text-[11.5px] text-[#334155]">سقف الرسائل لكل موعد (يمنع تكرار القالب)
             <input type="number" value={d.form.reminderCap} onChange={(e) => d.setForm({ ...d.form, reminderCap: Number(e.target.value) })} className={`${field} mt-1`} />
           </label>
-          <label className="text-sm block">نص الإلغاء للعميلة
+          <label className="block text-[11.5px] text-[#334155]">نص الإلغاء للعميلة
             <textarea value={d.form.cancellationPolicy} onChange={(e) => d.setForm({ ...d.form, cancellationPolicy: e.target.value })} className={`${field} mt-1`} rows={3} />
-            <span className="block text-[11px] text-stone-400 mt-1">يظهر في الحجز العام إذا سياسة الحجوزات على موقع العيادة فاضية.</span>
+            <span className="mt-1 block text-[10px] text-[#94A3B8]">يظهر في الحجز العام إذا سياسة الحجوزات على موقع العيادة فاضية.</span>
           </label>
-          <label className="text-sm block">مهلة قبول عرض الانتظار (بالدقائق)
+          <label className="block text-[11.5px] text-[#334155]">مهلة قبول عرض الانتظار (بالدقائق)
             <input type="number" value={d.form.waitlistOfferMinutes} onChange={(e) => d.setForm({ ...d.form, waitlistOfferMinutes: Number(e.target.value) })} className={`${field} mt-1`} />
           </label>
-          <label className="text-sm block">المنطقة الزمنية
+          <label className="block text-[11.5px] text-[#334155]">المنطقة الزمنية
             <input value={d.form.timezone} onChange={(e) => d.setForm({ ...d.form, timezone: e.target.value })} className={`${field} mt-1`} />
           </label>
-          <p className="text-xs text-stone-400">بيانات هذه العيادة فقط. لا عقوبات آلية.</p>
-          <button type="button" onClick={d.savePolicy} className="px-5 py-3 rounded-xl bg-[#172B3A] text-white font-bold">حفظ القواعد</button>
-        </div>
+          <p className="text-[10.5px] text-[#94A3B8]">بيانات هذه العيادة فقط. لا عقوبات آلية.</p>
+          <button type="button" onClick={d.savePolicy} className="w-full rounded-lg bg-[#059669] py-2 text-[12.5px] font-bold text-white transition-colors hover:bg-[#047857]">حفظ القواعد</button>
+        </section>
       </div>
       <WhatsAppRemindersPanel
         policy={{
@@ -686,7 +730,7 @@ export function AttendanceView() {
   const [tab, setTab] = useState('clients');
   const todayApts = d.appointments.filter((a) => a.date === d.todayStr);
   const expected = todayApts
-    .filter((a) => ['pending', 'confirmed', 'rescheduled'].includes(a.status))
+    .filter((a) => BOOKABLE_STATUSES.includes(a.status))
     .slice()
     .sort((a, b) => (parseTimeOffset(a.time) ?? 99) - (parseTimeOffset(b.time) ?? 99));
   const arrived = todayApts.filter((a) => a.status === 'attended');
@@ -762,95 +806,96 @@ export function AttendanceView() {
   };
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">الحضور</h1>
-          <p className="text-sm text-[#8a9199] mt-1">حضور العميلات للعلاج اليوم، وبدء/إغلاق شغل الفريق مع ساعات الشهر.</p>
+          <Link to="/appointments" className="text-[11px] font-bold tracking-wide text-[#94A3B8] hover:text-[#0E7490]">المواعيد ←</Link>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">الحضور</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">حضور العميلات للعلاج اليوم، وبدء/إغلاق شغل الفريق مع ساعات الشهر.</p>
         </div>
-        <Link to="/appointments" className="nura-chip nura-chip-sky">التقويم</Link>
-      </div>
+        <Link to="/appointments" className="inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490]">التقويم</Link>
+      </header>
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-[12px] text-[#0369a1]">بانتظار الحضور</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{expected.length}</p>
-        </div>
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-[12px] text-[#047857]">حضرت</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{arrived.length}</p>
-        </div>
-        <div className="saas-card stat-card-rose p-4">
-          <p className="text-[12px] text-[#be123c]">لم تحضر</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{missed.length}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-[12px] text-[#b45309]">في الشغل الآن</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{workingCount}</p>
-        </div>
-      </div>
+      <StatStrip
+        items={[
+          { label: 'بانتظار الحضور', value: expected.length, note: 'معلّق · مؤكد · معاد جدولته', accent: '#0FA3A3' },
+          { label: 'حضرت', value: arrived.length, note: 'سُجّل حضور العلاج', accent: '#059669' },
+          { label: 'لم تحضر', value: missed.length, note: 'غياب اليوم', accent: '#DC2626' },
+          { label: 'في الشغل الآن', value: workingCount, note: 'ورديات مفتوحة', accent: '#B45309' },
+        ]}
+      />
 
-      <div className="flex flex-wrap gap-1.5">
-        {[
-          { id: 'clients', label: 'العميلات', n: expected.length + arrived.length + missed.length },
-          { id: 'staff', label: 'الفريق', n: people.length },
-        ].map((t) => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold ${
-              tab === t.id ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'
-            }`}
-          >
-            {t.label} {t.n}
-          </button>
-        ))}
+      <div className={`${panel} flex flex-wrap items-center gap-2 px-3 py-2.5`}>
+        <div className="inline-flex items-center gap-0.5 rounded-lg border border-[#E4EAEE] bg-white p-0.5">
+          {[
+            { id: 'clients', label: 'العميلات', n: expected.length + arrived.length + missed.length },
+            { id: 'staff', label: 'الفريق', n: people.length },
+          ].map((t) => (
+            <button key={t.id} type="button" onClick={() => setTab(t.id)} className={seg(tab === t.id)}>
+              {t.label} <span className="tabular-nums">{t.n}</span>
+            </button>
+          ))}
+        </div>
+        <span className="ms-auto text-[10.5px] text-[#94A3B8]">{clockLabel(now)}</span>
       </div>
 
       {tab === 'clients' && (
         <div className="space-y-3">
           {expected.map((a) => (
-            <article key={a.id} className="saas-card stat-card-sky p-4 flex flex-col sm:flex-row sm:items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-white text-sky-700 font-bold flex items-center justify-center shrink-0">
-                {(a.customerName || 'ع').trim().charAt(0)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#111827] truncate">{a.customerName}</p>
-                <p className="text-xs text-[#0369a1] mt-0.5">{a.time} · {a.service || '—'}{a.specialistName ? ` · ${a.specialistName}` : ''}</p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => markClient(a, 'attended')} className="px-3 py-2 rounded-xl bg-[#10b981] text-white text-sm font-bold">حضرت</button>
-                <button type="button" onClick={() => markClient(a, 'noshow')} className="nura-chip nura-chip-rose">لم تحضر</button>
+            <article key={a.id} className="relative overflow-hidden rounded-xl border border-[#E4EAEE] bg-white px-4 py-3">
+              <span className="absolute inset-y-0 start-0 w-[3px] bg-[#0FA3A3]" />
+              <div className="flex flex-col gap-3 ps-1.5 sm:flex-row sm:items-center">
+                <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#ECFEFF] text-[11.5px] font-bold text-[#0E7490]">
+                  {(a.customerName || 'ع').trim().charAt(0)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[13px] font-bold text-[#0F172A]">{a.customerName}</p>
+                  <p className="mt-0.5 text-[10.5px] tabular-nums text-[#64748B]">{a.time} · {a.service || '—'}{a.specialistName ? ` · ${a.specialistName}` : ''}</p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => markClient(a, 'attended')} className="rounded-lg bg-[#059669] px-3 py-1.5 text-[11.5px] font-bold text-white transition-colors hover:bg-[#047857]">حضرت</button>
+                  <button type="button" onClick={() => markClient(a, 'noshow')} className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] px-3 py-1.5 text-[11.5px] font-bold text-[#DC2626] transition-colors hover:border-[#DC2626]">لم تحضر</button>
+                </div>
               </div>
             </article>
           ))}
           {!expected.length && (
-            <div className="saas-card p-10 text-center">
-              <p className="font-bold text-[#111827]">لا مواعيد تنتظر الحضور اليوم</p>
-              <p className="text-sm text-[#8a9199] mt-1">المعلّق والمؤكد والمُعاد جدولته يظهر هنا.</p>
+            <div className={panel}>
+              <EmptyNote title="لا مواعيد تنتظر الحضور اليوم" hint="المعلّق والمؤكد والمُعاد جدولته يظهر هنا." />
             </div>
           )}
           {arrived.length > 0 && (
-            <section className="saas-card stat-card-mint p-4">
-              <h3 className="font-bold text-emerald-800 mb-2">حضرت للعلاج</h3>
-              {arrived.map((a) => (
-                <p key={a.id} className="text-sm py-1.5 border-t border-emerald-100 first:border-0">{a.time} · {a.customerName} · {a.service || '—'}</p>
-              ))}
+            <section className={`${panel} overflow-hidden`}>
+              <div className="flex items-center gap-2 border-b border-[#E4EAEE] px-4 py-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" />
+                <h3 className="text-[12.5px] font-extrabold text-[#334155]">حضرت للعلاج</h3>
+                <span className="ms-auto text-[11px] font-bold tabular-nums text-[#047857]">{arrived.length}</span>
+              </div>
+              <div className="divide-y divide-[#EDF1F4]">
+                {arrived.map((a) => (
+                  <p key={a.id} className="px-4 py-2 text-[11.5px] text-[#334155]"><span className="tabular-nums text-[#64748B]">{a.time}</span> · {a.customerName} · <span className="text-[#94A3B8]">{a.service || '—'}</span></p>
+                ))}
+              </div>
             </section>
           )}
           {missed.length > 0 && (
-            <section className="saas-card stat-card-rose p-4">
-              <h3 className="font-bold text-rose-700 mb-2">لم تحضر</h3>
-              {missed.map((a) => (
-                <div key={a.id} className="flex justify-between gap-2 py-1.5 text-sm border-t border-rose-100 first:border-0">
-                  <span>{a.time} · {a.customerName}</span>
-                  {!a.noshowFollowupSent && (
-                    <button type="button" className="font-bold text-rose-700" onClick={() => d.followNoshow(a)}>متابعة واتساب</button>
-                  )}
-                </div>
-              ))}
+            <section className={`${panel} overflow-hidden`}>
+              <div className="flex items-center gap-2 border-b border-[#E4EAEE] px-4 py-3">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#DC2626]" />
+                <h3 className="text-[12.5px] font-extrabold text-[#334155]">لم تحضر</h3>
+                <span className="ms-auto text-[11px] font-bold tabular-nums text-[#DC2626]">{missed.length}</span>
+              </div>
+              <div className="divide-y divide-[#EDF1F4]">
+                {missed.map((a) => (
+                  <div key={a.id} className="flex items-center justify-between gap-2 px-4 py-2 text-[11.5px]">
+                    <span className="truncate text-[#334155]"><span className="tabular-nums text-[#64748B]">{a.time}</span> · {a.customerName}</span>
+                    {!a.noshowFollowupSent && (
+                      <button type="button" className="shrink-0 text-[11px] font-bold text-[#DC2626] hover:text-[#B91C1C]" onClick={() => d.followNoshow(a)}>متابعة واتساب</button>
+                    )}
+                  </div>
+                ))}
+              </div>
             </section>
           )}
         </div>
@@ -867,62 +912,69 @@ export function AttendanceView() {
             const days = monthDaysPresent(byDate, s.id, monthKey);
             const liveMs = open ? shiftMs(open, now) : todayMs;
             return (
-              <article key={s.id} className={`saas-card p-4 space-y-3 ${open ? 'stat-card-mint' : ''}`}>
-                <div className="flex items-start gap-3">
-                  <div className={`w-11 h-11 rounded-2xl font-bold flex items-center justify-center shrink-0 ${open ? 'bg-white text-emerald-700' : 'bg-emerald-50 text-emerald-700'}`}>
+              <article key={s.id} className="relative overflow-hidden rounded-xl border border-[#E4EAEE] bg-white px-4 py-3.5">
+                {open && <span className="absolute inset-y-0 start-0 w-[3px] bg-[#059669]" />}
+                <div className="flex items-start gap-3 ps-1.5">
+                  <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-lg text-[11.5px] font-bold ${open ? 'bg-[#ECFDF5] text-[#047857]' : 'bg-[#F4F7F8] text-[#475569]'}`}>
                     {(s.name || 'م').trim().charAt(0)}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-bold text-[#111827] truncate">{s.name}{s.id === user?.uid ? ' · أنتِ' : ''}</p>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-bold text-[#0F172A]">{s.name}{s.id === user?.uid ? ' · أنتِ' : ''}</p>
                     {open ? (
-                      <p className="text-xs text-emerald-700 mt-1">في الشغل منذ {clockLabel(open.startAt)}</p>
+                      <p className="mt-0.5 flex items-center gap-1.5 text-[10.5px] font-bold text-[#047857]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[#059669]" /> في الشغل منذ {clockLabel(open.startAt)}
+                      </p>
                     ) : shifts.length ? (
-                      <p className="text-xs text-[#8a9199] mt-1">آخر إغلاق {clockLabel(shifts[shifts.length - 1].endAt)}</p>
+                      <p className="mt-0.5 text-[10.5px] text-[#94A3B8]">آخر إغلاق {clockLabel(shifts[shifts.length - 1].endAt)}</p>
                     ) : (
-                      <p className="text-xs text-[#8a9199] mt-1">لم يبدأ العمل بعد</p>
+                      <p className="mt-0.5 text-[10.5px] text-[#94A3B8]">لم يبدأ العمل بعد</p>
                     )}
                   </div>
-                  <div className="flex flex-col gap-2 shrink-0">
-                    <button type="button" onClick={() => stamp(s, 'start')} disabled={!!open} className="px-3 py-2 rounded-xl bg-[#10b981] text-white text-xs font-bold disabled:opacity-40">
+                  <div className="flex shrink-0 flex-col gap-2">
+                    <button type="button" onClick={() => stamp(s, 'start')} disabled={!!open} className="rounded-lg bg-[#059669] px-3 py-1.5 text-[11px] font-bold text-white transition-colors hover:bg-[#047857] disabled:opacity-40">
                       بدء العمل
                     </button>
-                    <button type="button" onClick={() => stamp(s, 'close')} disabled={!open} className="px-3 py-2 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold disabled:opacity-40">
+                    <button type="button" onClick={() => stamp(s, 'close')} disabled={!open} className="rounded-lg border border-[#E4EAEE] bg-white px-3 py-1.5 text-[11px] font-bold text-[#334155] transition-colors hover:border-[#0FA3A3] hover:text-[#0E7490] disabled:opacity-40">
                       إغلاق العمل
                     </button>
                   </div>
                 </div>
-                <div className={`rounded-2xl px-4 py-3 text-center ${open ? 'bg-white' : 'bg-[#f8faf9]'}`}>
-                  <p className="text-[10px] tracking-[0.16em] uppercase text-[#8a9199]">{open ? 'الوردية الحالية' : 'عداد اليوم'}</p>
-                  <p className="text-[34px] font-bold text-emerald-700 leading-none mt-1 tabular-nums" dir="ltr">{formatHms(liveMs)}</p>
-                  <p className="text-[11px] text-[#8a9199] mt-2">اليوم {formatDurationAr(todayMs)} · الشهر {formatDurationAr(monthMs)}</p>
+                <div className="mt-3 rounded-lg border border-[#EDF1F4] bg-[#FAFCFC] px-4 py-3 text-center">
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.16em] text-[#94A3B8]">{open ? 'الوردية الحالية' : 'عداد اليوم'}</p>
+                  <p className={`mt-1 text-[30px] font-light leading-none tabular-nums ${open ? 'text-[#047857]' : 'text-[#334155]'}`} dir="ltr">{formatHms(liveMs)}</p>
+                  <p className="mt-2 text-[10.5px] text-[#94A3B8]">اليوم {formatDurationAr(todayMs)} · الشهر {formatDurationAr(monthMs)}</p>
                 </div>
                 {shifts.length > 0 && (
-                  <ul className="text-xs text-[#6b7280] space-y-1 border-t border-emerald-100 pt-2">
+                  <ul className="mt-3 space-y-1 border-t border-[#EDF1F4] pt-2 text-[10.5px] text-[#64748B]">
                     {shifts.map((sh) => (
-                      <li key={sh.id}>
+                      <li key={sh.id} className="tabular-nums">
                         دخول {clockLabel(sh.startAt)}
                         {sh.endAt ? ` → إغلاق ${clockLabel(sh.endAt)} · ${formatDurationAr(sh.endAt - sh.startAt)}` : ' → ما زالت في الشغل'}
                       </li>
                     ))}
                   </ul>
                 )}
-                <p className="text-[11px] text-[#8a9199]">{monthTitleAr(monthKey)}: {formatDurationAr(monthMs)} · {days} يوم حضور</p>
+                <p className="mt-2 text-[10.5px] text-[#94A3B8]">{monthTitleAr(monthKey)}: {formatDurationAr(monthMs)} · {days} يوم حضور</p>
               </article>
             );
           })}
           {!people.length && (
-            <div className="saas-card p-10 text-center">
-              <p className="font-bold text-[#111827]">لا حسابات فريق في السجل</p>
+            <div className={panel}>
+              <EmptyNote title="لا حسابات فريق في السجل" />
             </div>
           )}
-          <section className="saas-card p-4">
-            <h3 className="font-bold text-[#111827] mb-2">ساعات {monthTitleAr(monthKey)}</h3>
-            {people.map((s) => (
-              <div key={s.id} className="flex justify-between text-sm py-2 border-t border-[#e4eee8] first:border-0">
-                <span>{s.name}</span>
-                <b className="text-emerald-700">{formatDurationAr(monthWorkedMs(byDate, s.id, monthKey, now))}</b>
-              </div>
-            ))}
+          <section className={`${panel} overflow-hidden`}>
+            <div className="border-b border-[#E4EAEE] px-4 py-3">
+              <h3 className="text-[12.5px] font-extrabold text-[#334155]">ساعات {monthTitleAr(monthKey)}</h3>
+            </div>
+            <div className="divide-y divide-[#EDF1F4] px-4">
+              {people.map((s) => (
+                <div key={s.id} className="flex justify-between py-2 text-[11.5px]">
+                  <span className="text-[#334155]">{s.name}</span>
+                  <b className="font-bold tabular-nums text-[#047857]">{formatDurationAr(monthWorkedMs(byDate, s.id, monthKey, now))}</b>
+                </div>
+              ))}
+            </div>
           </section>
         </div>
       )}

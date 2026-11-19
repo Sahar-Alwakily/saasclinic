@@ -1,7 +1,10 @@
 import React from 'react';
 import { Ticket } from 'lucide-react';
 
-const field = 'p-2.5 border border-[#e4eee8] rounded-2xl text-sm bg-[#f8faf9]';
+const field = 'rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const primary = 'rounded-lg bg-[#059669] px-4 py-2 text-[12.5px] font-bold text-white hover:bg-[#047857] disabled:opacity-60';
+const chipMint = 'rounded-full border border-[#C9EEE0] bg-[#ECFDF5] px-2.5 py-1 text-[11px] font-bold text-[#047857]';
+const chipGold = 'rounded-full border border-[#FDE68A] bg-[#FFFBEB] px-2.5 py-1 text-[11px] font-bold text-[#B45309]';
 
 const GroupOffersSection = ({
   draft,
@@ -13,10 +16,10 @@ const GroupOffersSection = ({
   onCopy,
   onDelete,
 }) => (
-  <section className="saas-card p-5">
-    <h2 className="font-bold text-[#111827] dark:text-white">عروض تفتح بعد عدد موافقات</h2>
-    <p className="text-sm text-[#8a9199] mt-1 mb-4">العرض يبقى مغلقاً حتى يبلغ العدد الافتراضي 10 أشخاص. ويمكن تغييره.</p>
-    <form onSubmit={onSubmit} className="grid sm:grid-cols-2 lg:grid-cols-6 gap-2 mb-5">
+  <section className="rounded-lg border border-[#E4EAEE] bg-white p-4">
+    <h2 className="text-[15px] font-bold">عروض تفتح بعد عدد موافقات</h2>
+    <p className="mt-1 text-[12px] text-[#64748B]">العرض يبقى مغلقاً حتى يبلغ العدد المطلوب (افتراضياً 10).</p>
+    <form onSubmit={onSubmit} className="mb-5 mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
       <input
         value={draft.title}
         onChange={(e) => setDraft({ ...draft, title: e.target.value })}
@@ -48,50 +51,46 @@ const GroupOffersSection = ({
         className={field}
         aria-label="عدد الموافقات"
       />
-      <button
-        type="submit"
-        disabled={saving}
-        className="py-2.5 px-4 rounded-2xl bg-[#10b981] text-white text-sm font-bold disabled:opacity-60"
-      >
+      <button type="submit" disabled={saving} className={primary}>
         {saving ? 'جاري الحفظ...' : 'إنشاء العرض'}
       </button>
     </form>
 
-    {groupOffers.length === 0 && <p className="text-sm text-[#8a9199] mb-4">لا عروض جماعية بعد.</p>}
-    <ul className="space-y-2 mb-5">
+    {groupOffers.length === 0 && <p className="mb-4 text-[12.5px] text-[#94A3B8]">لا عروض جماعية بعد.</p>}
+    <ul className="mb-5 space-y-2">
       {groupOffers.map((o) => {
         const count = Object.keys(o.accepts || {}).length;
         const goal = Number(o.goal) || 10;
         const open = count >= goal;
         const label = o.discountType === 'percent' ? `${o.value}%` : o.value;
         return (
-          <li key={o.id} className="flex flex-wrap justify-between items-center gap-2 text-sm rounded-2xl bg-[#f8faf9] border border-[#e4eee8] px-4 py-3">
+          <li key={o.id} className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-4 py-3 text-[13px]">
             <span>
-              <span className="font-bold text-[#111827] dark:text-white block">{o.title}</span>
-              <span className="text-xs text-[#8a9199]">{label} · {count}/{goal}</span>
+              <span className="block font-bold">{o.title}</span>
+              <span className="text-[11px] text-[#64748B]">{label} · {count}/{goal}</span>
             </span>
             <span className="flex items-center gap-2">
-              <span className={`nura-chip ${open ? 'nura-chip-mint' : 'nura-chip-gold'}`}>{open ? 'مفتوح' : 'بانتظار الموافقات'}</span>
-              <button type="button" onClick={() => onCopy(o.id)} className="px-3 py-1.5 rounded-2xl bg-[#111827] text-white text-xs font-bold">نسخ الرابط</button>
-              <button type="button" onClick={() => onDelete(o.id)} className="px-3 py-1.5 rounded-2xl border border-[#e4eee8] text-xs font-bold text-[#9a3f32]">حذف</button>
+              <span className={open ? chipMint : chipGold}>{open ? 'مفتوح' : 'بانتظار الموافقات'}</span>
+              <button type="button" onClick={() => onCopy(o.id)} className="rounded-lg bg-[#0F172A] px-3 py-1.5 text-[11px] font-bold text-white">نسخ الرابط</button>
+              <button type="button" onClick={() => onDelete(o.id)} className="rounded-lg border border-[#E4EAEE] px-3 py-1.5 text-[11px] font-bold text-[#B91C1C]">حذف</button>
             </span>
           </li>
         );
       })}
     </ul>
 
-    <h3 className="font-bold text-[#111827] dark:text-white mb-3 flex items-center gap-2">
-      <Ticket size={16} className="text-emerald-600" />
+    <h3 className="mb-3 flex items-center gap-2 text-[14px] font-bold">
+      <Ticket size={16} className="text-[#059669]" />
       الكوبونات والعروض
     </h3>
-    {offers.length === 0 && <p className="text-sm text-[#8a9199]">لا عروض محفوظة. تُنشأ من استرجاع العميلات.</p>}
+    {offers.length === 0 && <p className="text-[12.5px] text-[#94A3B8]">لا عروض محفوظة. تُنشأ من استرجاع العميلات.</p>}
     <ul className="space-y-2">
       {offers.map((o) => {
         const amount = o.discountType === 'percent' ? `${o.value}%` : o.value;
         return (
-          <li key={o.id} className="flex justify-between items-center gap-3 text-sm rounded-2xl bg-[#f8faf9] border border-[#e4eee8] px-4 py-3">
-            <span className="font-bold text-[#111827] dark:text-white">{o.title || 'عرض'}</span>
-            <span className={`nura-chip ${o.adminApproved ? 'nura-chip-mint' : 'nura-chip-gold'}`}>
+          <li key={o.id} className="flex items-center justify-between gap-3 rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-4 py-3 text-[13px]">
+            <span className="font-bold">{o.title || 'عرض'}</span>
+            <span className={o.adminApproved ? chipMint : chipGold}>
               {o.adminApproved ? `${amount} معتمد` : `${amount} بانتظار اعتماد`}
             </span>
           </li>

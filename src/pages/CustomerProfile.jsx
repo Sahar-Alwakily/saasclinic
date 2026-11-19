@@ -4,10 +4,7 @@ import { ref, onValue, update, remove, push, set } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import {
-  FaArrowRight, FaPhone, FaBirthdayCake, FaSyringe, FaPlus, FaPen, FaTrash,
-  FaPlayCircle, FaCheckCircle, FaWhatsapp,
-} from 'react-icons/fa';
+import { FaPen, FaTrash } from 'react-icons/fa';
 import moment from 'moment';
 import 'moment/locale/ar';
 import SessionStampModal from '../components/customers/SessionStampModal';
@@ -15,6 +12,14 @@ import WhatsAppInstructionsModal, { WHATSAPP_TEMPLATE_ID } from '../components/c
 import CustomerFormModal from '../components/customers/CustomerFormModal';
 
 moment.locale('ar');
+
+function formatWhen(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString('ar', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit',
+  });
+}
 
 const CustomerProfile = () => {
   const { id } = useParams();
@@ -262,161 +267,165 @@ const CustomerProfile = () => {
   };
 
   const afterCount = treatmentsList.filter((t) => t.currentPhase === 'after').length;
+  const allergy = String(customer?.medicalInfo?.allergies || '').trim();
+  const flags = [
+    allergy && !/^(لا يوجد|لا توجد|لا|none|n\/a|—|-)$/i.test(allergy) ? allergy : '',
+    customer?.medicalInfo?.isPregnant ? 'حمل' : '',
+    customer?.medicalInfo?.isBreastfeeding ? 'رضاعة' : '',
+  ].filter(Boolean);
+  const initials = `${(customer?.firstName || '?')[0]}${(customer?.lastName || '')[0] || ''}`;
+  const ghost = 'inline-flex items-center gap-2 rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[13px] font-bold text-[#334155] hover:border-[#0FA3A3] hover:text-[#0E7490]';
+  const primary = 'inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#047857]';
 
-  if (loading) return <div className="flex justify-center py-20"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
-  if (!customer) return <div className="text-center py-20 text-[#8a9199]">العميلة غير موجودة</div>;
+  if (loading) return <div className="flex justify-center py-20"><div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E4EAEE] border-t-[#059669]" /></div>;
+  if (!customer) return <div className="py-20 text-center text-[13px] text-[#64748B]">العميلة غير موجودة</div>;
 
   const tabs = careEnabled
     ? [['sessions', 'سجل الجلسات'], ['treatments', 'العلاجات'], ['medical', 'المعلومات الطبية'], ['notes', 'ملاحظات']]
     : [['medical', 'المعلومات الطبية'], ['notes', 'ملاحظات']];
+  const kpis = [
+    { label: 'الجلسات', value: String(sortedSessions.length), note: 'مسجّلة في الملف', accent: '#059669' },
+    { label: 'العلاجات', value: String(treatmentsList.length), note: 'خطط مرتبطة بالجلسات', accent: '#0FA3A3' },
+    { label: 'بعد العلاج', value: String(afterCount), note: 'تحت المتابعة', accent: '#B45309' },
+  ];
 
   return (
-    <div dir="rtl" className="space-y-5 max-w-4xl mx-auto">
+    <div dir="rtl" className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]">
       <ToastContainer position="top-left" rtl />
-      <button type="button" onClick={() => navigate('/customers')} className="flex items-center gap-2 text-[#8a9199] hover:text-emerald-700 text-sm font-bold">
-        <FaArrowRight /> العودة للعميلات
-      </button>
-
-      <section className="saas-card p-5">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold">
-              {(customer.firstName || '?')[0]}
-            </div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <button type="button" onClick={() => navigate('/customers')} className="text-[11px] font-bold text-[#94A3B8] hover:text-[#0E7490]">العودة للعميلات</button>
+          <p className="mt-2 text-[11px] font-bold tracking-wide text-[#94A3B8]">ملف العميلة</p>
+          <div className="mt-1 flex items-center gap-3">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-lg bg-white text-[13px] font-extrabold text-[#0E7490]">{initials}</span>
             <div>
-              <h1 className="text-[22px] font-bold text-[#111827]">{customer.firstName} {customer.lastName}</h1>
-              <div className="flex flex-wrap gap-2 mt-2">
-                <span className="nura-chip nura-chip-mint" dir="ltr"><FaPhone className="text-[11px]" /> {customer.phone}</span>
-                {customer.birthDate && <span className="nura-chip nura-chip-gold"><FaBirthdayCake className="text-[11px]" /> {customer.birthDate}</span>}
-                {customer.idNumber && <span className="nura-chip nura-chip-sky" dir="ltr">{customer.idNumber}</span>}
-              </div>
+              <h1 className="text-[24px] font-extrabold tracking-tight">{customer.firstName} {customer.lastName}</h1>
+              <p className="mt-1 text-[12.5px] text-[#64748B]">
+                <span dir="ltr">{customer.phone || '—'}</span>
+                {customer.birthDate ? ` · ${customer.birthDate}` : ''}
+                {customer.idNumber ? ` · ${customer.idNumber}` : ''}
+              </p>
             </div>
           </div>
+          {flags.length > 0 && (
+            <p className="mt-2 inline-flex rounded-full border border-[#F7D3D3] bg-[#FEF2F2] px-2.5 py-1 text-[11px] font-bold text-[#DC2626]">تنبيه: {flags.join(' · ')}</p>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
-            onClick={() => setShowEditForm(true)}
-            className="nura-chip nura-chip-lilac"
+            onClick={async () => {
+              const next = !customer.doNotContact;
+              await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
+              toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
+            }}
+            className={`${customer.doNotContact || customer.winbackOptOut ? 'rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] px-3 py-2 text-[13px] font-bold text-[#DC2626]' : ghost} ${hasCap('winback') ? '' : 'hidden'}`}
           >
-            <FaPen className="text-[11px]" /> تعديل البيانات
+            {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل'}
           </button>
+          <button type="button" onClick={() => setShowEditForm(true)} className={ghost}>تعديل البيانات</button>
+          {careEnabled && activeTab === 'sessions' && (
+            <button type="button" onClick={() => setShowSessionModal(true)} className={primary}>تسجيل جلسة</button>
+          )}
         </div>
-        <button
-          type="button"
-          onClick={async () => {
-            const next = !customer.doNotContact;
-            await update(ref(database, clinicPath(`customers/${id}`)), { doNotContact: next, winbackOptOut: next, optOutAt: next ? Date.now() : null });
-            toast.success(next ? 'لن تُرسل حملات استرجاع لهذه العميلة' : 'أُعيد السماح بالتواصل التنظيمي');
-          }}
-          className={`mt-3 nura-chip ${customer.doNotContact || customer.winbackOptOut ? 'nura-chip-rose' : 'nura-chip-sky'} ${hasCap('winback') ? '' : 'hidden'}`}
-        >
-          {customer.doNotContact || customer.winbackOptOut ? 'مسموح بالتواصل التنظيمي' : 'عدم التواصل / انسحاب من الحملات'}
-        </button>
+      </header>
+
+      <section aria-label="مؤشرات الملف" className="grid grid-cols-3 border-y border-[#E4EAEE]">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={`px-5 py-4 ${i > 0 ? 'border-s border-[#E4EAEE]' : ''}`}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />{k.label}</p>
+            <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
       </section>
 
-      <div className="grid grid-cols-3 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-xs text-[#047857]">الجلسات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{sortedSessions.length}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-xs text-[#0369a1]">العلاجات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{treatmentsList.length}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-xs text-[#b45309]">بعد العلاج</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{afterCount}</p>
-        </div>
-      </div>
-
-      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="flex gap-1.5 overflow-x-auto">
         {tabs.map(([tid, label]) => (
           <button
             key={tid}
             type="button"
             onClick={() => setActiveTab(tid)}
-            className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold ${activeTab === tid ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[11.5px] font-bold ${activeTab === tid ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155]'}`}
           >
             {label}
           </button>
         ))}
       </div>
 
-      <section className="saas-card p-5 min-h-[280px]">
+      <section className="min-h-[280px]">
         {activeTab === 'sessions' && (
-          <div>
-            <button type="button" onClick={() => setShowSessionModal(true)} className="w-full mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold">
-              <FaPlus /> تسجيل جلسة جديدة
-            </button>
+          <div className="space-y-3">
             {sortedSessions.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="font-bold text-[#111827]">لا جلسات بعد</p>
-                <p className="text-sm text-[#8a9199] mt-1">سجّلي أول جلسة لتظهر هنا وفي متابعة العلاجات.</p>
+              <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-12 text-center">
+                <p className="text-[14px] font-bold">لا جلسات بعد</p>
+                <p className="mt-1 text-[12.5px] text-[#64748B]">سجّلي أول جلسة لتظهر هنا وفي متابعة العلاجات.</p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {sortedSessions.map((session) => (
-                  <div key={session.id} className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e4eee8] flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0"><FaSyringe /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-bold text-[#111827]">{session.serviceTitle || 'جلسة عامة'}</p>
-                      <p className="text-xs text-[#8a9199] mt-0.5">{moment(session.recordedAt).format('dddd، D MMMM YYYY — HH:mm')} · {session.recordedBy || '—'}</p>
-                      {session.note && <p className="text-xs text-[#111827] mt-2 bg-white p-2 rounded-xl border border-[#e4eee8]">{session.note}</p>}
-                      {session.signature && <img src={session.signature} alt="توقيع" className="mt-2 h-12 bg-white rounded-lg border border-[#e4eee8]" />}
-                    </div>
-                    <div className="flex gap-2">
-                      <button type="button" onClick={() => handleEditSessionNote(session)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-emerald-700 flex items-center justify-center"><FaPen /></button>
-                      <button type="button" onClick={() => handleDeleteSession(session)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-rose-500 flex items-center justify-center"><FaTrash /></button>
-                    </div>
+            ) : sortedSessions.map((session) => (
+              <article key={session.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-3 py-3">
+                <span className="absolute inset-y-0 start-0 w-[3px] bg-[#0FA3A3]" />
+                <div className="flex items-start justify-between gap-3 ps-1.5">
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-bold">{session.serviceTitle || 'جلسة عامة'}</p>
+                    <p className="mt-0.5 text-[11.5px] text-[#64748B]">{formatWhen(session.recordedAt)} · {session.recordedBy || '—'}</p>
+                    {session.note && <p className="mt-2 rounded-lg border border-[#EDF1F4] bg-[#F8FBFC] px-2.5 py-2 text-[12px] text-[#334155]">{session.note}</p>}
+                    {session.signature && <img src={session.signature} alt="توقيع" className="mt-2 h-12 rounded-lg border border-[#E4EAEE] bg-white" />}
                   </div>
-                ))}
-              </div>
-            )}
+                  <div className="flex shrink-0 gap-2">
+                    <button type="button" onClick={() => handleEditSessionNote(session)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] bg-white text-[#0E7490]" aria-label="تعديل الملاحظة"><FaPen className="text-[11px]" /></button>
+                    <button type="button" onClick={() => handleDeleteSession(session)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626]" aria-label="حذف الجلسة"><FaTrash className="text-[11px]" /></button>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         )}
 
         {activeTab === 'treatments' && (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {treatmentsList.length === 0 && (
-              <div className="text-center py-12">
-                <p className="font-bold text-[#111827]">لا علاجات بعد</p>
-                <p className="text-sm text-[#8a9199] mt-1">تُنشأ تلقائياً مع أول جلسة. تعليمات الخدمات من متابعة العلاجات.</p>
+              <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-12 text-center">
+                <p className="text-[14px] font-bold">لا علاجات بعد</p>
+                <p className="mt-1 text-[12.5px] text-[#64748B]">تُنشأ تلقائياً مع أول جلسة. تعليمات الخدمات من متابعة العلاجات.</p>
               </div>
             )}
             {treatmentsList.map((t) => {
               const after = t.currentPhase === 'after';
+              const accent = after ? '#B45309' : '#0FA3A3';
               return (
-                <article key={t.id} className={`saas-card overflow-hidden ${after ? 'stat-card-mint' : 'stat-card-sky'}`}>
-                  <div className="p-4 flex flex-wrap items-start justify-between gap-3">
+                <article key={t.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-3 py-3">
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: accent }} />
+                  <div className="flex flex-wrap items-start justify-between gap-3 ps-1.5">
                     <div>
-                      <p className="font-bold text-[#111827] flex items-center gap-2">
-                        {after ? <FaCheckCircle className="text-emerald-600" /> : <FaPlayCircle className="text-sky-600" />}
-                        {t.serviceName}
-                      </p>
-                      <p className="text-xs text-[#8a9199] mt-1">{t.sessions?.length || 0} جلسة مسجّلة</p>
+                      <p className="text-[14px] font-bold">{t.serviceName}</p>
+                      <p className="mt-0.5 text-[11.5px] text-[#64748B]">{t.sessions?.length || 0} جلسة مسجّلة</p>
                     </div>
-                    <span className={`nura-chip ${after ? 'nura-chip-mint' : 'nura-chip-sky'}`}>{after ? 'بعد العلاج' : 'أثناء العلاج'}</span>
+                    <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${after ? 'border-[#F6E4C4] bg-[#FFFBEB] text-[#B45309]' : 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]'}`}>{after ? 'بعد العلاج' : 'أثناء العلاج'}</span>
                   </div>
-                  <div className="px-4 pb-4 space-y-3">
-                    <div className="flex flex-wrap gap-2">
-                      <button type="button" onClick={() => handleChangePhase(t.id, 'during')} className={`text-xs px-3 py-1.5 rounded-full font-bold ${!after ? 'bg-sky-600 text-white' : 'bg-sky-50 text-sky-700'}`}>أثناء العلاج</button>
-                      <button type="button" onClick={() => handleChangePhase(t.id, 'after')} className={`text-xs px-3 py-1.5 rounded-full font-bold ${after ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-700'}`}>بعد العلاج</button>
-                      <button
-                        type="button"
-                        onClick={() => setWaModal({
-                          show: true,
-                          client: { clientId: id, customerName: `${customer.firstName} ${customer.lastName}`.trim(), phoneNumber: customer.phone },
-                          treatment: { ...t, templateId: WHATSAPP_TEMPLATE_ID },
-                        })}
-                        className="text-xs px-3 py-1.5 rounded-full bg-[#10b981] text-white font-bold flex items-center gap-1"
-                      >
-                        <FaWhatsapp /> إرسال تعليمات المرحلة
-                      </button>
-                      <button type="button" onClick={() => handleDeleteTreatment(t.id)} className="nura-chip nura-chip-rose text-xs">حذف العلاج</button>
+                  <div className="mt-3 flex flex-wrap gap-2 border-t border-[#EDF1F4] ps-1.5 pt-3">
+                    <button type="button" onClick={() => handleChangePhase(t.id, 'during')} className={`rounded-lg px-3 py-1.5 text-[11.5px] font-bold ${!after ? 'bg-[#0FA3A3] text-white' : 'border border-[#E4EAEE] bg-white text-[#334155]'}`}>أثناء العلاج</button>
+                    <button type="button" onClick={() => handleChangePhase(t.id, 'after')} className={`rounded-lg px-3 py-1.5 text-[11.5px] font-bold ${after ? 'bg-[#059669] text-white' : 'border border-[#E4EAEE] bg-white text-[#334155]'}`}>بعد العلاج</button>
+                    <button
+                      type="button"
+                      onClick={() => setWaModal({
+                        show: true,
+                        client: { clientId: id, customerName: `${customer.firstName} ${customer.lastName}`.trim(), phoneNumber: customer.phone },
+                        treatment: { ...t, templateId: WHATSAPP_TEMPLATE_ID },
+                      })}
+                      className="rounded-lg border border-[#25D366]/40 bg-[#25D366]/10 px-3 py-1.5 text-[11.5px] font-bold text-[#166534]"
+                    >
+                      إرسال تعليمات المرحلة
+                    </button>
+                    <button type="button" onClick={() => handleDeleteTreatment(t.id)} className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] px-3 py-1.5 text-[11.5px] font-bold text-[#DC2626]">حذف العلاج</button>
+                  </div>
+                  {(t.sessions || []).length > 0 && (
+                    <div className="mt-3 space-y-1 ps-1.5">
+                      {(t.sessions || []).map((s, i) => (
+                        <p key={s.sessionId || i} className="text-[11.5px] text-[#64748B]">جلسة {s.sessionNumber || i + 1} · {s.date} {s.time} {s.notes ? `· ${s.notes}` : ''}</p>
+                      ))}
                     </div>
-                    {(t.sessions || []).map((s, i) => (
-                      <p key={i} className="text-xs text-[#8a9199]">جلسة {s.sessionNumber || i + 1} · {s.date} {s.time} {s.notes ? `· ${s.notes}` : ''}</p>
-                    ))}
-                  </div>
+                  )}
                 </article>
               );
             })}
@@ -424,62 +433,59 @@ const CustomerProfile = () => {
         )}
 
         {activeTab === 'notes' && (
-          <div>
-            <textarea
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              rows={3}
-              placeholder="ملاحظة عن العميلة…"
-              className="w-full p-3 rounded-xl bg-[#f8faf9] border border-[#e4eee8] outline-none focus:ring-2 focus:ring-emerald-200 text-sm"
-            />
-            <button
-              type="button"
-              disabled={savingNote || !noteDraft.trim()}
-              onClick={handleAddNote}
-              className="w-full mt-3 mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold disabled:opacity-40"
-            >
-              <FaPlus /> حفظ الملاحظة
-            </button>
+          <div className="space-y-3">
+            <div className="rounded-xl border border-[#E4EAEE] bg-white p-4">
+              <textarea
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                rows={3}
+                placeholder="ملاحظة عن العميلة…"
+                className="w-full resize-none rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]"
+              />
+              <button
+                type="button"
+                disabled={savingNote || !noteDraft.trim()}
+                onClick={handleAddNote}
+                className={`${primary} mt-3 disabled:opacity-40`}
+              >
+                حفظ الملاحظة
+              </button>
+            </div>
             {ownerNotes.length === 0 ? (
-              <div className="text-center py-12">
-                <p className="font-bold text-[#111827]">لا ملاحظات بعد</p>
-                <p className="text-sm text-[#8a9199] mt-1">كل حفظ بيسجّل ملاحظة جديدة مع وقتها، من غير ما يمس الجلسات أو الملف الطبي.</p>
+              <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-12 text-center">
+                <p className="text-[14px] font-bold">لا ملاحظات بعد</p>
+                <p className="mt-1 text-[12.5px] text-[#64748B]">كل حفظ يسجّل ملاحظة جديدة مع وقتها، من غير ما يمس الجلسات أو المعلومات الطبية.</p>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {ownerNotes.map((note) => (
-                  <div key={note.id} className="p-4 rounded-2xl bg-[#f8faf9] border border-[#e4eee8] flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-[#8a9199]">{moment(note.createdAt).format('dddd، D MMMM YYYY — HH:mm')}</p>
-                      <p className="text-sm text-[#111827] mt-2 whitespace-pre-wrap">{note.text}</p>
-                    </div>
-                    <button type="button" onClick={() => handleDeleteNote(note.id)} className="w-9 h-9 rounded-full bg-white border border-[#e4eee8] text-rose-500 flex items-center justify-center shrink-0" aria-label="حذف الملاحظة">
-                      <FaTrash />
-                    </button>
+            ) : ownerNotes.map((note) => (
+              <article key={note.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-3 py-3">
+                <span className="absolute inset-y-0 start-0 w-[3px] bg-[#94A3B8]" />
+                <div className="flex items-start gap-3 ps-1.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[11.5px] text-[#64748B]">{formatWhen(note.createdAt)}</p>
+                    <p className="mt-2 whitespace-pre-wrap text-[13px] text-[#0F172A]">{note.text}</p>
                   </div>
-                ))}
-              </div>
-            )}
+                  <button type="button" onClick={() => handleDeleteNote(note.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626]" aria-label="حذف الملاحظة">
+                    <FaTrash className="text-[11px]" />
+                  </button>
+                </div>
+              </article>
+            ))}
           </div>
         )}
 
         {activeTab === 'medical' && (
-          <div>
-            <button
-              type="button"
-              onClick={() => setShowMedicalForm(true)}
-              className="w-full mb-5 bg-[#10b981] text-white py-3 rounded-xl flex items-center justify-center gap-2 font-bold"
-            >
-              <FaPen /> ملء المعلومات الطبية
-            </button>
+          <div className="space-y-3">
+            <div className="flex justify-end">
+              <button type="button" onClick={() => setShowMedicalForm(true)} className={primary}>تعديل المعلومات الطبية</button>
+            </div>
             {medicalRows.length === 0
-              ? <p className="text-center text-[#8a9199] py-10">لا معلومات طبية مسجّلة بعد.</p>
+              ? <p className="rounded-xl border border-[#E4EAEE] bg-white py-10 text-center text-[13px] text-[#64748B]">لا معلومات طبية مسجّلة بعد.</p>
               : (
-                <div className="grid sm:grid-cols-2 gap-3">
+                <div className="grid gap-3 sm:grid-cols-2">
                   {medicalRows.map(([label, val]) => (
-                    <div key={label} className="rounded-2xl bg-[#f8faf9] border border-[#e4eee8] p-4">
-                      <p className="text-xs text-[#8a9199] mb-1">{label}</p>
-                      <p className="text-sm font-medium text-[#111827]">{String(val)}</p>
+                    <div key={label} className="rounded-lg border border-[#E4EAEE] bg-white px-4 py-3">
+                      <p className="text-[11px] font-bold text-[#94A3B8]">{label}</p>
+                      <p className="mt-1 text-[13px] font-bold text-[#0F172A]">{String(val)}</p>
                     </div>
                   ))}
                 </div>

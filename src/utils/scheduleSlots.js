@@ -1,36 +1,10 @@
+import {
+  formatHourLabel, parseHourFromLabel, parseTimeOffset, formatClock,
+} from './timeParse';
+
+export { formatHourLabel, parseHourFromLabel, parseTimeOffset, formatClock };
+
 export const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-
-export function formatHourLabel(hour) {
-  const h = Number(hour);
-  const period = h < 12 ? 'ص' : 'م';
-  const display = h % 12 === 0 ? 12 : h % 12;
-  return `${String(display).padStart(2, '0')}:00 ${period}`;
-}
-
-export function parseHourFromLabel(time) {
-  const offset = parseTimeOffset(time);
-  return offset == null ? null : Math.floor(offset);
-}
-
-export function parseTimeOffset(time) {
-  const s = String(time || '').trim();
-  const m = s.match(/(\d{1,2})(?::(\d{2}))?/);
-  if (!m) return null;
-  let h = Number(m[1]);
-  const min = Number(m[2] || 0);
-  if ((/م/.test(s) || /pm/i.test(s)) && h < 12) h += 12;
-  if ((/ص/.test(s) || /am/i.test(s)) && h === 12) h = 0;
-  if (h > 23) h = 23;
-  return h + (Number.isFinite(min) ? min / 60 : 0);
-}
-
-export function formatClock(date = new Date()) {
-  const h = date.getHours();
-  const m = String(date.getMinutes()).padStart(2, '0');
-  const period = h < 12 ? 'ص' : 'م';
-  const display = h % 12 === 0 ? 12 : h % 12;
-  return `${display}:${m} ${period}`;
-}
 
 export function scheduleForStaff(schedules, staffId, branchId) {
   const map = schedules || {};
@@ -80,6 +54,7 @@ export function addDays(date, n) {
 
 export function toYmd(date) {
   const x = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(x.getTime())) return '';
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
 }
 

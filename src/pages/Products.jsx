@@ -4,20 +4,24 @@ import { onValue, push, ref, remove, set, update } from 'firebase/database';
 import { database } from '../APIFirebase/firebase';
 import { useClinic } from '../context/ClinicContext';
 import { toast, ToastContainer } from 'react-toastify';
-import {
-  FaBoxOpen, FaPlus, FaPen, FaTrash, FaTimes, FaPhone, FaMapMarkerAlt,
-  FaCheckCircle, FaTimesCircle, FaTruck,
-} from 'react-icons/fa';
+import { FaPen, FaTrash, FaTimes } from 'react-icons/fa';
 
 const emptyProduct = { title: '', category: 'beauty', price: '', imageUrl: '' };
-const field = 'w-full p-2.5 border border-[#e4eee8] bg-[#f8faf9] rounded-xl outline-none focus:ring-2 focus:ring-emerald-200';
+const field = 'w-full rounded-lg border border-[#E4EAEE] bg-[#F8FBFC] px-3 py-2 text-[13px] outline-none focus:border-[#0FA3A3]';
+const primary = 'inline-flex items-center gap-2 rounded-lg bg-[#059669] px-4 py-2 text-[13px] font-bold text-white hover:bg-[#047857]';
 
 const STATUS = {
-  pending: { label: 'بانتظار التأكيد', chip: 'nura-chip-gold' },
-  confirmed: { label: 'مؤكد', chip: 'nura-chip-mint' },
-  delivered: { label: 'تم التوصيل', chip: 'nura-chip-sky' },
-  cancelled: { label: 'ملغي', chip: 'nura-chip-rose' },
+  pending: { label: 'بانتظار التأكيد', box: 'border-[#F6E4C4] bg-[#FFFBEB] text-[#B45309]', accent: '#B45309' },
+  confirmed: { label: 'مؤكد', box: 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]', accent: '#0FA3A3' },
+  delivered: { label: 'تم التوصيل', box: 'border-[#C9EEE0] bg-[#ECFDF5] text-[#047857]', accent: '#059669' },
+  cancelled: { label: 'ملغي', box: 'border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626]', accent: '#DC2626' },
 };
+
+function money(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '—';
+  return `${n.toLocaleString('ar')} شيكل`;
+}
 
 const Products = () => {
   const { clinicPath, clinicInfo, isAdmin } = useClinic();
@@ -144,57 +148,55 @@ const Products = () => {
     }
   };
 
+  const kpis = [
+    { label: 'المنتجات', value: String(products.length), note: 'في الكتالوج', accent: '#059669' },
+    { label: 'بانتظار التأكيد', value: String(stats.pending), note: 'طلبيات جديدة', accent: '#B45309' },
+    { label: 'مؤكدة', value: String(stats.confirmed), note: 'بانتظار التوصيل', accent: '#0FA3A3' },
+    { label: 'تم التوصيل', value: String(stats.delivered), note: 'طلبيات مغلقة', accent: '#059669' },
+  ];
+
   if (loading) {
-    return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#10b981]" /></div>;
+    return <div className="flex h-64 items-center justify-center"><div className="h-10 w-10 animate-spin rounded-full border-2 border-[#E4EAEE] border-t-[#059669]" /></div>;
   }
 
   return (
-    <div className="space-y-5" dir="rtl">
+    <div className="mx-auto max-w-[1360px] space-y-5 text-[#0F172A]" dir="rtl">
       <ToastContainer position="top-left" rtl />
 
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-[22px] font-bold text-[#111827]">المنتجات</h1>
-          <p className="text-sm text-[#8a9199] mt-1">كتالوج المتجر وطلبيات العميلات — منفصل عن جلسات العيادة.</p>
+          <p className="text-[11px] font-bold tracking-wide text-[#94A3B8]">متجر العيادة</p>
+          <h1 className="mt-1 text-[24px] font-extrabold tracking-tight">المنتجات</h1>
+          <p className="mt-1 text-[12.5px] text-[#64748B]">الكتالوج يعرض الاسم والسعر. الطلبيات تعرض الحالة والمجموع.</p>
         </div>
         {tab === 'catalog' && isAdmin && (
-          <button type="button" onClick={() => openProduct()} className="flex items-center gap-2 bg-[#10b981] text-white px-5 py-2.5 rounded-2xl font-bold">
-            <FaPlus /> منتج جديد
-          </button>
+          <button type="button" onClick={() => openProduct()} className={primary}>+ منتج جديد</button>
         )}
-      </div>
+      </header>
 
       <div className="flex gap-1.5">
-        <button type="button" onClick={() => goTab('catalog')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${tab === 'catalog' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>الكتالوج</button>
-        <button type="button" onClick={() => goTab('orders')} className={`px-3 py-1.5 rounded-full text-xs font-bold ${tab === 'orders' ? 'bg-[#10b981] text-white' : 'bg-emerald-50 text-emerald-800'}`}>الطلبيات ({orders.length})</button>
+        <button type="button" onClick={() => goTab('catalog')} className={`rounded-full border px-3 py-1.5 text-[11.5px] font-bold ${tab === 'catalog' ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155]'}`}>الكتالوج {products.length}</button>
+        <button type="button" onClick={() => goTab('orders')} className={`rounded-full border px-3 py-1.5 text-[11.5px] font-bold ${tab === 'orders' ? 'border-[#C6EEEE] bg-[#ECFEFF] text-[#0E7490]' : 'border-[#E4EAEE] bg-white text-[#334155]'}`}>الطلبيات {orders.length}</button>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="saas-card stat-card-mint p-4">
-          <p className="text-xs text-[#047857]">المنتجات</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{products.length}</p>
-        </div>
-        <div className="saas-card stat-card-gold p-4">
-          <p className="text-xs text-[#b45309]">بانتظار التأكيد</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{stats.pending}</p>
-        </div>
-        <div className="saas-card stat-card-sky p-4">
-          <p className="text-xs text-[#0369a1]">مؤكدة</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{stats.confirmed}</p>
-        </div>
-        <div className="saas-card stat-card-lilac p-4">
-          <p className="text-xs text-[#6d28d9]">تم التوصيل</p>
-          <p className="stat-num text-[28px] leading-none mt-2">{stats.delivered}</p>
-        </div>
-      </div>
+      <section aria-label="مؤشرات المتجر" className="grid grid-cols-2 border-y border-[#E4EAEE] lg:grid-cols-4">
+        {kpis.map((k, i) => (
+          <div key={k.label} className={['px-5 py-4', i % 2 === 1 ? 'border-s border-[#E4EAEE]' : '', i > 1 ? 'border-t border-[#E4EAEE] lg:border-t-0' : '', i > 0 ? 'lg:border-s lg:border-[#E4EAEE]' : ''].join(' ')}>
+            <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#64748B]"><span className="h-1.5 w-1.5 rounded-full" style={{ background: k.accent }} />{k.label}</p>
+            <p className="mt-2 text-[32px] font-light leading-none tabular-nums tracking-tight">{k.value}</p>
+            <p className="mt-2 text-[11px] text-[#94A3B8]">{k.note}</p>
+            <span className="mt-2 block h-[2px] w-10 rounded-full" style={{ background: k.accent }} />
+          </div>
+        ))}
+      </section>
 
       {tab === 'catalog' && (
         <>
-          <div className="saas-card p-5 flex items-start justify-between gap-4">
+          <div className="flex items-center justify-between gap-4 rounded-lg border border-[#E4EAEE] bg-white px-4 py-3">
             <div>
-              <p className="font-bold text-[#111827]">إظهار المنتجات على الموقع</p>
-              <p className="text-xs text-[#8a9199] mt-1">{showProducts ? 'القسم ظاهر على صفحة الحجز' : 'القسم مخفي. المنتجات والطلبيات تبقى محفوظة'}</p>
-              <Link to="/website" className="text-xs font-bold text-emerald-700 mt-2 inline-block">إعدادات الموقع</Link>
+              <p className="text-[13px] font-bold">إظهار المنتجات على الموقع</p>
+              <p className="mt-1 text-[12px] text-[#64748B]">{showProducts ? 'القسم ظاهر على صفحة الحجز' : 'القسم مخفي. المنتجات والطلبيات تبقى محفوظة'}</p>
+              <Link to="/website" className="mt-1 inline-block text-[12px] font-bold text-[#0FA3A3] hover:text-[#059669]">إعدادات الموقع</Link>
             </div>
             <button
               type="button"
@@ -202,34 +204,37 @@ const Products = () => {
               aria-checked={showProducts}
               disabled={saving || !isAdmin}
               onClick={() => patchInfo({ showProducts: !showProducts })}
-              className={`shrink-0 w-12 h-7 rounded-full ${showProducts ? 'bg-[#10b981]' : 'bg-stone-300'}`}
+              className={`h-7 w-12 shrink-0 rounded-full ${showProducts ? 'bg-[#059669]' : 'bg-[#E4EAEE]'}`}
             >
-              <span className={`block w-6 h-6 bg-white rounded-full shadow mt-0.5 transition ${showProducts ? 'mr-0.5' : 'mr-5'}`} />
+              <span className={`mt-0.5 block h-6 w-6 rounded-full bg-white shadow transition ${showProducts ? 'mr-0.5' : 'mr-5'}`} />
             </button>
           </div>
 
           {products.length === 0 ? (
-            <div className="saas-card text-center py-16">
-              <h3 className="text-lg font-bold text-[#111827] mb-2">لا منتجات بعد</h3>
-              <p className="text-sm text-[#8a9199]">أضيفي منتج عناية إذا بدكِ متجر على الموقع.</p>
+            <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-16 text-center">
+              <h3 className="text-[15px] font-bold">لا منتجات بعد</h3>
+              <p className="mt-1 text-[12.5px] text-[#64748B]">أضيفي منتج عناية إذا بدك متجر على الموقع.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
               {products.map((p) => (
-                <article key={p.id} className="saas-card p-4 flex flex-col">
-                  <div className="h-36 rounded-2xl bg-[#f8faf9] border border-[#e4eee8] mb-3 overflow-hidden flex items-center justify-center">
-                    {p.imageUrl ? <img src={p.imageUrl} alt="" className="w-full h-full object-cover" /> : <FaBoxOpen className="text-3xl text-emerald-300" />}
-                  </div>
+                <article key={p.id} className="rounded-lg border border-[#E4EAEE] bg-white p-4">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="font-bold text-[#111827]">{p.title || p.name}</p>
-                      <p className="text-lg font-bold text-emerald-700 mt-1">{Number(p.price || 0).toLocaleString('ar')} ₪</p>
-                    </div>
-                    <div className="flex gap-1">
-                      <button type="button" onClick={() => openProduct(p)} className="w-8 h-8 bg-emerald-50 text-emerald-700 rounded-full flex items-center justify-center"><FaPen className="text-xs" /></button>
-                      <button type="button" onClick={() => deleteProduct(p.id)} className="w-8 h-8 bg-rose-50 text-rose-500 rounded-full flex items-center justify-center"><FaTrash className="text-xs" /></button>
-                    </div>
+                    <h3 className="text-[15px] font-extrabold">{p.title || p.name || 'منتج بلا اسم'}</h3>
+                    {isAdmin && (
+                      <div className="flex shrink-0 gap-1.5">
+                        <button type="button" onClick={() => openProduct(p)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] bg-white text-[#0E7490]" aria-label="تعديل المنتج"><FaPen className="text-[11px]" /></button>
+                        <button type="button" onClick={() => deleteProduct(p.id)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] text-[#DC2626]" aria-label="حذف المنتج"><FaTrash className="text-[11px]" /></button>
+                      </div>
+                    )}
                   </div>
+                  {p.imageUrl && <img src={p.imageUrl} alt="" className="mt-3 h-28 w-full rounded-lg border border-[#E4EAEE] object-cover" />}
+                  <dl className="mt-3 border-t border-[#EDF1F4] pt-3">
+                    <div className="flex items-center justify-between gap-3 text-[12.5px]">
+                      <dt className="text-[#94A3B8]">السعر</dt>
+                      <dd className={`font-bold ${p.price === '' || p.price == null ? 'text-[#B45309]' : 'text-[#0F172A]'}`}>{p.price === '' || p.price == null ? 'غير مسعّر' : money(p.price)}</dd>
+                    </div>
+                  </dl>
                 </article>
               ))}
             </div>
@@ -239,69 +244,64 @@ const Products = () => {
 
       {tab === 'orders' && (
         orders.length === 0 ? (
-          <div className="saas-card text-center py-16">
-            <h3 className="text-lg font-bold text-[#111827] mb-2">لا طلبيات بعد</h3>
-            <p className="text-sm text-[#8a9199]">عندما تطلب عميلة من متجر الموقع، يظهر الطلب هنا.</p>
+          <div className="rounded-xl border border-[#E4EAEE] bg-white px-4 py-16 text-center">
+            <h3 className="text-[15px] font-bold">لا طلبيات بعد</h3>
+            <p className="mt-1 text-[12.5px] text-[#64748B]">عندما تطلب عميلة من متجر الموقع، يظهر الطلب هنا.</p>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {orders.map((order) => {
               const status = statusOf(order);
               const st = STATUS[status] || STATUS.pending;
               const info = order.customerInfo || {};
               const items = Array.isArray(order.items) ? order.items : [];
+              const paid = order.paymentStatus === 'paid';
               return (
-                <article key={order.id} className="saas-card p-5">
-                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-4 border-b border-[#e4eee8]">
+                <article key={order.id} className="relative overflow-hidden rounded-lg border border-[#E4EAEE] bg-white px-4 py-3">
+                  <span className="absolute inset-y-0 start-0 w-[3px]" style={{ background: st.accent }} />
+                  <div className="flex flex-wrap items-start justify-between gap-3 ps-1.5">
                     <div>
-                      <h3 className="font-bold text-lg text-[#111827]">{info.name || 'عميلة'}</h3>
-                      <div className="flex flex-wrap items-center gap-3 text-sm text-[#8a9199] mt-1">
-                        {info.phone && <span className="flex items-center gap-1" dir="ltr"><FaPhone className="text-[11px]" /> {info.phone}</span>}
-                        {info.address && <span className="flex items-center gap-1"><FaMapMarkerAlt className="text-[11px]" /> {info.address}</span>}
+                      <h3 className="text-[15px] font-extrabold">{info.name || 'عميلة'}</h3>
+                      <p className="mt-1 text-[12px] text-[#64748B]">
+                        <span className="text-[#94A3B8]">الهاتف </span><span dir="ltr">{info.phone || '—'}</span>
+                        <span className="mx-1.5 text-[#E4EAEE]">·</span>
+                        <span className="text-[#94A3B8]">العنوان </span>{info.address || '—'}
+                      </p>
+                    </div>
+                    <div className="text-end">
+                      <p className="text-[11px] text-[#94A3B8]">{order.createdAt ? new Date(order.createdAt).toLocaleString('ar') : ''}</p>
+                      <div className="mt-1 flex flex-wrap justify-end gap-1.5">
+                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${st.box}`}>{st.label}</span>
+                        <span className={`rounded-full border px-2.5 py-1 text-[11px] font-bold ${paid ? 'border-[#C9EEE0] bg-[#ECFDF5] text-[#047857]' : 'border-[#E4EAEE] bg-[#F4F7F8] text-[#64748B]'}`}>{paid ? 'مدفوع' : 'غير مدفوع'}</span>
                       </div>
                     </div>
-                    <div className="text-left space-y-1">
-                      <p className="text-xs text-[#8a9199]">{order.createdAt ? new Date(order.createdAt).toLocaleString('ar-IL') : ''}</p>
-                      <span className={`nura-chip ${st.chip}`}>{st.label}</span>
-                      {order.paymentStatus === 'paid' && <span className="nura-chip nura-chip-mint mr-1">مدفوع</span>}
-                    </div>
                   </div>
-
-                  <div className="space-y-2 mb-4">
+                  <div className="mt-3 space-y-1.5 border-t border-[#EDF1F4] ps-1.5 pt-3">
+                    {items.length === 0 && <p className="text-[12.5px] text-[#94A3B8]">لا بنود في الطلب</p>}
                     {items.map((item, idx) => (
-                      <div key={idx} className="flex justify-between items-center text-sm">
-                        <span className="text-[#111827]">{item.title} <span className="text-[#8a9199] text-xs">×{item.qty}</span></span>
-                        <span className="font-bold">{(Number(item.price) || 0) * (Number(item.qty) || 0)} ₪</span>
+                      <div key={idx} className="flex items-center justify-between gap-3 text-[12.5px]">
+                        <span>{item.title || 'منتج'} <span className="text-[#94A3B8]">×{item.qty || 0}</span></span>
+                        <span className="font-bold tabular-nums">{money((Number(item.price) || 0) * (Number(item.qty) || 0))}</span>
                       </div>
                     ))}
-                  </div>
-
-                  <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-4 border-t border-[#e4eee8]">
-                    <p className="text-lg font-bold text-[#111827]">
-                      المجموع: <span className="text-emerald-700">{order.total} ₪</span>
-                    </p>
-                    <div className="flex flex-wrap gap-2 w-full md:w-auto">
-                      {status === 'pending' && (
-                        <button type="button" onClick={() => handleUpdateStatus(order.id, 'confirmed')} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-[#10b981] text-white rounded-xl text-sm font-bold">
-                          <FaCheckCircle /> تأكيد
-                        </button>
-                      )}
-                      {status === 'confirmed' && (
-                        <button type="button" onClick={() => handleUpdateStatus(order.id, 'delivered')} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-sky-600 text-white rounded-xl text-sm font-bold">
-                          <FaTruck /> تم التوصيل
-                        </button>
-                      )}
-                      {status !== 'cancelled' && status !== 'delivered' && (
-                        <button type="button" onClick={() => handleUpdateStatus(order.id, 'cancelled')} className="flex-1 md:flex-none flex items-center justify-center gap-2 px-4 py-2 bg-rose-50 text-rose-600 rounded-xl text-sm font-bold">
-                          <FaTimesCircle /> إلغاء
-                        </button>
-                      )}
-                      {order.paymentStatus !== 'paid' && status !== 'cancelled' && (
-                        <button type="button" onClick={() => markPaid(order.id)} className="flex-1 md:flex-none px-4 py-2 bg-[#111827] text-white rounded-xl text-sm font-bold">
-                          تسجيل الدفع
-                        </button>
-                      )}
+                    <div className="flex items-center justify-between gap-3 border-t border-[#EDF1F4] pt-2 text-[13px]">
+                      <span className="text-[#94A3B8]">المجموع</span>
+                      <span className="font-extrabold tabular-nums">{money(order.total)}</span>
                     </div>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2 ps-1.5">
+                    {status === 'pending' && (
+                      <button type="button" onClick={() => handleUpdateStatus(order.id, 'confirmed')} className={primary}>تأكيد</button>
+                    )}
+                    {status === 'confirmed' && (
+                      <button type="button" onClick={() => handleUpdateStatus(order.id, 'delivered')} className={primary}>تم التوصيل</button>
+                    )}
+                    {status !== 'cancelled' && status !== 'delivered' && (
+                      <button type="button" onClick={() => handleUpdateStatus(order.id, 'cancelled')} className="rounded-lg border border-[#F7D3D3] bg-[#FEF2F2] px-3 py-2 text-[12.5px] font-bold text-[#DC2626]">إلغاء</button>
+                    )}
+                    {!paid && status !== 'cancelled' && (
+                      <button type="button" onClick={() => markPaid(order.id)} className="rounded-lg border border-[#E4EAEE] bg-white px-3 py-2 text-[12.5px] font-bold text-[#334155] hover:border-[#0FA3A3] hover:text-[#0E7490]">تسجيل الدفع</button>
+                    )}
                   </div>
                 </article>
               );
@@ -312,16 +312,16 @@ const Products = () => {
 
       {modal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <form onSubmit={saveProduct} className="bg-white rounded-3xl w-full max-w-lg overflow-hidden" dir="rtl">
-            <div className="bg-[#10b981] p-5 text-white flex justify-between items-center">
-              <h3 className="font-bold">{editingId ? 'تعديل منتج' : 'منتج جديد'}</h3>
-              <button type="button" onClick={() => setModal(false)} className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center"><FaTimes /></button>
+          <form onSubmit={saveProduct} className="w-full max-w-lg overflow-hidden rounded-xl border border-[#E4EAEE] bg-white" dir="rtl">
+            <div className="flex items-center justify-between border-b border-[#E4EAEE] px-5 py-4">
+              <h3 className="text-[16px] font-extrabold">{editingId ? 'تعديل منتج' : 'منتج جديد'}</h3>
+              <button type="button" onClick={() => setModal(false)} className="grid h-8 w-8 place-items-center rounded-lg border border-[#E4EAEE] text-[#64748B]" aria-label="إغلاق"><FaTimes className="text-[11px]" /></button>
             </div>
-            <div className="p-5 space-y-3">
+            <div className="space-y-3 p-5">
               <input required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={field} placeholder="اسم المنتج" />
-              <input required type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={field} placeholder="السعر ₪" dir="ltr" />
+              <input required type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} className={field} placeholder="السعر بالشيكل" dir="ltr" />
               <input type="url" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} className={field} placeholder="رابط صورة (اختياري)" dir="ltr" />
-              <button type="submit" className="w-full py-3 rounded-xl bg-[#10b981] text-white font-bold">حفظ المنتج</button>
+              <button type="submit" className={primary}>حفظ المنتج</button>
             </div>
           </form>
         </div>

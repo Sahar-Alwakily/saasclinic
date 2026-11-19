@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { ref, set, push } from 'firebase/database';
+import { ref, set, push, remove } from 'firebase/database';
 import { auth, database } from '../APIFirebase/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { getPlan } from '../config/plans';
@@ -36,12 +36,22 @@ const RegisterClinic = () => {
 
     setLoading(true);
 
+    let createdUid = null;
+    let clinicReady = false;
+
     try {
       const cred = await createUserWithEmailAndPassword(auth, form.email.trim(), form.password);
       const uid = cred.user.uid;
+      createdUid = uid;
       const clinicId = `clinic_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       const now = Date.now();
       const trialEndsAt = now + trialDays * 24 * 60 * 60 * 1000;
+
+      // قواعد RTDB تربط صلاحية الكتابة على clinics/{clinicId} بوجود meta/users/{uid}.
+      // لذلك نكتب الربط أولاً، ثم بقية بيانات العيادة.
+      await set(ref(database, `meta/users/${uid}`), {
+        clinicId, role: 'admin', email: form.email.trim(),
+      });
 
       await set(ref(database, `clinics/${clinicId}/info`), {
         name: form.clinicName.trim(),
@@ -59,13 +69,10 @@ const RegisterClinic = () => {
         paymentStatus: 'none',
         sections: createDefaultSections(),
       });
+      clinicReady = true;
 
       await set(ref(database, `clinics/${clinicId}/users/${uid}`), {
         email: form.email.trim(), name: form.ownerName.trim(), role: 'admin', createdAt: now,
-      });
-
-      await set(ref(database, `meta/users/${uid}`), {
-        clinicId, role: 'admin', email: form.email.trim(),
       });
 
       await set(ref(database, `meta/clinics/${clinicId}`), {
@@ -97,6 +104,9 @@ const RegisterClinic = () => {
 
       navigate('/dashboard');
     } catch (err) {
+      // لا نترك ربط meta/users معلّقاً على عيادة ناقصة — حتى يستطيع المستخدم إعادة المحاولة.
+      // وإذا كانت العيادة قد أُنشئت فعلاً نُبقي الربط لأن الحساب صار صالحاً للاستخدام.
+      if (createdUid && !clinicReady) await remove(ref(database, `meta/users/${createdUid}`)).catch(() => {});
       setError(err.code === 'auth/email-already-in-use' ? t('register.emailUsed') : err.message);
     } finally {
       setLoading(false);
